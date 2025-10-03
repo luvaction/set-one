@@ -1,35 +1,69 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
-
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from "@/constants/theme";
+import { Ionicons } from "@expo/vector-icons";
+import { Tabs } from "expo-router";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { StyleSheet } from "react-native";
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
-        tabBarButton: HapticTab,
-      }}>
+    <SafeAreaProvider>
+      <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
+        <Tabs
+          screenOptions={{
+            headerShown: false,
+            tabBarStyle: {
+              backgroundColor: Colors.dark.surface,
+              borderTopColor: Colors.dark.border,
+              borderTopWidth: 1,
+              height: 60,
+              paddingBottom: 8,
+              paddingTop: 8,
+            },
+            tabBarActiveTintColor: Colors.dark.primary,
+            tabBarInactiveTintColor: Colors.dark.tabIconDefault,
+            tabBarLabelStyle: {
+              fontSize: 11,
+              fontWeight: "600",
+            },
+          }}
+        >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          title: "홈",
+          tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="routines"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: "루틴",
+          tabBarIcon: ({ color, size }) => <Ionicons name="list" size={size} color={color} />,
         }}
       />
-    </Tabs>
+      <Tabs.Screen
+        name="workout"
+        options={{
+          title: "운동",
+          tabBarIcon: ({ color, size }) => <Ionicons name="fitness" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="history"
+        options={{
+          title: "기록",
+          tabBarIcon: ({ color, size }) => <Ionicons name="bar-chart" size={size} color={color} />,
+        }}
+      />
+        </Tabs>
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: Colors.dark.background,
+  },
+});

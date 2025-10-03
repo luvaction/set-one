@@ -1,98 +1,188 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import { Colors } from "@/constants/theme";
+import { Ionicons } from "@expo/vector-icons";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export default function HomeScreen() {
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    <ScrollView style={styles.container}>
+      {/* 인사말 */}
+      <View style={styles.header}>
+        <Text style={styles.greeting}>안녕하세요!</Text>
+        <Text style={styles.subGreeting}>오늘도 Set1부터 시작해볼까요?</Text>
+      </View>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+      {/* 빠른 시작 버튼 */}
+      <TouchableOpacity style={styles.quickStartButton}>
+        <View style={styles.quickStartContent}>
+          <Ionicons name="play-circle" size={32} color={Colors.dark.primary} />
+          <View style={styles.quickStartText}>
+            <Text style={styles.quickStartTitle}>빠른 시작</Text>
+            <Text style={styles.quickStartSubtitle}>마지막 루틴 계속하기</Text>
+          </View>
+        </View>
+        <Ionicons name="chevron-forward" size={24} color={Colors.dark.textSecondary} />
+      </TouchableOpacity>
+
+      {/* 오늘의 통계 */}
+      <View style={styles.statsContainer}>
+        <View style={styles.statCard}>
+          <Text style={styles.statValue}>0</Text>
+          <Text style={styles.statLabel}>완료한 세트</Text>
+        </View>
+        <View style={styles.statCard}>
+          <Text style={styles.statValue}>0분</Text>
+          <Text style={styles.statLabel}>운동 시간</Text>
+        </View>
+      </View>
+
+      {/* 추천 루틴 */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>추천 루틴</Text>
+        <TouchableOpacity style={styles.routineCard}>
+          <View style={styles.routineHeader}>
+            <Text style={styles.routineTitle}>초보자 맨몸 운동</Text>
+            <View style={styles.routineBadge}>
+              <Text style={styles.routineBadgeText}>맨몸</Text>
+            </View>
+          </View>
+          <Text style={styles.routineDescription}>푸시업, 스쿼트, 플랭크 등 5가지 운동</Text>
+          <Text style={styles.routineDuration}>⏱ 약 20분</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.routineCard}>
+          <View style={styles.routineHeader}>
+            <Text style={styles.routineTitle}>가슴 집중 웨이트</Text>
+            <View style={[styles.routineBadge, styles.routineBadgeWeight]}>
+              <Text style={styles.routineBadgeText}>웨이트</Text>
+            </View>
+          </View>
+          <Text style={styles.routineDescription}>벤치프레스, 덤벨 플라이, 푸시업</Text>
+          <Text style={styles.routineDuration}>⏱ 약 40분</Text>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: {
+    flex: 1,
+    backgroundColor: Colors.dark.background,
+    padding: 20,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  header: {
+    marginBottom: 24,
+    marginTop: 10,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  greeting: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: Colors.dark.text,
+    marginBottom: 4,
+  },
+  subGreeting: {
+    fontSize: 16,
+    color: Colors.dark.textSecondary,
+  },
+  quickStartButton: {
+    backgroundColor: Colors.dark.surface,
+    borderRadius: 16,
+    padding: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+  },
+  quickStartContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+  },
+  quickStartText: {
+    gap: 4,
+  },
+  quickStartTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: Colors.dark.text,
+  },
+  quickStartSubtitle: {
+    fontSize: 14,
+    color: Colors.dark.textSecondary,
+  },
+  statsContainer: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 32,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: Colors.dark.surface,
+    borderRadius: 12,
+    padding: 16,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: Colors.dark.primary,
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: Colors.dark.textSecondary,
+  },
+  section: {
+    gap: 12,
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: Colors.dark.text,
+  },
+  routineCard: {
+    backgroundColor: Colors.dark.surface,
+    borderRadius: 12,
+    padding: 16,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+  },
+  routineHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  routineTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: Colors.dark.text,
+  },
+  routineBadge: {
+    backgroundColor: Colors.dark.primary + "20",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  routineBadgeWeight: {
+    backgroundColor: "#FF6B00" + "20",
+  },
+  routineBadgeText: {
+    fontSize: 12,
+    color: Colors.dark.primary,
+    fontWeight: "600",
+  },
+  routineDescription: {
+    fontSize: 14,
+    color: Colors.dark.textSecondary,
+  },
+  routineDuration: {
+    fontSize: 12,
+    color: Colors.dark.icon,
   },
 });
