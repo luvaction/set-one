@@ -7,6 +7,17 @@ import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
+// reps를 표시용 문자열로 변환하는 헬퍼 함수
+const formatReps = (reps: { min: number; max: number } | string): string => {
+  if (typeof reps === "string") {
+    return reps;
+  }
+  if (reps.min === reps.max) {
+    return `${reps.min}`;
+  }
+  return `${reps.min}-${reps.max}`;
+};
+
 const categories = [
   { id: "all", name: "전체", icon: "grid" },
   { id: "bodyweight", name: "맨몸운동", icon: "body" },
@@ -751,7 +762,7 @@ export default function RoutinesScreen() {
                                 </View>
                               </View>
                               <Text style={[styles.exerciseDetails, { color: colors.textSecondary }]}>
-                                {exercise.sets}세트 × {exercise.reps}
+                                {exercise.sets}세트 × {formatReps(exercise.reps)}
                               </Text>
                             </View>
                           ))}

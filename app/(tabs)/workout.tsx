@@ -4,8 +4,8 @@ import { routineService } from "@/services/routine";
 import { workoutSessionService } from "@/services/workoutSession";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
-import { useCallback, useState, useEffect, useRef } from "react";
-import { Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 // 타이머 상태 타입
 type SetTimerState = {
@@ -22,6 +22,27 @@ type RestTimerState = {
   startTime: number;
   elapsedTime: number; // 초 단위 (0부터 카운트업)
   isRunning: boolean;
+};
+
+// reps를 표시용 문자열로 변환하는 헬퍼 함수
+const formatReps = (reps: { min: number; max: number } | string): string => {
+  if (typeof reps === "string") {
+    return reps;
+  }
+  if (reps.min === reps.max) {
+    return `${reps.min}`;
+  }
+  return `${reps.min}-${reps.max}`;
+};
+
+// reps에서 최솟값 추출 (기본값으로 사용)
+const getMinReps = (reps: { min: number; max: number } | string): number => {
+  if (typeof reps === "string") {
+    // 문자열인 경우 숫자 추출 (예: "10-15" → 10, "30초" → 30)
+    const match = reps.match(/\d+/);
+    return match ? parseInt(match[0]) : 0;
+  }
+  return reps.min;
 };
 
 export default function WorkoutScreen() {
@@ -69,6 +90,7 @@ export default function WorkoutScreen() {
 
       // 세션이 있으면 타이머 시작
       if (session) {
+        // 이미 진행 중인 세션 시간을 복원하는 로직이 필요할 수 있지만, 여기서는 단순화하여 전체 타이머만 시작
         startTotalTimer();
       }
     } catch (error) {
@@ -91,6 +113,8 @@ export default function WorkoutScreen() {
   const startTotalTimer = () => {
     if (totalTimerRef.current) clearInterval(totalTimerRef.current);
 
+    // activeSession에 저장된 startTime을 사용하여 elapsed 시간을 계산해야 하지만,
+    // 현재 코드에서는 workoutStartTimeRef를 사용하므로 해당 로직을 따릅니다.
     if (workoutStartTimeRef.current === 0) {
       workoutStartTimeRef.current = Date.now();
     }
@@ -289,12 +313,20 @@ export default function WorkoutScreen() {
     const exercise = activeSession.exercises[exerciseIndex];
     const set = exercise.sets[setIndex];
 
+    // 목표 횟수 포맷 (표시용)
+    const targetRepsString = set.targetReps || "0";
+
+    // 기본값: 최솟값 추출
+    const minReps = getMinReps(targetRepsString);
+
     setCompletingSet({
       exerciseIndex,
       setIndex,
-      targetReps: set.targetReps,
+      targetReps: targetRepsString, // 원본 데이터 저장 (표시용)
     });
-    setActualReps(set.targetReps); // 목표 횟수를 기본값으로 설정
+
+    // 기본값 설정: 최솟값을 기본값으로 설정
+    setActualReps(String(minReps));
     setWeight(""); // 무게는 빈 값으로 시작
     setShowSetCompleteModal(true);
   };
@@ -324,7 +356,11 @@ export default function WorkoutScreen() {
 
       // 마지막 세트가 아니면 휴식 타이머 시작
       if (setIndex < exercise.sets.length - 1) {
-        startRestTimer(exerciseIndex, setIndex + 1);
+        // 다음 세트가 완료된 상태가 아닐 경우에만 휴식 타이머 시작
+        const nextSet = exercise.sets[setIndex + 1];
+        if (!nextSet.isCompleted) {
+          startRestTimer(exerciseIndex, setIndex + 1);
+        }
       }
 
       // 모달 닫기
@@ -382,13 +418,24 @@ export default function WorkoutScreen() {
               <View style={styles.setsContainer}>
                 {exercise.sets.map((set, setIndex) => {
                   const isActiveSet = activeSetTimer?.exerciseIndex === exerciseIndex && activeSetTimer?.setIndex === setIndex;
-                  const isRestingAfterThisSet = restTimer?.exerciseIndex === exerciseIndex && restTimer?.setIndex === setIndex + 1;
 
                   return (
-                    <View key={set.setNumber} style={[styles.setRow, { borderBottomColor: colors.border }, set.isCompleted && { backgroundColor: colors.primary + "10" }]}>
+                    <View
+                      key={set.setNumber}
+                      style={[
+                        styles.setRow,
+                        { borderBottomColor: colors.border },
+                        set.isCompleted && { backgroundColor: colors.primary + "15", borderLeftWidth: 3, borderLeftColor: colors.primary },
+                        isActiveSet && !set.isCompleted && { backgroundColor: colors.surface, borderLeftWidth: 3, borderLeftColor: colors.primary, borderWidth: 1, borderColor: colors.primary + "30" },
+                      ]}
+                    >
                       <View style={styles.setInfo}>
-                        <Text style={[styles.setNumber, { color: colors.textSecondary }]}>세트 {set.setNumber}</Text>
-                        <Text style={[styles.targetReps, { color: colors.textSecondary }]}>목표: {set.targetReps}회</Text>
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                          {set.isCompleted && <Ionicons name="checkmark-circle" size={16} color={colors.primary} />}
+                          {isActiveSet && !set.isCompleted && <Ionicons name="play-circle" size={16} color={colors.primary} />}
+                          <Text style={[styles.setNumber, { color: set.isCompleted || isActiveSet ? colors.primary : colors.textSecondary }]}>세트 {set.setNumber}</Text>
+                        </View>
+                        <Text style={[styles.targetReps, { color: colors.textSecondary }]}>목표: {formatReps(set.targetReps)}회</Text>
                       </View>
 
                       {set.isCompleted ? (
@@ -431,9 +478,10 @@ export default function WorkoutScreen() {
                               </TouchableOpacity>
                             )}
 
+                            {/* ✅ 수정된 부분: handleCompleteSetClick 호출 */}
                             <TouchableOpacity
                               style={[styles.iconButton, styles.completeIconButton, { backgroundColor: colors.primary }]}
-                              onPress={() => handleCompleteSet(exerciseIndex, setIndex)}
+                              onPress={() => handleCompleteSetClick(exerciseIndex, setIndex)}
                             >
                               <Ionicons name="checkmark" size={18} color={colors.buttonText} />
                             </TouchableOpacity>
@@ -454,6 +502,59 @@ export default function WorkoutScreen() {
             <Text style={[styles.completeButtonText, { color: colors.buttonText }]}>운동 완료</Text>
           </TouchableOpacity>
         </View>
+
+        {/* ✅ 추가된 부분: 세트 완료 입력 모달 */}
+        <Modal visible={showSetCompleteModal} animationType="fade" transparent={true} onRequestClose={() => setShowSetCompleteModal(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={[styles.setCompleteModal, { backgroundColor: colors.surface }]}>
+              <Text style={[styles.modalTitleSmall, { color: colors.text }]}>세트 완료 기록</Text>
+
+              {completingSet && activeSession && (
+                <View style={styles.modalContent}>
+                  <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>{activeSession.exercises[completingSet.exerciseIndex].exerciseName}</Text>
+
+                  {/* 오류 발생 위치 수정 완료 */}
+                  <Text style={[styles.modalLabel, { color: colors.textSecondary, marginBottom: 15 }]}>
+                    세트 {completingSet.setIndex + 1} (목표: {completingSet.targetReps}회)
+                  </Text>
+
+                  {/* 횟수 입력 */}
+                  <Text style={[styles.inputLabel, { color: colors.text }]}>실제 횟수</Text>
+                  <TextInput
+                    style={[styles.modalInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                    value={actualReps}
+                    onChangeText={setActualReps}
+                    keyboardType="numeric"
+                    placeholder="횟수 입력 (필수)"
+                    placeholderTextColor={colors.textSecondary}
+                    maxLength={3}
+                  />
+
+                  {/* 무게 입력 */}
+                  <Text style={[styles.inputLabel, { color: colors.text, marginTop: 15 }]}>무게 (kg)</Text>
+                  <TextInput
+                    style={[styles.modalInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                    value={weight}
+                    onChangeText={setWeight}
+                    keyboardType="numeric"
+                    placeholder="무게 입력 (선택)"
+                    placeholderTextColor={colors.textSecondary}
+                    maxLength={6}
+                  />
+                </View>
+              )}
+
+              <View style={styles.modalActions}>
+                <Pressable style={[styles.modalCancelButton, { borderColor: colors.border }]} onPress={() => setShowSetCompleteModal(false)}>
+                  <Text style={[styles.modalCancelButtonText, { color: colors.text }]}>취소</Text>
+                </Pressable>
+                <Pressable style={[styles.modalSaveButton, { backgroundColor: colors.primary }]} onPress={handleSaveSetComplete}>
+                  <Text style={[styles.modalSaveButtonText, { color: colors.buttonText }]}>저장</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </View>
     );
   }
@@ -792,5 +893,69 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: "center",
     lineHeight: 24,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+  },
+  setCompleteModal: {
+    width: "85%",
+    borderRadius: 12,
+    padding: 20,
+  },
+  modalTitleSmall: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+  modalContent: {
+    marginBottom: 20,
+  },
+  modalSubtitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 5,
+  },
+  modalLabel: {
+    // ⬅️ 이 스타일을 추가하여 오류를 해결했습니다.
+    fontSize: 14,
+    marginBottom: 8, // 참고 코드에서 가져옴
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 5,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+  },
+  modalActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 10,
+  },
+  modalCancelButton: {
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  modalCancelButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  modalSaveButton: {
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  modalSaveButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
   },
 });

@@ -60,12 +60,6 @@ export default function HistoryScreen() {
 
   const handleDayPress = (day: DateData) => {
     setSelectedDate(day.dateString);
-    const record = records.find((r) => r.date === day.dateString);
-    if (record) {
-      setCurrentRecord(record);
-      setMemo(record.memo || "");
-      setShowEditModal(true);
-    }
   };
 
   const handleSaveRecord = async () => {
@@ -190,10 +184,19 @@ export default function HistoryScreen() {
 
                     {record.exercises.map((ex, exIdx) => (
                       <View key={exIdx} style={styles.exerciseItem}>
-                        <Text style={[styles.exerciseName, { color: colors.text }]}>{ex.exerciseName}</Text>
-                        <Text style={[styles.exerciseSets, { color: colors.textSecondary }]}>
-                          {ex.sets.filter((s) => s.isCompleted).length}/{ex.sets.length} 세트
-                        </Text>
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.exerciseName, { color: colors.text }]}>{ex.exerciseName}</Text>
+                          <Text style={[styles.exerciseSets, { color: colors.textSecondary }]}>
+                            {ex.sets.filter((s) => s.isCompleted).length}/{ex.sets.length} 세트
+                          </Text>
+                          <View style={styles.setsDetailContainer}>
+                            {ex.sets.map((set, setIdx) => (
+                              <Text key={setIdx} style={[styles.setDetail, { color: colors.textSecondary }]}>
+                                {set.isCompleted ? `${set.actualReps}회${set.weight > 0 ? ` × ${set.weight}kg` : ""}` : "-"}
+                              </Text>
+                            ))}
+                          </View>
+                        </View>
                       </View>
                     ))}
 
@@ -364,15 +367,27 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   exerciseItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 4,
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(0, 0, 0, 0.05)",
+    marginTop: 8,
   },
   exerciseName: {
     fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 4,
   },
   exerciseSets: {
-    fontSize: 14,
+    fontSize: 13,
+    marginBottom: 4,
+  },
+  setsDetailContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  setDetail: {
+    fontSize: 12,
   },
   recordMemo: {
     fontSize: 14,

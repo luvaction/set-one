@@ -16,6 +16,17 @@ const generateId = (): string => {
 
 const now = (): string => new Date().toISOString();
 
+// reps를 문자열로 변환하는 헬퍼 함수
+const formatRepsToString = (reps: { min: number; max: number } | string): string => {
+  if (typeof reps === "string") {
+    return reps;
+  }
+  if (reps.min === reps.max) {
+    return `${reps.min}`;
+  }
+  return `${reps.min}-${reps.max}`;
+};
+
 // 루틴을 WorkoutExercise로 변환
 const convertRoutineToWorkoutExercises = (routine: Routine): WorkoutExercise[] => {
   return routine.exercises.map((exercise) => ({
@@ -24,7 +35,7 @@ const convertRoutineToWorkoutExercises = (routine: Routine): WorkoutExercise[] =
     targetSets: exercise.sets,
     sets: Array.from({ length: exercise.sets }, (_, i) => ({
       setNumber: i + 1,
-      targetReps: exercise.reps,
+      targetReps: formatRepsToString(exercise.reps), // 객체를 문자열로 변환
       actualReps: 0,
       weight: 0,
       isCompleted: false,

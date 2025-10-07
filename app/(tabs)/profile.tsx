@@ -295,9 +295,28 @@ export default function ProfileScreen() {
               <TextInput
                 style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
                 value={editingProfile.birthDate}
-                onChangeText={(text) => setEditingProfile({ ...editingProfile, birthDate: text })}
+                onChangeText={(text) => {
+                  // 숫자만 추출
+                  const numbers = text.replace(/[^0-9]/g, "");
+                  let formatted = "";
+
+                  // 최대 8자리 숫자만 허용
+                  if (numbers.length <= 8) {
+                    // YYYY-MM-DD 형식으로 포맷
+                    if (numbers.length <= 4) {
+                      formatted = numbers;
+                    } else if (numbers.length <= 6) {
+                      formatted = numbers.slice(0, 4) + "-" + numbers.slice(4);
+                    } else {
+                      formatted = numbers.slice(0, 4) + "-" + numbers.slice(4, 6) + "-" + numbers.slice(6, 8);
+                    }
+                    setEditingProfile({ ...editingProfile, birthDate: formatted });
+                  }
+                }}
                 placeholder="YYYY-MM-DD"
                 placeholderTextColor={colors.textSecondary}
+                keyboardType="numeric"
+                maxLength={10}
               />
 
               {/* 키 */}
