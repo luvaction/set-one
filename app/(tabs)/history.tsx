@@ -94,28 +94,10 @@ export default function HistoryScreen() {
       {/* 탭 버튼 */}
       <View style={[styles.tabContainer, { backgroundColor: colors.surface }]}>
         <Pressable style={[styles.tab, activeTab === "record" && { backgroundColor: colors.primary }]} onPress={() => setActiveTab("record")}>
-          <Text
-            style={[
-              styles.tabText,
-              { color: colors.textSecondary },
-              // ⭐️ [수정] 활성화된 탭 텍스트 색상을 buttonText로 설정
-              activeTab === "record" && { color: colors.buttonText },
-            ]}
-          >
-            기록
-          </Text>
+          <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === "record" && { color: colors.buttonText }]}>기록</Text>
         </Pressable>
         <Pressable style={[styles.tab, activeTab === "stats" && { backgroundColor: colors.primary }]} onPress={() => setActiveTab("stats")}>
-          <Text
-            style={[
-              styles.tabText,
-              { color: colors.textSecondary },
-              // ⭐️ [수정] 활성화된 탭 텍스트 색상을 buttonText로 설정
-              activeTab === "stats" && { color: colors.buttonText },
-            ]}
-          >
-            통계
-          </Text>
+          <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === "stats" && { color: colors.buttonText }]}>통계</Text>
         </Pressable>
       </View>
 
@@ -137,7 +119,6 @@ export default function HistoryScreen() {
           <View style={styles.section}>
             <View style={styles.calendarHeaderWrapper}>
               <Pressable style={[styles.todayButton, { backgroundColor: colors.primary }]} onPress={goToToday}>
-                {/* ⭐️ [수정] buttonText 사용 */}
                 <Text style={[styles.todayButtonText, { color: colors.buttonText }]}>Today</Text>
               </Pressable>
             </View>
@@ -152,7 +133,6 @@ export default function HistoryScreen() {
                   calendarBackground: colors.surface,
                   textSectionTitleColor: colors.primary,
                   selectedDayBackgroundColor: colors.primary,
-                  // ⭐️ [수정] 캘린더 선택된 날짜 텍스트 색상
                   selectedDayTextColor: colors.buttonText,
                   todayTextColor: colors.primary,
                   dayTextColor: colors.text,
@@ -160,7 +140,6 @@ export default function HistoryScreen() {
                   monthTextColor: colors.primary,
                   arrowColor: colors.primary,
                   dotColor: colors.primary,
-                  // ⭐️ [수정] 캘린더 선택된 점 색상
                   selectedDotColor: colors.buttonText,
                 }}
               />
@@ -278,7 +257,6 @@ export default function HistoryScreen() {
                 <Text style={[styles.cancelButtonText, { color: colors.text }]}>취소</Text>
               </Pressable>
               <Pressable style={[styles.modalButton, styles.saveButton, { backgroundColor: colors.primary }]} onPress={handleSaveRecord}>
-                {/* ⭐️ [수정] buttonText 사용 */}
                 <Text style={[styles.saveButtonText, { color: colors.buttonText }]}>저장</Text>
               </Pressable>
             </View>
@@ -465,7 +443,6 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: 16,
     fontWeight: "600",
-    // ⭐️ [수정] color 속성 제거 (인라인 스타일로 대체)
   },
   tabContainer: {
     flexDirection: "row",
@@ -486,16 +463,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
   },
-  activeTabText: {
-    // ⭐️ [수정] color 속성 제거 (인라인 스타일로 대체)
-  },
+  activeTabText: {},
   todayButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
   },
   todayButtonText: {
-    // ⭐️ [수정] color 속성 제거 (인라인 스타일로 대체)
     fontSize: 14,
     fontWeight: "600",
   },

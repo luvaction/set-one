@@ -101,7 +101,6 @@ export default function WorkoutScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* ⭐️ [수정] ScrollView에 contentScroll 적용 */}
         <ScrollView style={styles.contentScroll}>
           {activeSession.exercises.map((exercise, exerciseIndex) => (
             <View key={exercise.exerciseId} style={[styles.exerciseCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -146,7 +145,6 @@ export default function WorkoutScreen() {
                           }
                         }}
                       >
-                        {/* ⭐️ [수정] buttonText 사용 */}
                         <Text style={[styles.checkButtonText, { color: colors.buttonText }]}>완료</Text>
                       </TouchableOpacity>
                     )}
@@ -159,9 +157,7 @@ export default function WorkoutScreen() {
 
         <View style={[styles.footer, { borderTopColor: colors.border, backgroundColor: colors.surface }]}>
           <TouchableOpacity style={[styles.completeButton, { backgroundColor: colors.primary }]} onPress={handleCompleteWorkout}>
-            {/* ⭐️ [수정] buttonText 사용 */}
             <Ionicons name="checkmark-circle" size={24} color={colors.buttonText} />
-            {/* ⭐️ [수정] buttonText 사용 */}
             <Text style={[styles.completeButtonText, { color: colors.buttonText }]}>운동 완료</Text>
           </TouchableOpacity>
         </View>
@@ -172,16 +168,13 @@ export default function WorkoutScreen() {
   // 활성 세션이 없으면 루틴 선택 화면
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* ⭐️ [수정] View에 contentCenter 적용 */}
       <View style={styles.contentCenter}>
         <Ionicons name="fitness-outline" size={80} color={colors.primary} />
         <Text style={[styles.title, { color: colors.text }]}>운동 시작하기</Text>
         <Text style={[styles.description, { color: colors.textSecondary }]}>루틴을 선택하여{"\n"}운동을 시작하세요</Text>
 
         <TouchableOpacity style={[styles.startButton, { backgroundColor: colors.primary }]} onPress={() => setShowRoutineSelector(true)}>
-          {/* ⭐️ [수정] buttonText 사용 */}
           <Ionicons name="play-circle" size={24} color={colors.buttonText} />
-          {/* ⭐️ [수정] buttonText 사용 */}
           <Text style={[styles.buttonText, { color: colors.buttonText }]}>루틴 선택</Text>
         </TouchableOpacity>
       </View>
@@ -313,7 +306,6 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 18,
     fontWeight: "600",
-    // ⭐️ [수정] color 속성 제거 (인라인 스타일로 대체)
   },
   exerciseCard: {
     borderRadius: 12,
@@ -368,7 +360,6 @@ const styles = StyleSheet.create({
   checkButtonText: {
     fontSize: 14,
     fontWeight: "600",
-    // ⭐️ [수정] color 속성 제거 (인라인 스타일로 대체)
   },
   footer: {
     padding: 20,
@@ -385,7 +376,6 @@ const styles = StyleSheet.create({
   completeButtonText: {
     fontSize: 18,
     fontWeight: "600",
-    // ⭐️ [수정] color 속성 제거 (인라인 스타일로 대체)
   },
   modalContainer: {
     flex: 1,

@@ -181,7 +181,6 @@ export default function ProfileScreen() {
             <Ionicons name="person-outline" size={64} color={colors.icon} />
             <Text style={[styles.emptyText, { color: colors.text }]}>프로필을 설정해주세요</Text>
             <Pressable style={[styles.setupButton, { backgroundColor: colors.primary }]} onPress={handleEdit}>
-              {/* ⭐️ [수정] buttonText 사용 */}
               <Text style={[styles.setupButtonText, { color: colors.buttonText }]}>프로필 설정</Text>
             </Pressable>
           </View>
@@ -231,15 +230,7 @@ export default function ProfileScreen() {
                   ]}
                   onPress={() => setEditingProfile({ ...editingProfile, gender: "male" })}
                 >
-                  <Text
-                    style={[
-                      styles.optionButtonText,
-                      { color: colors.textSecondary },
-                      editingProfile.gender === "male" && { color: colors.buttonText }, // ⭐️ [수정] buttonText 사용
-                    ]}
-                  >
-                    남성
-                  </Text>
+                  <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.gender === "male" && { color: colors.buttonText }]}>남성</Text>
                 </Pressable>
                 <Pressable
                   style={[
@@ -249,15 +240,7 @@ export default function ProfileScreen() {
                   ]}
                   onPress={() => setEditingProfile({ ...editingProfile, gender: "female" })}
                 >
-                  <Text
-                    style={[
-                      styles.optionButtonText,
-                      { color: colors.textSecondary },
-                      editingProfile.gender === "female" && { color: colors.buttonText }, // ⭐️ [수정] buttonText 사용
-                    ]}
-                  >
-                    여성
-                  </Text>
+                  <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.gender === "female" && { color: colors.buttonText }]}>여성</Text>
                 </Pressable>
               </View>
 
@@ -315,15 +298,7 @@ export default function ProfileScreen() {
                   ]}
                   onPress={() => setEditingProfile({ ...editingProfile, goal: "lose" })}
                 >
-                  <Text
-                    style={[
-                      styles.optionButtonText,
-                      { color: colors.textSecondary },
-                      editingProfile.goal === "lose" && { color: colors.buttonText }, // ⭐️ [수정] buttonText 사용
-                    ]}
-                  >
-                    감량
-                  </Text>
+                  <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.goal === "lose" && { color: colors.buttonText }]}>감량</Text>
                 </Pressable>
                 <Pressable
                   style={[
@@ -333,15 +308,7 @@ export default function ProfileScreen() {
                   ]}
                   onPress={() => setEditingProfile({ ...editingProfile, goal: "gain" })}
                 >
-                  <Text
-                    style={[
-                      styles.optionButtonText,
-                      { color: colors.textSecondary },
-                      editingProfile.goal === "gain" && { color: colors.buttonText }, // ⭐️ [수정] buttonText 사용
-                    ]}
-                  >
-                    증량
-                  </Text>
+                  <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.goal === "gain" && { color: colors.buttonText }]}>증량</Text>
                 </Pressable>
                 <Pressable
                   style={[
@@ -351,15 +318,7 @@ export default function ProfileScreen() {
                   ]}
                   onPress={() => setEditingProfile({ ...editingProfile, goal: "maintain" })}
                 >
-                  <Text
-                    style={[
-                      styles.optionButtonText,
-                      { color: colors.textSecondary },
-                      editingProfile.goal === "maintain" && { color: colors.buttonText }, // ⭐️ [수정] buttonText 사용
-                    ]}
-                  >
-                    유지
-                  </Text>
+                  <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.goal === "maintain" && { color: colors.buttonText }]}>유지</Text>
                 </Pressable>
               </View>
 
@@ -374,15 +333,7 @@ export default function ProfileScreen() {
                   ]}
                   onPress={() => setEditingProfile({ ...editingProfile, activityLevel: "low" })}
                 >
-                  <Text
-                    style={[
-                      styles.optionButtonText,
-                      { color: colors.textSecondary },
-                      editingProfile.activityLevel === "low" && { color: colors.buttonText }, // ⭐️ [수정] buttonText 사용
-                    ]}
-                  >
-                    낮음
-                  </Text>
+                  <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.activityLevel === "low" && { color: colors.buttonText }]}>낮음</Text>
                 </Pressable>
                 <Pressable
                   style={[
@@ -392,15 +343,7 @@ export default function ProfileScreen() {
                   ]}
                   onPress={() => setEditingProfile({ ...editingProfile, activityLevel: "medium" })}
                 >
-                  <Text
-                    style={[
-                      styles.optionButtonText,
-                      { color: colors.textSecondary },
-                      editingProfile.activityLevel === "medium" && { color: colors.buttonText }, // ⭐️ [수정] buttonText 사용
-                    ]}
-                  >
-                    보통
-                  </Text>
+                  <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.activityLevel === "medium" && { color: colors.buttonText }]}>보통</Text>
                 </Pressable>
                 <Pressable
                   style={[
@@ -410,15 +353,7 @@ export default function ProfileScreen() {
                   ]}
                   onPress={() => setEditingProfile({ ...editingProfile, activityLevel: "high" })}
                 >
-                  <Text
-                    style={[
-                      styles.optionButtonText,
-                      { color: colors.textSecondary },
-                      editingProfile.activityLevel === "high" && { color: colors.buttonText }, // ⭐️ [수정] buttonText 사용
-                    ]}
-                  >
-                    높음
-                  </Text>
+                  <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.activityLevel === "high" && { color: colors.buttonText }]}>높음</Text>
                 </Pressable>
               </View>
 
@@ -442,7 +377,6 @@ export default function ProfileScreen() {
                   <Text style={[styles.cancelButtonText, { color: colors.text }]}>취소</Text>
                 </Pressable>
                 <Pressable style={[styles.modalButton, styles.saveButton, { backgroundColor: colors.primary }]} onPress={handleSave}>
-                  {/* ⭐️ [수정] buttonText 사용 */}
                   <Text style={[styles.saveButtonText, { color: colors.buttonText }]}>저장</Text>
                 </Pressable>
               </View>
@@ -534,7 +468,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   setupButtonText: {
-    // ⭐️ [수정] 색상 제거. props로 받도록 변경
     fontSize: 16,
     fontWeight: "600",
   },
@@ -583,7 +516,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
   },
-  // ⭐️ [수정] optionButtonTextActive 스타일에서 색상 제거. 인라인 스타일로 color.buttonText 적용
   optionButtonTextActive: {},
   modalButtons: {
     flexDirection: "row",
@@ -605,7 +537,6 @@ const styles = StyleSheet.create({
   },
   saveButton: {},
   saveButtonText: {
-    // ⭐️ [수정] 색상 제거. props로 받도록 변경
     fontSize: 16,
     fontWeight: "600",
   },

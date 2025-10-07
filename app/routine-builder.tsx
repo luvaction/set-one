@@ -229,7 +229,6 @@ export default function RoutineBuilderScreen() {
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.text }]}>{isEditing ? "루틴 수정" : "새 루틴"}</Text>
         <TouchableOpacity style={[styles.saveButton, { backgroundColor: colors.primary }]} onPress={saveRoutine}>
-          {/* ⭐️ [수정] buttonText 사용 */}
           <Text style={[styles.saveButtonText, { color: colors.buttonText }]}>저장</Text>
         </TouchableOpacity>
       </View>
@@ -339,7 +338,6 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontWeight: "600",
     fontSize: 14,
-    // ⭐️ [수정] color 속성 제거 (인라인 스타일로 대체)
   },
   content: {
     flex: 1,

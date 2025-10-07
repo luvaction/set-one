@@ -425,40 +425,13 @@ export default function RoutinesScreen() {
         {/* 세그먼트 컨트롤 */}
         <View style={[styles.segmentContainer, { backgroundColor: colors.surface }]}>
           <TouchableOpacity style={[styles.segmentButton, selectedTab === "library" && { backgroundColor: colors.primary }]} onPress={() => setSelectedTab("library")}>
-            <Text
-              style={[
-                styles.segmentText,
-                { color: colors.textSecondary },
-                // ⭐️ [수정] 활성화된 탭 텍스트 색상을 buttonText로 설정
-                selectedTab === "library" && { color: colors.buttonText, fontWeight: "600" },
-              ]}
-            >
-              라이브러리
-            </Text>
+            <Text style={[styles.segmentText, { color: colors.textSecondary }, selectedTab === "library" && { color: colors.buttonText, fontWeight: "600" }]}>라이브러리</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.segmentButton, selectedTab === "recommended" && { backgroundColor: colors.primary }]} onPress={() => setSelectedTab("recommended")}>
-            <Text
-              style={[
-                styles.segmentText,
-                { color: colors.textSecondary },
-                // ⭐️ [수정] 활성화된 탭 텍스트 색상을 buttonText로 설정
-                selectedTab === "recommended" && { color: colors.buttonText, fontWeight: "600" },
-              ]}
-            >
-              추천 루틴
-            </Text>
+            <Text style={[styles.segmentText, { color: colors.textSecondary }, selectedTab === "recommended" && { color: colors.buttonText, fontWeight: "600" }]}>추천 루틴</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.segmentButton, selectedTab === "my" && { backgroundColor: colors.primary }]} onPress={() => setSelectedTab("my")}>
-            <Text
-              style={[
-                styles.segmentText,
-                { color: colors.textSecondary },
-                // ⭐️ [수정] 활성화된 탭 텍스트 색상을 buttonText로 설정
-                selectedTab === "my" && { color: colors.buttonText, fontWeight: "600" },
-              ]}
-            >
-              내 루틴
-            </Text>
+            <Text style={[styles.segmentText, { color: colors.textSecondary }, selectedTab === "my" && { color: colors.buttonText, fontWeight: "600" }]}>내 루틴</Text>
           </TouchableOpacity>
         </View>
 
@@ -630,7 +603,6 @@ export default function RoutinesScreen() {
                                 </View>
                               </View>
                               <TouchableOpacity style={[styles.playButton, { backgroundColor: colors.primary }]} onPress={() => handlePlayTemplate(routine)}>
-                                {/* ⭐️ [수정] playButton 내부 아이콘 색상을 buttonText로 설정 */}
                                 <Ionicons name="play" size={20} color={colors.buttonText} />
                               </TouchableOpacity>
                             </View>
@@ -704,7 +676,6 @@ export default function RoutinesScreen() {
                         <Text style={[styles.routineName, { color: colors.text }]}>{routine.name}</Text>
                         {routine.isRecommended && (
                           <View style={[styles.recommendedBadge, { backgroundColor: colors.primary }]}>
-                            {/* ⭐️ [수정] 추천 배지 텍스트 색상을 buttonText로 설정 */}
                             <Text style={[styles.recommendedText, { color: colors.buttonText }]}>추천</Text>
                           </View>
                         )}
@@ -716,7 +687,6 @@ export default function RoutinesScreen() {
                     </View>
                     <View style={styles.routineActions}>
                       <TouchableOpacity style={[styles.playButton, { backgroundColor: colors.primary }]} onPress={() => handlePlayRoutine(routine)}>
-                        {/* ⭐️ [수정] playButton 내부 아이콘 색상을 buttonText로 설정 */}
                         <Ionicons name="play" size={20} color={colors.buttonText} />
                       </TouchableOpacity>
                       <TouchableOpacity
@@ -867,7 +837,6 @@ const styles = StyleSheet.create({
   },
   segmentTextActive: {
     fontWeight: "600",
-    // ⭐️ [수정] color 속성 제거 (인라인 스타일로 대체)
   },
   categoryContainer: {
     marginBottom: 20,
@@ -1075,9 +1044,7 @@ const styles = StyleSheet.create({
   },
   recommendedText: {
     fontSize: 10,
-
     fontWeight: "600",
-    // ⭐️ [수정] color 속성 제거 (인라인 스타일로 대체)
   },
   searchContainer: {
     flexDirection: "row",
