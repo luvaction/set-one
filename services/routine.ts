@@ -108,4 +108,62 @@ export const routineService = {
 
     return await this.createRoutine(userCopy);
   },
+
+  // 루틴 마지막 사용 시간 업데이트 (사용자 루틴만)
+  async updateLastUsed(id: string): Promise<void> {
+    const routine = await this.getRoutineById(id);
+    if (!routine) {
+      return; // 루틴이 없으면 무시
+    }
+
+    // 추천 루틴은 업데이트하지 않음
+    if (routine.isRecommended) {
+      return;
+    }
+
+    const updatedRoutine: Routine = {
+      ...routine,
+      lastUsed: new Date().toISOString().split("T")[0], // YYYY-MM-DD 형식
+      updatedAt: now(),
+    };
+
+    await storage.updateInArray(STORAGE_KEYS.USER_ROUTINES, updatedRoutine);
+  },
+
+  // 루틴에 운동 추가 (사용자 루틴만)
+  async addExerciseToRoutine(routineId: string, exercise: { id: string; name: string; sets: number; reps: string; targetMuscle?: string; difficulty?: string }): Promise<Routine> {
+    const routine = await this.getRoutineById(routineId);
+    if (!routine) {
+      throw new Error(`Routine with id ${routineId} not found`);
+    }
+
+    if (routine.isRecommended) {
+      throw new Error("Cannot add exercise to recommended routine. Create a copy instead.");
+    }
+
+    // 이미 같은 운동이 있는지 확인
+    const existingExercise = routine.exercises.find((ex) => ex.id === exercise.id);
+    if (existingExercise) {
+      throw new Error(`Exercise "${exercise.name}" already exists in this routine`);
+    }
+
+    const updatedRoutine: Routine = {
+      ...routine,
+      exercises: [
+        ...routine.exercises,
+        {
+          id: exercise.id,
+          name: exercise.name,
+          sets: exercise.sets,
+          reps: exercise.reps,
+          targetMuscle: exercise.targetMuscle,
+          difficulty: exercise.difficulty,
+        },
+      ],
+      updatedAt: now(),
+    };
+
+    await storage.updateInArray(STORAGE_KEYS.USER_ROUTINES, updatedRoutine);
+    return updatedRoutine;
+  },
 };

@@ -31,6 +31,8 @@ export interface Routine extends BaseEntity {
   exercises: RoutineExercise[];
   isRecommended?: boolean; // 추천 루틴인지
   category?: string; // 루틴 카테고리 (예: "상체", "하체", "전신")
+  lastUsed?: string; // 마지막 사용 날짜
+  duration?: string; // 예상 소요 시간 (예: "20분", "45분")
 }
 
 export type CreateRoutineData = Omit<

@@ -9,10 +9,12 @@ import { Routine } from "@/models";
 export default function HomeScreen() {
   const { colors } = useTheme();
   const [recommendedRoutines, setRecommendedRoutines] = useState<Routine[]>([]);
+  const [lastUsedRoutine, setLastUsedRoutine] = useState<Routine | null>(null);
 
   useFocusEffect(
     useCallback(() => {
       loadRecommendedRoutines();
+      loadLastUsedRoutine();
     }, [])
   );
 
@@ -22,6 +24,31 @@ export default function HomeScreen() {
       setRecommendedRoutines(routines.slice(0, 3)); // 첫 3개만
     } catch (error) {
       console.error("Failed to load recommended routines:", error);
+    }
+  };
+
+  const loadLastUsedRoutine = async () => {
+    try {
+      const userRoutines = await routineService.getUserRoutines();
+      // lastUsed가 있는 루틴 중 가장 최근 것 찾기
+      const sortedRoutines = userRoutines
+        .filter((r) => r.lastUsed)
+        .sort((a, b) => new Date(b.lastUsed!).getTime() - new Date(a.lastUsed!).getTime());
+
+      if (sortedRoutines.length > 0) {
+        setLastUsedRoutine(sortedRoutines[0]);
+      }
+    } catch (error) {
+      console.error("Failed to load last used routine:", error);
+    }
+  };
+
+  const handleQuickStart = async () => {
+    if (lastUsedRoutine) {
+      await handlePlayRoutine(lastUsedRoutine);
+    } else {
+      // 마지막 루틴이 없으면 루틴 화면으로 이동
+      router.push("/(tabs)/routines");
     }
   };
 
@@ -44,12 +71,12 @@ export default function HomeScreen() {
       </View>
 
       {/* 빠른 시작 버튼 */}
-      <TouchableOpacity style={[styles.quickStartButton, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <TouchableOpacity style={[styles.quickStartButton, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={handleQuickStart}>
         <View style={styles.quickStartContent}>
           <Ionicons name="play-circle" size={32} color={colors.primary} />
           <View style={styles.quickStartText}>
             <Text style={[styles.quickStartTitle, { color: colors.text }]}>빠른 시작</Text>
-            <Text style={[styles.quickStartSubtitle, { color: colors.textSecondary }]}>마지막 루틴 계속하기</Text>
+            <Text style={[styles.quickStartSubtitle, { color: colors.textSecondary }]}>{lastUsedRoutine ? `${lastUsedRoutine.name} 계속하기` : "루틴 선택하기"}</Text>
           </View>
         </View>
         <Ionicons name="chevron-forward" size={24} color={colors.textSecondary} />
@@ -70,27 +97,20 @@ export default function HomeScreen() {
       {/* 추천 루틴 */}
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>추천 루틴</Text>
-        <TouchableOpacity style={[styles.routineCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <View style={styles.routineHeader}>
-            <Text style={[styles.routineTitle, { color: colors.text }]}>초보자 맨몸 운동</Text>
-            <View style={[styles.routineBadge, { backgroundColor: colors.primary + "20" }]}>
-              <Text style={[styles.routineBadgeText, { color: colors.primary }]}>맨몸</Text>
+        {recommendedRoutines.map((routine) => (
+          <TouchableOpacity key={routine.id} style={[styles.routineCard, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={() => handlePlayRoutine(routine)}>
+            <View style={styles.routineHeader}>
+              <Text style={[styles.routineTitle, { color: colors.text }]}>{routine.name}</Text>
+              {routine.category && (
+                <View style={[styles.routineBadge, { backgroundColor: colors.primary + "20" }]}>
+                  <Text style={[styles.routineBadgeText, { color: colors.primary }]}>{routine.category}</Text>
+                </View>
+              )}
             </View>
-          </View>
-          <Text style={[styles.routineDescription, { color: colors.textSecondary }]}>푸시업, 스쿼트, 플랭크 등 5가지 운동</Text>
-          <Text style={[styles.routineDuration, { color: colors.icon }]}>⏱ 약 20분</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={[styles.routineCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <View style={styles.routineHeader}>
-            <Text style={[styles.routineTitle, { color: colors.text }]}>가슴 집중 웨이트</Text>
-            <View style={[styles.routineBadge, styles.routineBadgeWeight]}>
-              <Text style={[styles.routineBadgeText, { color: colors.primary }]}>웨이트</Text>
-            </View>
-          </View>
-          <Text style={[styles.routineDescription, { color: colors.textSecondary }]}>벤치프레스, 덤벨 플라이, 푸시업</Text>
-          <Text style={[styles.routineDuration, { color: colors.icon }]}>⏱ 약 40분</Text>
-        </TouchableOpacity>
+            {routine.description && <Text style={[styles.routineDescription, { color: colors.textSecondary }]}>{routine.description}</Text>}
+            {routine.duration && <Text style={[styles.routineDuration, { color: colors.icon }]}>⏱ {routine.duration}</Text>}
+          </TouchableOpacity>
+        ))}
       </View>
     </ScrollView>
   );

@@ -4,8 +4,25 @@ import { routineService } from "@/services/routine";
 import { workoutSessionService } from "@/services/workoutSession";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect, useRef } from "react";
 import { Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+
+// 타이머 상태 타입
+type SetTimerState = {
+  exerciseIndex: number;
+  setIndex: number;
+  startTime: number;
+  elapsedTime: number; // 초 단위
+  isRunning: boolean;
+};
+
+type RestTimerState = {
+  exerciseIndex: number;
+  setIndex: number;
+  startTime: number;
+  elapsedTime: number; // 초 단위 (0부터 카운트업)
+  isRunning: boolean;
+};
 
 export default function WorkoutScreen() {
   const { colors } = useTheme();
@@ -14,6 +31,22 @@ export default function WorkoutScreen() {
   const [recommendedRoutines, setRecommendedRoutines] = useState<Routine[]>([]);
   const [showRoutineSelector, setShowRoutineSelector] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // 타이머 관련 상태
+  const [totalElapsedTime, setTotalElapsedTime] = useState(0); // 전체 운동 시간 (초)
+  const [activeSetTimer, setActiveSetTimer] = useState<SetTimerState | null>(null); // 현재 진행 중인 세트 타이머
+  const [restTimer, setRestTimer] = useState<RestTimerState | null>(null); // 휴식 타이머
+
+  // 세트 완료 입력 모달 상태
+  const [showSetCompleteModal, setShowSetCompleteModal] = useState(false);
+  const [completingSet, setCompletingSet] = useState<{ exerciseIndex: number; setIndex: number; targetReps: string } | null>(null);
+  const [actualReps, setActualReps] = useState("");
+  const [weight, setWeight] = useState("");
+
+  const totalTimerRef = useRef<number | null>(null);
+  const setTimerRef = useRef<number | null>(null);
+  const restTimerRef = useRef<number | null>(null);
+  const workoutStartTimeRef = useRef<number>(0);
 
   // 화면 포커스될 때마다 활성 세션 확인
   useFocusEffect(
@@ -33,6 +66,11 @@ export default function WorkoutScreen() {
       setActiveSession(session);
       setMyRoutines(userRoutines);
       setRecommendedRoutines(recommended);
+
+      // 세션이 있으면 타이머 시작
+      if (session) {
+        startTotalTimer();
+      }
     } catch (error) {
       console.error("Failed to load workout data:", error);
     } finally {
@@ -40,11 +78,153 @@ export default function WorkoutScreen() {
     }
   };
 
+  // 컴포넌트 언마운트 시 타이머 정리
+  useEffect(() => {
+    return () => {
+      if (totalTimerRef.current) clearInterval(totalTimerRef.current);
+      if (setTimerRef.current) clearInterval(setTimerRef.current);
+      if (restTimerRef.current) clearInterval(restTimerRef.current);
+    };
+  }, []);
+
+  // 전체 타이머 시작
+  const startTotalTimer = () => {
+    if (totalTimerRef.current) clearInterval(totalTimerRef.current);
+
+    if (workoutStartTimeRef.current === 0) {
+      workoutStartTimeRef.current = Date.now();
+    }
+
+    totalTimerRef.current = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - workoutStartTimeRef.current) / 1000);
+      setTotalElapsedTime(elapsed);
+    }, 1000);
+  };
+
+  // 전체 타이머 정지
+  const stopTotalTimer = () => {
+    if (totalTimerRef.current) {
+      clearInterval(totalTimerRef.current);
+      totalTimerRef.current = null;
+    }
+  };
+
+  // 시간 포맷 함수
+  const formatTime = (seconds: number): string => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+    }
+    return `${minutes}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  // 세트 타이머 시작
+  const startSetTimer = (exerciseIndex: number, setIndex: number) => {
+    // 휴식 타이머가 실행 중이면 중지
+    if (restTimer) {
+      stopRestTimer();
+    }
+
+    setActiveSetTimer({
+      exerciseIndex,
+      setIndex,
+      startTime: Date.now(),
+      elapsedTime: 0,
+      isRunning: true,
+    });
+
+    if (setTimerRef.current) clearInterval(setTimerRef.current);
+    setTimerRef.current = setInterval(() => {
+      setActiveSetTimer((prev) => {
+        if (!prev || !prev.isRunning) return prev;
+        const elapsed = Math.floor((Date.now() - prev.startTime) / 1000);
+        return { ...prev, elapsedTime: elapsed };
+      });
+    }, 1000);
+  };
+
+  // 세트 타이머 일시정지
+  const pauseSetTimer = () => {
+    setActiveSetTimer((prev) => {
+      if (!prev) return prev;
+      return { ...prev, isRunning: false };
+    });
+    if (setTimerRef.current) {
+      clearInterval(setTimerRef.current);
+      setTimerRef.current = null;
+    }
+  };
+
+  // 세트 타이머 재개
+  const resumeSetTimer = () => {
+    setActiveSetTimer((prev) => {
+      if (!prev) return prev;
+      const newStartTime = Date.now() - prev.elapsedTime * 1000;
+      return { ...prev, startTime: newStartTime, isRunning: true };
+    });
+
+    if (setTimerRef.current) clearInterval(setTimerRef.current);
+    setTimerRef.current = setInterval(() => {
+      setActiveSetTimer((prev) => {
+        if (!prev || !prev.isRunning) return prev;
+        const elapsed = Math.floor((Date.now() - prev.startTime) / 1000);
+        return { ...prev, elapsedTime: elapsed };
+      });
+    }, 1000);
+  };
+
+  // 세트 타이머 중지
+  const stopSetTimer = () => {
+    if (setTimerRef.current) {
+      clearInterval(setTimerRef.current);
+      setTimerRef.current = null;
+    }
+    setActiveSetTimer(null);
+  };
+
+  // 휴식 타이머 시작 (0초부터 카운트업)
+  const startRestTimer = (exerciseIndex: number, setIndex: number) => {
+    stopSetTimer();
+
+    setRestTimer({
+      exerciseIndex,
+      setIndex,
+      startTime: Date.now(),
+      elapsedTime: 0,
+      isRunning: true,
+    });
+
+    if (restTimerRef.current) clearInterval(restTimerRef.current);
+    restTimerRef.current = setInterval(() => {
+      setRestTimer((prev) => {
+        if (!prev || !prev.isRunning) return prev;
+        const elapsed = Math.floor((Date.now() - prev.startTime) / 1000);
+        return { ...prev, elapsedTime: elapsed };
+      });
+    }, 1000);
+  };
+
+  // 휴식 타이머 중지
+  const stopRestTimer = () => {
+    if (restTimerRef.current) {
+      clearInterval(restTimerRef.current);
+      restTimerRef.current = null;
+    }
+    setRestTimer(null);
+  };
+
   const startWorkout = async (routine: Routine) => {
     try {
       const session = await workoutSessionService.startSession(routine);
       setActiveSession(session);
       setShowRoutineSelector(false);
+
+      // 타이머 초기화 및 시작
+      workoutStartTimeRef.current = Date.now();
+      setTotalElapsedTime(0);
+      startTotalTimer();
     } catch (error) {
       console.error("Failed to start workout:", error);
       Alert.alert("오류", "운동 시작에 실패했습니다.");
@@ -62,6 +242,14 @@ export default function WorkoutScreen() {
             try {
               await workoutSessionService.stopSession(activeSession.id);
               setActiveSession(null);
+
+              // 모든 타이머 정지 및 초기화
+              stopTotalTimer();
+              stopSetTimer();
+              stopRestTimer();
+              workoutStartTimeRef.current = 0;
+              setTotalElapsedTime(0);
+
               Alert.alert("완료", "운동 기록이 저장되었습니다.");
             } catch (error) {
               console.error("Failed to stop workout:", error);
@@ -79,10 +267,74 @@ export default function WorkoutScreen() {
     try {
       await workoutSessionService.completeSession(activeSession.id);
       setActiveSession(null);
+
+      // 모든 타이머 정지 및 초기화
+      stopTotalTimer();
+      stopSetTimer();
+      stopRestTimer();
+      workoutStartTimeRef.current = 0;
+      setTotalElapsedTime(0);
+
       Alert.alert("축하합니다!", "운동을 완료했습니다. 수고하셨습니다! 💪");
     } catch (error) {
       console.error("Failed to complete workout:", error);
       Alert.alert("오류", "운동 완료 처리에 실패했습니다.");
+    }
+  };
+
+  // 세트 완료 버튼 클릭 (모달 표시)
+  const handleCompleteSetClick = (exerciseIndex: number, setIndex: number) => {
+    if (!activeSession) return;
+
+    const exercise = activeSession.exercises[exerciseIndex];
+    const set = exercise.sets[setIndex];
+
+    setCompletingSet({
+      exerciseIndex,
+      setIndex,
+      targetReps: set.targetReps,
+    });
+    setActualReps(set.targetReps); // 목표 횟수를 기본값으로 설정
+    setWeight(""); // 무게는 빈 값으로 시작
+    setShowSetCompleteModal(true);
+  };
+
+  // 세트 완료 저장
+  const handleSaveSetComplete = async () => {
+    if (!activeSession || !completingSet) return;
+
+    const reps = parseInt(actualReps) || 0;
+    const weightValue = parseFloat(weight) || 0;
+
+    if (reps <= 0) {
+      Alert.alert("오류", "횟수는 1 이상이어야 합니다.");
+      return;
+    }
+
+    try {
+      const { exerciseIndex, setIndex } = completingSet;
+      const exercise = activeSession.exercises[exerciseIndex];
+
+      // 세트 완료 처리
+      const updated = await workoutSessionService.completeSet(activeSession.id, exerciseIndex, setIndex, reps, weightValue);
+      setActiveSession(updated);
+
+      // 세트 타이머 중지
+      stopSetTimer();
+
+      // 마지막 세트가 아니면 휴식 타이머 시작
+      if (setIndex < exercise.sets.length - 1) {
+        startRestTimer(exerciseIndex, setIndex + 1);
+      }
+
+      // 모달 닫기
+      setShowSetCompleteModal(false);
+      setCompletingSet(null);
+      setActualReps("");
+      setWeight("");
+    } catch (error) {
+      console.error("Failed to complete set:", error);
+      Alert.alert("오류", "세트 완료 처리에 실패했습니다.");
     }
   };
 
@@ -91,15 +343,33 @@ export default function WorkoutScreen() {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <View>
+          <View style={styles.headerLeft}>
             <Text style={[styles.headerTitle, { color: colors.text }]}>{activeSession.routineName}</Text>
             <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>운동 진행 중</Text>
+            <View style={styles.timerContainer}>
+              <Ionicons name="time-outline" size={16} color={colors.primary} />
+              <Text style={[styles.totalTimerText, { color: colors.primary }]}>{formatTime(totalElapsedTime)}</Text>
+            </View>
           </View>
           <TouchableOpacity style={[styles.stopButton, { backgroundColor: colors.textSecondary + "20" }]} onPress={handleStopWorkout}>
             <Ionicons name="stop-circle" size={20} color={colors.textSecondary} />
             <Text style={[styles.stopButtonText, { color: colors.textSecondary }]}>중단</Text>
           </TouchableOpacity>
         </View>
+
+        {/* 휴식 타이머 표시 */}
+        {restTimer && (
+          <View style={[styles.restTimerBanner, { backgroundColor: colors.primary }]}>
+            <Ionicons name="cafe-outline" size={24} color={colors.buttonText} />
+            <View style={styles.restTimerContent}>
+              <Text style={[styles.restTimerTitle, { color: colors.buttonText }]}>휴식 시간</Text>
+              <Text style={[styles.restTimerValue, { color: colors.buttonText }]}>{formatTime(restTimer.elapsedTime)}</Text>
+            </View>
+            <TouchableOpacity onPress={stopRestTimer}>
+              <Ionicons name="close-circle" size={24} color={colors.buttonText} />
+            </TouchableOpacity>
+          </View>
+        )}
 
         <ScrollView style={styles.contentScroll}>
           {activeSession.exercises.map((exercise, exerciseIndex) => (
@@ -110,46 +380,69 @@ export default function WorkoutScreen() {
               </View>
 
               <View style={styles.setsContainer}>
-                {exercise.sets.map((set, setIndex) => (
-                  <View key={set.setNumber} style={[styles.setRow, { borderBottomColor: colors.border }, set.isCompleted && { backgroundColor: colors.primary + "10" }]}>
-                    <Text style={[styles.setNumber, { color: colors.textSecondary }]}>세트 {set.setNumber}</Text>
-                    <Text style={[styles.targetReps, { color: colors.textSecondary }]}>목표: {set.targetReps}회</Text>
-                    {set.isCompleted ? (
-                      <View style={styles.completedInfo}>
-                        <Text style={[styles.completedText, { color: colors.primary }]}>✓ {set.actualReps}회</Text>
-                        <TouchableOpacity
-                          onPress={async () => {
-                            try {
-                              const updated = await workoutSessionService.uncompleteSet(activeSession.id, exerciseIndex, setIndex);
-                              setActiveSession(updated);
-                            } catch (error) {
-                              console.error("Failed to uncomplete set:", error);
-                            }
-                          }}
-                        >
-                          <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
-                        </TouchableOpacity>
+                {exercise.sets.map((set, setIndex) => {
+                  const isActiveSet = activeSetTimer?.exerciseIndex === exerciseIndex && activeSetTimer?.setIndex === setIndex;
+                  const isRestingAfterThisSet = restTimer?.exerciseIndex === exerciseIndex && restTimer?.setIndex === setIndex + 1;
+
+                  return (
+                    <View key={set.setNumber} style={[styles.setRow, { borderBottomColor: colors.border }, set.isCompleted && { backgroundColor: colors.primary + "10" }]}>
+                      <View style={styles.setInfo}>
+                        <Text style={[styles.setNumber, { color: colors.textSecondary }]}>세트 {set.setNumber}</Text>
+                        <Text style={[styles.targetReps, { color: colors.textSecondary }]}>목표: {set.targetReps}회</Text>
                       </View>
-                    ) : (
-                      <TouchableOpacity
-                        style={[styles.checkButton, { backgroundColor: colors.primary }]}
-                        onPress={async () => {
-                          // TODO: 무게/횟수 입력 모달 표시
-                          // 지금은 임시로 목표 횟수대로 완료
-                          try {
-                            const targetReps = parseInt(set.targetReps) || 10;
-                            const updated = await workoutSessionService.completeSet(activeSession.id, exerciseIndex, setIndex, targetReps, 0);
-                            setActiveSession(updated);
-                          } catch (error) {
-                            console.error("Failed to complete set:", error);
-                          }
-                        }}
-                      >
-                        <Text style={[styles.checkButtonText, { color: colors.buttonText }]}>완료</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                ))}
+
+                      {set.isCompleted ? (
+                        <View style={styles.completedInfo}>
+                          <Text style={[styles.completedText, { color: colors.primary }]}>✓ {set.actualReps}회</Text>
+                          <TouchableOpacity
+                            onPress={async () => {
+                              try {
+                                const updated = await workoutSessionService.uncompleteSet(activeSession.id, exerciseIndex, setIndex);
+                                setActiveSession(updated);
+                              } catch (error) {
+                                console.error("Failed to uncomplete set:", error);
+                              }
+                            }}
+                          >
+                            <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
+                          </TouchableOpacity>
+                        </View>
+                      ) : (
+                        <View style={styles.setControls}>
+                          {isActiveSet && (
+                            <View style={styles.setTimerDisplay}>
+                              <Ionicons name="timer-outline" size={16} color={colors.primary} />
+                              <Text style={[styles.setTimerText, { color: colors.primary }]}>{formatTime(activeSetTimer.elapsedTime)}</Text>
+                            </View>
+                          )}
+
+                          <View style={styles.setButtons}>
+                            {!isActiveSet ? (
+                              <TouchableOpacity style={[styles.iconButton, { backgroundColor: colors.primary + "20" }]} onPress={() => startSetTimer(exerciseIndex, setIndex)}>
+                                <Ionicons name="play" size={18} color={colors.primary} />
+                              </TouchableOpacity>
+                            ) : activeSetTimer.isRunning ? (
+                              <TouchableOpacity style={[styles.iconButton, { backgroundColor: colors.textSecondary + "20" }]} onPress={pauseSetTimer}>
+                                <Ionicons name="pause" size={18} color={colors.textSecondary} />
+                              </TouchableOpacity>
+                            ) : (
+                              <TouchableOpacity style={[styles.iconButton, { backgroundColor: colors.primary + "20" }]} onPress={resumeSetTimer}>
+                                <Ionicons name="play" size={18} color={colors.primary} />
+                              </TouchableOpacity>
+                            )}
+
+                            <TouchableOpacity
+                              style={[styles.iconButton, styles.completeIconButton, { backgroundColor: colors.primary }]}
+                              onPress={() => handleCompleteSet(exerciseIndex, setIndex)}
+                            >
+                              <Ionicons name="checkmark" size={18} color={colors.buttonText} />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      )}
+                    </View>
+                  );
+                })}
               </View>
             </View>
           ))}
@@ -247,10 +540,14 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-start",
     padding: 20,
     paddingTop: 60,
     borderBottomWidth: 1,
+  },
+  headerLeft: {
+    flex: 1,
+    gap: 4,
   },
   headerTitle: {
     fontSize: 24,
@@ -258,6 +555,33 @@ const styles = StyleSheet.create({
   },
   headerSubtitle: {
     fontSize: 14,
+  },
+  timerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 8,
+  },
+  totalTimerText: {
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  restTimerBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+    gap: 12,
+  },
+  restTimerContent: {
+    flex: 1,
+  },
+  restTimerTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  restTimerValue: {
+    fontSize: 24,
+    fontWeight: "bold",
     marginTop: 4,
   },
   stopButton: {
@@ -333,15 +657,53 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 8,
     borderRadius: 8,
+    gap: 8,
+  },
+  setInfo: {
+    flex: 1,
+    gap: 2,
   },
   setNumber: {
     fontSize: 14,
     fontWeight: "600",
-    width: 60,
   },
   targetReps: {
+    fontSize: 12,
+  },
+  setControls: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  setTimerDisplay: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: "rgba(0, 0, 0, 0.05)",
+  },
+  setTimerText: {
     fontSize: 14,
-    flex: 1,
+    fontWeight: "600",
+  },
+  setButtons: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  iconButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  completeIconButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
   },
   completedInfo: {
     flexDirection: "row",

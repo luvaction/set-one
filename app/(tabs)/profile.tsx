@@ -1,9 +1,10 @@
 import { useTheme } from "@/contexts/ThemeContext";
 import { CreateProfileData } from "@/models";
 import { profileService } from "@/services/profile";
+import { storage } from "@/services/storage/asyncStorage";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 
 const emptyProfile: CreateProfileData = {
   name: "",
@@ -55,8 +56,32 @@ export default function ProfileScreen() {
       setShowEditModal(false);
     } catch (error) {
       console.error("Failed to save profile:", error);
-      // TODO: 에러 토스트 표시
+      Alert.alert("오류", "프로필 저장에 실패했습니다.");
     }
+  };
+
+  const handleClearAllData = () => {
+    Alert.alert(
+      "모든 데이터 삭제",
+      "모든 운동 기록, 루틴, 프로필 데이터가 삭제됩니다. 계속하시겠습니까?",
+      [
+        { text: "취소", style: "cancel" },
+        {
+          text: "삭제",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await storage.clear();
+              setProfile(emptyProfile);
+              Alert.alert("완료", "모든 데이터가 삭제되었습니다.");
+            } catch (error) {
+              console.error("Failed to clear data:", error);
+              Alert.alert("오류", "데이터 삭제에 실패했습니다.");
+            }
+          },
+        },
+      ]
+    );
   };
 
   const goalText = {
@@ -198,6 +223,27 @@ export default function ProfileScreen() {
               </View>
               <Switch value={theme === "dark"} onValueChange={toggleTheme} trackColor={{ false: colors.border, true: colors.primary }} thumbColor="#FFFFFF" />
             </View>
+          </View>
+        </View>
+
+        {/* 기타 섹션 */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>기타</Text>
+
+          <View style={[styles.infoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={styles.infoRow}>
+              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>앱 버전</Text>
+              <Text style={[styles.infoValue, { color: colors.text }]}>1.0.0</Text>
+            </View>
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+            <Pressable style={styles.infoRow} onPress={handleClearAllData}>
+              <View style={styles.settingLabelContainer}>
+                <Ionicons name="trash-outline" size={20} color="#F44336" />
+                <Text style={[styles.infoLabel, { color: "#F44336" }]}>모든 데이터 삭제</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+            </Pressable>
           </View>
         </View>
       </ScrollView>

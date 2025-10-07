@@ -8,6 +8,7 @@ import {
 } from "@/models";
 import { storage } from "./storage/asyncStorage";
 import { Routine } from "@/models";
+import { routineService } from "./routine";
 
 const generateId = (): string => {
   return `session_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
@@ -88,6 +89,10 @@ export const workoutSessionService = {
     };
 
     await storage.setItem(STORAGE_KEYS.ACTIVE_WORKOUT_SESSION, newSession);
+
+    // 루틴의 lastUsed 업데이트
+    await routineService.updateLastUsed(routine.id);
+
     return newSession;
   },
 

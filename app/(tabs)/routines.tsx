@@ -1,11 +1,11 @@
 import { useTheme } from "@/contexts/ThemeContext";
 import { Routine } from "@/models";
 import { routineService, workoutSessionService } from "@/services";
-import { convertExerciseToRoutine, convertTemplateToRoutine } from "@/utils/workoutHelpers";
+import { convertExerciseToRoutine } from "@/utils/workoutHelpers";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 const categories = [
   { id: "all", name: "전체", icon: "grid" },
@@ -21,25 +21,13 @@ const recommendedRoutineGroups = {
     name: "초보자용",
     icon: "school",
     description: "운동을 처음 시작하는 분들을 위한 루틴",
-    routines: ["초보자 맨몸 루틴"],
+    routines: ["초보자 전신 운동", "홈트레이닝"],
   },
   muscle_gain: {
     name: "근력 증가",
     icon: "fitness",
     description: "근력과 근육량 증가를 위한 루틴",
-    routines: ["상체 집중 맨몸", "가슴 집중 웨이트", "등 + 이두 웨이트", "다양한 스쿼트"],
-  },
-  weight_loss: {
-    name: "체중 감량",
-    icon: "flame",
-    description: "칼로리 소모와 체지방 감소를 위한 루틴",
-    routines: ["HIIT 유산소"],
-  },
-  flexibility: {
-    name: "유연성",
-    icon: "leaf",
-    description: "몸의 유연성과 회복을 위한 루틴",
-    routines: ["전신 스트레칭"],
+    routines: ["가슴 집중 운동", "등 집중 운동", "하체 집중 운동"],
   },
 };
 
@@ -279,6 +267,7 @@ export default function RoutinesScreen() {
   const [selectedTab, setSelectedTab] = useState<"library" | "my" | "recommended">("library");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedPurpose, setSelectedPurpose] = useState("all");
+  const [selectedDifficulty, setSelectedDifficulty] = useState("all"); // 난이도 필터
   const [searchQuery, setSearchQuery] = useState("");
   const [recommendedSearchQuery, setRecommendedSearchQuery] = useState("");
   const [myRoutineSearchQuery, setMyRoutineSearchQuery] = useState("");
@@ -311,18 +300,17 @@ export default function RoutinesScreen() {
   const exerciseList = Object.values(exercises);
   const filteredExercises = exerciseList.filter((exercise) => {
     const matchesCategory = selectedCategory === "all" || exercise.category === selectedCategory;
+    const matchesDifficulty = selectedDifficulty === "all" || exercise.difficulty === selectedDifficulty;
     const matchesSearch = exercise.name.toLowerCase().includes(searchQuery.toLowerCase()) || exercise.targetMuscle.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+    return matchesCategory && matchesDifficulty && matchesSearch;
   });
 
   // 추천 루틴 필터링
-  const filteredRecommendedRoutines = routines.filter((routine) => {
-    const matchesCategory = selectedCategory === "all" || routine.category === selectedCategory;
-    const matchesPurpose = selectedPurpose === "all" || routine.purpose === selectedPurpose;
+  const filteredRecommendedRoutines = recommendedRoutinesList.filter((routine) => {
     const matchesSearch =
       routine.name.toLowerCase().includes(recommendedSearchQuery.toLowerCase()) ||
       routine.exercises.some((ex) => ex.name.toLowerCase().includes(recommendedSearchQuery.toLowerCase()));
-    return matchesCategory && matchesPurpose && matchesSearch;
+    return matchesSearch;
   });
 
   // 내 루틴 필터링
@@ -336,18 +324,6 @@ export default function RoutinesScreen() {
   const handlePlayExercise = async (exercise: any) => {
     try {
       const routine = convertExerciseToRoutine(exercise);
-      await workoutSessionService.startSession(routine);
-      router.push("/(tabs)/workout");
-    } catch (error) {
-      console.error("Failed to start workout:", error);
-      Alert.alert("오류", "운동 시작에 실패했습니다.");
-    }
-  };
-
-  // 템플릿 루틴 바로 시작
-  const handlePlayTemplate = async (template: any) => {
-    try {
-      const routine = convertTemplateToRoutine(template);
       await workoutSessionService.startSession(routine);
       router.push("/(tabs)/workout");
     } catch (error) {
@@ -388,6 +364,41 @@ export default function RoutinesScreen() {
       },
     });
     setShowAddToRoutineModal(false);
+  };
+
+  // 기존 루틴에 운동 추가
+  const addToExistingRoutine = async (routineId: string, routineName: string) => {
+    if (!selectedExerciseForAdd) return;
+
+    try {
+      await routineService.addExerciseToRoutine(routineId, {
+        id: selectedExerciseForAdd.id,
+        name: selectedExerciseForAdd.name,
+        sets: selectedExerciseForAdd.defaultSets,
+        reps: selectedExerciseForAdd.defaultReps,
+        targetMuscle: selectedExerciseForAdd.targetMuscle,
+        difficulty: selectedExerciseForAdd.difficulty,
+      });
+
+      setShowAddToRoutineModal(false);
+      await loadRoutines(); // 목록 새로고침
+      Alert.alert("성공", `"${selectedExerciseForAdd.name}"을(를) "${routineName}" 루틴에 추가했습니다.`);
+    } catch (error: any) {
+      console.error("Failed to add exercise to routine:", error);
+      Alert.alert("오류", error.message || "운동 추가에 실패했습니다.");
+    }
+  };
+
+  // 추천 루틴을 내 루틴으로 복사
+  const handleCopyToUserRoutine = async (routine: any) => {
+    try {
+      const copiedRoutine = await routineService.copyToUserRoutine(routine.id);
+      await loadRoutines(); // 목록 새로고침
+      Alert.alert("성공", `"${copiedRoutine.name}"이(가) 내 루틴에 추가되었습니다.`);
+    } catch (error) {
+      console.error("Failed to copy routine:", error);
+      Alert.alert("오류", "루틴 복사에 실패했습니다.");
+    }
   };
 
   // 루틴 삭제 함수
@@ -441,12 +452,115 @@ export default function RoutinesScreen() {
             {/* 검색창 */}
             <View style={[styles.searchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <Ionicons name="search" size={20} color={colors.textSecondary} />
-              <Text style={[styles.searchInput, { color: colors.textSecondary }]}>운동 이름이나 근육 부위로 검색...</Text>
+              <TextInput
+                style={[styles.searchInput, { color: colors.text }]}
+                placeholder="운동 이름이나 근육 부위로 검색..."
+                placeholderTextColor={colors.textSecondary}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery("")}>
+                  <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
+                </TouchableOpacity>
+              )}
             </View>
 
-            {/* 트리 구조 카테고리 */}
+            {/* 난이도 필터 */}
+            <View style={styles.filterContainer}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
+                <TouchableOpacity
+                  style={[styles.filterButton, selectedDifficulty === "all" && { backgroundColor: colors.primary }, { borderColor: colors.border }]}
+                  onPress={() => setSelectedDifficulty("all")}
+                >
+                  <Text style={[styles.filterButtonText, { color: selectedDifficulty === "all" ? colors.buttonText : colors.text }]}>전체</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.filterButton, selectedDifficulty === "초급" && styles.beginnerFilterActive, { borderColor: colors.border }]}
+                  onPress={() => setSelectedDifficulty("초급")}
+                >
+                  <Text style={[styles.filterButtonText, { color: selectedDifficulty === "초급" ? "#FFFFFF" : colors.text }]}>초급</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.filterButton, selectedDifficulty === "중급" && styles.intermediateFilterActive, { borderColor: colors.border }]}
+                  onPress={() => setSelectedDifficulty("중급")}
+                >
+                  <Text style={[styles.filterButtonText, { color: selectedDifficulty === "중급" ? "#FFFFFF" : colors.text }]}>중급</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.filterButton, selectedDifficulty === "고급" && styles.advancedFilterActive, { borderColor: colors.border }]}
+                  onPress={() => setSelectedDifficulty("고급")}
+                >
+                  <Text style={[styles.filterButtonText, { color: selectedDifficulty === "고급" ? "#FFFFFF" : colors.text }]}>고급</Text>
+                </TouchableOpacity>
+              </ScrollView>
+            </View>
+
+            {/* 트리 구조 카테고리 또는 검색 결과 */}
             <View style={styles.exerciseLibrary}>
-              {Object.entries(exerciseCategories).map(([categoryKey, categoryData]) => (
+              {searchQuery.length > 0 ? (
+                // 검색 중일 때는 필터링된 결과만 평평하게 표시
+                <View style={styles.exerciseList}>
+                  {filteredExercises.length > 0 ? (
+                    filteredExercises.map((exercise) => (
+                      <View key={exercise.id} style={[styles.exerciseLibraryCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                        <View style={styles.exerciseLibraryInfo}>
+                          <Text style={[styles.exerciseLibraryName, { color: colors.text }]}>{exercise.name}</Text>
+                          <View style={styles.exerciseTags}>
+                            <View
+                              style={[
+                                styles.muscleTag,
+                                exercise.targetMuscle === "가슴" && styles.chestTag,
+                                exercise.targetMuscle === "등" && styles.backTag,
+                                exercise.targetMuscle === "하체" && styles.legTag,
+                                exercise.targetMuscle === "코어" && styles.coreTag,
+                                exercise.targetMuscle === "삼두" && styles.tricepsTag,
+                                exercise.targetMuscle === "가슴 상부" && styles.chestTag,
+                                exercise.targetMuscle === "가슴 하부" && styles.chestTag,
+                                exercise.targetMuscle === "등/하체" && styles.backTag,
+                                exercise.targetMuscle === "햄스트링" && styles.legTag,
+                                exercise.targetMuscle === "어깨" && styles.shoulderTag,
+                                exercise.targetMuscle === "전신" && styles.fullBodyTag,
+                                exercise.targetMuscle === "이두" && styles.bicepsTag,
+                              ]}
+                            >
+                              <Text style={[styles.muscleTagText, { color: colors.text }]}>{exercise.targetMuscle}</Text>
+                            </View>
+                            <View
+                              style={[
+                                styles.difficultyTag,
+                                exercise.difficulty === "초급" && styles.beginnerTag,
+                                exercise.difficulty === "중급" && styles.intermediateTag,
+                                exercise.difficulty === "고급" && styles.advancedTag,
+                              ]}
+                            >
+                              <Text style={[styles.difficultyTagText, { color: "#FFFFFF" }]}>{exercise.difficulty}</Text>
+                            </View>
+                          </View>
+                          <Text style={[styles.exerciseDefaultSets, { color: colors.textSecondary }]}>
+                            권장: {exercise.defaultSets}세트 × {exercise.defaultReps}
+                          </Text>
+                        </View>
+                        <View style={styles.exerciseCardActions}>
+                          <TouchableOpacity style={styles.playIconButton} onPress={() => handlePlayExercise(exercise)}>
+                            <Ionicons name="play-circle" size={28} color={colors.primary} />
+                          </TouchableOpacity>
+                          <TouchableOpacity style={styles.addToRoutineButton} onPress={() => handleAddExerciseToRoutine(exercise)}>
+                            <Ionicons name="add-circle" size={24} color={colors.primary} />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ))
+                  ) : (
+                    <View style={styles.emptySearchResult}>
+                      <Ionicons name="search-outline" size={48} color={colors.icon} />
+                      <Text style={[styles.emptySearchText, { color: colors.textSecondary }]}>검색 결과가 없습니다</Text>
+                    </View>
+                  )}
+                </View>
+              ) : (
+                // 검색하지 않을 때는 트리 구조 표시
+                Object.entries(exerciseCategories).map(([categoryKey, categoryData]) => (
                 <View key={categoryKey}>
                   {/* 메인 카테고리 헤더 */}
                   <TouchableOpacity
@@ -514,7 +628,16 @@ export default function RoutinesScreen() {
                                         >
                                           <Text style={[styles.muscleTagText, { color: colors.text }]}>{exercise.targetMuscle}</Text>
                                         </View>
-                                        <Text style={[styles.difficultyText, { color: colors.textSecondary }]}>{exercise.difficulty}</Text>
+                                        <View
+                                          style={[
+                                            styles.difficultyTag,
+                                            exercise.difficulty === "초급" && styles.beginnerTag,
+                                            exercise.difficulty === "중급" && styles.intermediateTag,
+                                            exercise.difficulty === "고급" && styles.advancedTag,
+                                          ]}
+                                        >
+                                          <Text style={[styles.difficultyTagText, { color: "#FFFFFF" }]}>{exercise.difficulty}</Text>
+                                        </View>
                                       </View>
                                       <Text style={[styles.exerciseDefaultSets, { color: colors.textSecondary }]}>
                                         권장: {exercise.defaultSets}세트 × {exercise.defaultReps}
@@ -538,7 +661,8 @@ export default function RoutinesScreen() {
                     </View>
                   )}
                 </View>
-              ))}
+                ))
+              )}
             </View>
           </>
         )}
@@ -549,12 +673,101 @@ export default function RoutinesScreen() {
             {/* 검색창 */}
             <View style={[styles.searchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <Ionicons name="search" size={20} color={colors.textSecondary} />
-              <Text style={[styles.searchInput, { color: colors.textSecondary }]}>루틴 이름이나 운동명으로 검색...</Text>
+              <TextInput
+                style={[styles.searchInput, { color: colors.text }]}
+                placeholder="루틴 이름이나 운동명으로 검색..."
+                placeholderTextColor={colors.textSecondary}
+                value={recommendedSearchQuery}
+                onChangeText={setRecommendedSearchQuery}
+              />
+              {recommendedSearchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setRecommendedSearchQuery("")}>
+                  <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
+                </TouchableOpacity>
+              )}
             </View>
 
-            {/* 목적별 그룹 트리 구조 */}
+            {/* 목적별 그룹 트리 구조 또는 검색 결과 */}
             <View style={styles.exerciseLibrary}>
-              {Object.entries(recommendedRoutineGroups).map(([groupKey, groupData]) => (
+              {recommendedSearchQuery.length > 0 ? (
+                // 검색 중일 때는 필터링된 결과만 평평하게 표시
+                <View style={styles.routinesList}>
+                  {filteredRecommendedRoutines.length > 0 ? (
+                    filteredRecommendedRoutines.map((routine) => (
+                      <View key={routine.id} style={[styles.routineCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                        <View style={styles.routineHeader}>
+                          <View style={styles.routineInfo}>
+                            <Text style={[styles.routineName, { color: colors.text }]}>{routine.name}</Text>
+                            <View style={styles.routineMeta}>
+                              <Text style={[styles.routineDuration, { color: colors.icon }]}>⏱ {routine.exercises.length}개 운동</Text>
+                            </View>
+                          </View>
+                          <View style={styles.routineActions}>
+                            <TouchableOpacity style={[styles.addToMyButton, { backgroundColor: colors.primary + "20" }]} onPress={() => handleCopyToUserRoutine(routine)}>
+                              <Ionicons name="add" size={20} color={colors.primary} />
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[styles.playButton, { backgroundColor: colors.primary }]} onPress={() => handlePlayRoutine(routine)}>
+                              <Ionicons name="play" size={20} color={colors.buttonText} />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                        <View style={styles.exerciseList}>
+                          {routine.exercises.map((exercise, index) => (
+                            <View key={index} style={styles.exerciseItem}>
+                              <View style={styles.exerciseMainInfo}>
+                                <Text style={[styles.exerciseName, { color: colors.text }]}>• {exercise.name}</Text>
+                                <View style={styles.exerciseTags}>
+                                  <View
+                                    style={[
+                                      styles.muscleTag,
+                                      exercise.targetMuscle === "가슴" && styles.chestTag,
+                                      exercise.targetMuscle === "등" && styles.backTag,
+                                      exercise.targetMuscle === "하체" && styles.legTag,
+                                      exercise.targetMuscle === "코어" && styles.coreTag,
+                                      exercise.targetMuscle === "삼두" && styles.tricepsTag,
+                                      exercise.targetMuscle === "가슴 상부" && styles.chestTag,
+                                      exercise.targetMuscle === "가슴 하부" && styles.chestTag,
+                                      exercise.targetMuscle === "등/하체" && styles.backTag,
+                                      exercise.targetMuscle === "햄스트링" && styles.legTag,
+                                      exercise.targetMuscle === "어깨" && styles.shoulderTag,
+                                      exercise.targetMuscle === "전신" && styles.fullBodyTag,
+                                      exercise.targetMuscle === "이두" && styles.bicepsTag,
+                                    ]}
+                                  >
+                                    <Text style={[styles.muscleTagText, { color: colors.text }]}>{exercise.targetMuscle}</Text>
+                                  </View>
+                                  {exercise.difficulty && (
+                                    <View
+                                      style={[
+                                        styles.difficultyTag,
+                                        exercise.difficulty === "초급" && styles.beginnerTag,
+                                        exercise.difficulty === "중급" && styles.intermediateTag,
+                                        exercise.difficulty === "고급" && styles.advancedTag,
+                                      ]}
+                                    >
+                                      <Text style={[styles.difficultyTagText, { color: "#FFFFFF" }]}>{exercise.difficulty}</Text>
+                                    </View>
+                                  )}
+                                </View>
+                              </View>
+                              <Text style={[styles.exerciseDetails, { color: colors.textSecondary }]}>
+                                {exercise.sets}세트 × {exercise.reps}
+                              </Text>
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+                    ))
+                  ) : (
+                    <View style={styles.emptySearchResult}>
+                      <Ionicons name="search-outline" size={48} color={colors.icon} />
+                      <Text style={[styles.emptySearchText, { color: colors.textSecondary }]}>검색 결과가 없습니다</Text>
+                    </View>
+                  )}
+                </View>
+              ) : (
+                // 검색하지 않을 때는 트리 구조 표시
+                Object.entries(recommendedRoutineGroups).map(([groupKey, groupData]) => (
                 <View key={groupKey}>
                   {/* 목적별 그룹 헤더 */}
                   <TouchableOpacity
@@ -579,33 +792,27 @@ export default function RoutinesScreen() {
                   {/* 루틴 목록 */}
                   {expandedCategories[`recommended_${groupKey}`] && (
                     <View style={styles.subcategoryContainer}>
-                      {groupData.routines.map((routineName) => {
-                        const routine = routines.find((r) => r.name === routineName);
-                        if (!routine) return null;
-
-                        return (
-                          <View key={routine.id} style={[styles.routineCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                            <View style={styles.routineHeader}>
-                              <View style={styles.routineInfo}>
-                                <Text style={[styles.routineName, { color: colors.text }]}>{routine.name}</Text>
-                                <View style={styles.routineMeta}>
-                                  <View
-                                    style={[
-                                      styles.levelBadge,
-                                      routine.level === "초급" && styles.levelBeginner,
-                                      routine.level === "중급" && styles.levelIntermediate,
-                                      routine.level === "고급" && styles.levelAdvanced,
-                                    ]}
-                                  >
-                                    <Text style={[styles.levelText, { color: colors.text }]}>{routine.level}</Text>
+                      {filteredRecommendedRoutines
+                        .filter((routine) => groupData.routines.includes(routine.name))
+                        .map((routine) => {
+                          return (
+                            <View key={routine.id} style={[styles.routineCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                              <View style={styles.routineHeader}>
+                                <View style={styles.routineInfo}>
+                                  <Text style={[styles.routineName, { color: colors.text }]}>{routine.name}</Text>
+                                  <View style={styles.routineMeta}>
+                                    <Text style={[styles.routineDuration, { color: colors.icon }]}>⏱ {routine.exercises.length}개 운동</Text>
                                   </View>
-                                  <Text style={[styles.routineDuration, { color: colors.icon }]}>⏱ {routine.duration}</Text>
+                                </View>
+                                <View style={styles.routineActions}>
+                                  <TouchableOpacity style={[styles.addToMyButton, { backgroundColor: colors.primary + "20" }]} onPress={() => handleCopyToUserRoutine(routine)}>
+                                    <Ionicons name="add" size={20} color={colors.primary} />
+                                  </TouchableOpacity>
+                                  <TouchableOpacity style={[styles.playButton, { backgroundColor: colors.primary }]} onPress={() => handlePlayRoutine(routine)}>
+                                    <Ionicons name="play" size={20} color={colors.buttonText} />
+                                  </TouchableOpacity>
                                 </View>
                               </View>
-                              <TouchableOpacity style={[styles.playButton, { backgroundColor: colors.primary }]} onPress={() => handlePlayTemplate(routine)}>
-                                <Ionicons name="play" size={20} color={colors.buttonText} />
-                              </TouchableOpacity>
-                            </View>
                             <View style={styles.exerciseList}>
                               {routine.exercises.map((exercise, index) => (
                                 <View key={index} style={styles.exerciseItem}>
@@ -631,7 +838,18 @@ export default function RoutinesScreen() {
                                       >
                                         <Text style={[styles.muscleTagText, { color: colors.text }]}>{exercise.targetMuscle}</Text>
                                       </View>
-                                      <Text style={[styles.difficultyText, { color: colors.textSecondary }]}>{exercise.difficulty}</Text>
+                                      {exercise.difficulty && (
+                                        <View
+                                          style={[
+                                            styles.difficultyTag,
+                                            exercise.difficulty === "초급" && styles.beginnerTag,
+                                            exercise.difficulty === "중급" && styles.intermediateTag,
+                                            exercise.difficulty === "고급" && styles.advancedTag,
+                                          ]}
+                                        >
+                                          <Text style={[styles.difficultyTagText, { color: "#FFFFFF" }]}>{exercise.difficulty}</Text>
+                                        </View>
+                                      )}
                                     </View>
                                   </View>
                                   <Text style={[styles.exerciseDetails, { color: colors.textSecondary }]}>
@@ -646,7 +864,8 @@ export default function RoutinesScreen() {
                     </View>
                   )}
                 </View>
-              ))}
+                ))
+              )}
             </View>
           </>
         )}
@@ -657,7 +876,18 @@ export default function RoutinesScreen() {
             {/* 검색창 */}
             <View style={[styles.searchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <Ionicons name="search" size={20} color={colors.textSecondary} />
-              <Text style={[styles.searchInput, { color: colors.textSecondary }]}>내 루틴 검색...</Text>
+              <TextInput
+                style={[styles.searchInput, { color: colors.text }]}
+                placeholder="내 루틴 검색..."
+                placeholderTextColor={colors.textSecondary}
+                value={myRoutineSearchQuery}
+                onChangeText={setMyRoutineSearchQuery}
+              />
+              {myRoutineSearchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setMyRoutineSearchQuery("")}>
+                  <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
+                </TouchableOpacity>
+              )}
             </View>
 
             <View style={styles.routinesList}>
@@ -717,19 +947,32 @@ export default function RoutinesScreen() {
                         <View style={styles.exerciseMainInfo}>
                           <Text style={[styles.exerciseName, { color: colors.text }]}>• {exercise.name}</Text>
                           <View style={styles.exerciseTags}>
-                            <View
-                              style={[
-                                styles.muscleTag,
-                                exercise.targetMuscle === "가슴" && styles.chestTag,
-                                exercise.targetMuscle === "등" && styles.backTag,
-                                exercise.targetMuscle === "하체" && styles.legTag,
-                                exercise.targetMuscle === "코어" && styles.coreTag,
-                                exercise.targetMuscle === "삼두" && styles.tricepsTag,
-                              ]}
-                            >
-                              <Text style={[styles.muscleTagText, { color: colors.text }]}>{exercise.targetMuscle}</Text>
-                            </View>
-                            <Text style={[styles.difficultyText, { color: colors.textSecondary }]}>{exercise.difficulty}</Text>
+                            {exercise.targetMuscle && (
+                              <View
+                                style={[
+                                  styles.muscleTag,
+                                  exercise.targetMuscle === "가슴" && styles.chestTag,
+                                  exercise.targetMuscle === "등" && styles.backTag,
+                                  exercise.targetMuscle === "하체" && styles.legTag,
+                                  exercise.targetMuscle === "코어" && styles.coreTag,
+                                  exercise.targetMuscle === "삼두" && styles.tricepsTag,
+                                ]}
+                              >
+                                <Text style={[styles.muscleTagText, { color: colors.text }]}>{exercise.targetMuscle}</Text>
+                              </View>
+                            )}
+                            {exercise.difficulty && (
+                              <View
+                                style={[
+                                  styles.difficultyTag,
+                                  exercise.difficulty === "초급" && styles.beginnerTag,
+                                  exercise.difficulty === "중급" && styles.intermediateTag,
+                                  exercise.difficulty === "고급" && styles.advancedTag,
+                                ]}
+                              >
+                                <Text style={[styles.difficultyTagText, { color: "#FFFFFF" }]}>{exercise.difficulty}</Text>
+                              </View>
+                            )}
                           </View>
                         </View>
                         <View style={styles.exerciseActions}>
@@ -779,13 +1022,13 @@ export default function RoutinesScreen() {
                     <TouchableOpacity
                       key={routine.id}
                       style={[styles.modalOption, { backgroundColor: colors.background }]}
-                      onPress={() => {
-                        // TODO: 기존 루틴에 추가하는 로직
-                        setShowAddToRoutineModal(false);
-                      }}
+                      onPress={() => addToExistingRoutine(routine.id, routine.name)}
                     >
                       <Ionicons name="list" size={20} color={colors.textSecondary} />
-                      <Text style={[styles.modalOptionText, { color: colors.text }]}>{routine.name}</Text>
+                      <View style={styles.routineOptionContent}>
+                        <Text style={[styles.modalOptionText, { color: colors.text }]}>{routine.name}</Text>
+                        <Text style={[styles.routineExerciseCount, { color: colors.textSecondary }]}>{routine.exercises.length}개 운동</Text>
+                      </View>
                     </TouchableOpacity>
                   ))}
                 </>
@@ -915,12 +1158,10 @@ const styles = StyleSheet.create({
   },
   routineDescription: {
     fontSize: 14,
-
     lineHeight: 20,
   },
   addToMyButton: {
     padding: 8,
-
     borderRadius: 8,
   },
   routineActions: {
@@ -1002,8 +1243,25 @@ const styles = StyleSheet.create({
   },
   difficultyText: {
     fontSize: 10,
-
     fontStyle: "italic",
+  },
+  difficultyTag: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  difficultyTagText: {
+    fontSize: 10,
+    fontWeight: "600",
+  },
+  beginnerTag: {
+    backgroundColor: "#4CAF50",
+  },
+  intermediateTag: {
+    backgroundColor: "#FF9800",
+  },
+  advancedTag: {
+    backgroundColor: "#F44336",
   },
   exerciseDetails: {
     fontSize: 12,
@@ -1062,6 +1320,8 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 14,
+    padding: 0,
+    marginLeft: 8,
   },
   exerciseLibrary: {
     paddingHorizontal: 20,
@@ -1198,7 +1458,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     padding: 16,
-
     borderRadius: 12,
     marginBottom: 8,
     gap: 12,
@@ -1206,6 +1465,13 @@ const styles = StyleSheet.create({
   modalOptionText: {
     fontSize: 16,
     fontWeight: "500",
+  },
+  routineOptionContent: {
+    flex: 1,
+    gap: 4,
+  },
+  routineExerciseCount: {
+    fontSize: 12,
   },
   modalDivider: {
     height: 1,
@@ -1215,7 +1481,44 @@ const styles = StyleSheet.create({
   modalSectionTitle: {
     fontSize: 14,
     fontWeight: "600",
-
     marginBottom: 12,
+  },
+  filterContainer: {
+    marginHorizontal: 20,
+    marginBottom: 16,
+  },
+  filterScroll: {
+    gap: 8,
+    paddingVertical: 4,
+  },
+  filterButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  filterButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  beginnerFilterActive: {
+    backgroundColor: "#4CAF50",
+    borderColor: "#4CAF50",
+  },
+  intermediateFilterActive: {
+    backgroundColor: "#FF9800",
+    borderColor: "#FF9800",
+  },
+  advancedFilterActive: {
+    backgroundColor: "#F44336",
+    borderColor: "#F44336",
+  },
+  emptySearchResult: {
+    paddingVertical: 60,
+    alignItems: "center",
+    gap: 16,
+  },
+  emptySearchText: {
+    fontSize: 16,
   },
 });
