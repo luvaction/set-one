@@ -3,7 +3,14 @@
     "allow": [
       "Bash(cat:*)",
       "Bash(npm run lint)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(ls:*)",
+      "Bash(wc:*)",
+      "Bash(grep:*)",
+      "Bash(for file in index.tsx history.tsx routines.tsx workout.tsx)",
+      "Bash(do echo \"=== $file ===\")",
+      "Bash(head:*)",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []

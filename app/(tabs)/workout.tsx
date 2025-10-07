@@ -1,18 +1,20 @@
-import { Colors } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function WorkoutScreen() {
-  return (
-    <View style={styles.container}>
-      <View style={styles.content}>
-        <Ionicons name="fitness-outline" size={80} color={Colors.dark.primary} />
-        <Text style={styles.title}>운동 시작하기</Text>
-        <Text style={styles.description}>홈이나 루틴 탭에서{"\n"}운동을 선택해주세요</Text>
+  const { colors } = useTheme();
 
-        <TouchableOpacity style={styles.startButton}>
-          <Ionicons name="play-circle" size={24} color={Colors.dark.background} />
-          <Text style={styles.buttonText}>빠른 시작</Text>
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={styles.content}>
+        <Ionicons name="fitness-outline" size={80} color={colors.primary} />
+        <Text style={[styles.title, { color: colors.text }]}>운동 시작하기</Text>
+        <Text style={[styles.description, { color: colors.textSecondary }]}>홈이나 루틴 탭에서{"\n"}운동을 선택해주세요</Text>
+
+        <TouchableOpacity style={[styles.startButton, { backgroundColor: colors.primary }]}>
+          <Ionicons name="play-circle" size={24} color={colors.background} />
+          <Text style={[styles.buttonText, { color: colors.background }]}>빠른 시작</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -22,7 +24,6 @@ export default function WorkoutScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.dark.background,
   },
   content: {
     flex: 1,
@@ -33,18 +34,15 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: "bold",
-    color: Colors.dark.text,
     marginTop: 24,
     marginBottom: 8,
   },
   description: {
     fontSize: 16,
-    color: Colors.dark.textSecondary,
     textAlign: "center",
     marginBottom: 32,
   },
   startButton: {
-    backgroundColor: Colors.dark.primary,
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
@@ -55,6 +53,5 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     fontWeight: "600",
-    color: Colors.dark.background,
   },
 });

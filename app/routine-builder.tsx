@@ -1,4 +1,3 @@
-import { Colors } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState, useEffect } from "react";
@@ -12,6 +11,7 @@ import {
   Alert
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useTheme } from "@/contexts/ThemeContext";
 
 // 운동 데이터 (routines.tsx에서 가져온 것과 동일)
 const exercises = {
@@ -49,6 +49,7 @@ type Exercise = {
 };
 
 export default function RoutineBuilderScreen() {
+  const { colors } = useTheme();
   const params = useLocalSearchParams();
   const isEditing = !!params.routineId;
 
@@ -120,24 +121,24 @@ export default function RoutineBuilderScreen() {
 
   if (showExerciseLibrary) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => setShowExerciseLibrary(false)}
           >
-            <Ionicons name="arrow-back" size={24} color={Colors.dark.text} />
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>운동 선택</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>운동 선택</Text>
           <View style={styles.headerSpacer} />
         </View>
 
-        <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color={Colors.dark.textSecondary} />
+        <View style={[styles.searchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Ionicons name="search" size={20} color={colors.textSecondary} />
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: colors.text }]}
             placeholder="운동 검색..."
-            placeholderTextColor={Colors.dark.textSecondary}
+            placeholderTextColor={colors.textSecondary}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
@@ -147,11 +148,11 @@ export default function RoutineBuilderScreen() {
           {filteredExercises.map((exercise) => (
             <TouchableOpacity
               key={exercise.id}
-              style={styles.exerciseCard}
+              style={[styles.exerciseCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
               onPress={() => addExercise(exercise)}
             >
               <View style={styles.exerciseInfo}>
-                <Text style={styles.exerciseName}>{exercise.name}</Text>
+                <Text style={[styles.exerciseName, { color: colors.text }]}>{exercise.name}</Text>
                 <View style={styles.exerciseTags}>
                   <View style={[styles.muscleTag,
                     exercise.targetMuscle === "가슴" && styles.chestTag,
@@ -162,15 +163,15 @@ export default function RoutineBuilderScreen() {
                     exercise.targetMuscle === "가슴 상부" && styles.chestTag,
                     exercise.targetMuscle === "이두" && styles.bicepsTag,
                   ]}>
-                    <Text style={styles.muscleTagText}>{exercise.targetMuscle}</Text>
+                    <Text style={[styles.muscleTagText, { color: colors.text }]}>{exercise.targetMuscle}</Text>
                   </View>
-                  <Text style={styles.difficultyText}>{exercise.difficulty}</Text>
+                  <Text style={[styles.difficultyText, { color: colors.textSecondary }]}>{exercise.difficulty}</Text>
                 </View>
-                <Text style={styles.defaultSets}>
+                <Text style={[styles.defaultSets, { color: colors.textSecondary }]}>
                   권장: {exercise.defaultSets}세트 × {exercise.defaultReps}
                 </Text>
               </View>
-              <Ionicons name="add-circle" size={24} color={Colors.dark.primary} />
+              <Ionicons name="add-circle" size={24} color={colors.primary} />
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -179,30 +180,30 @@ export default function RoutineBuilderScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <Ionicons name="arrow-back" size={24} color={Colors.dark.text} />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>
           {isEditing ? "루틴 수정" : "새 루틴"}
         </Text>
-        <TouchableOpacity style={styles.saveButton} onPress={saveRoutine}>
-          <Text style={styles.saveButtonText}>저장</Text>
+        <TouchableOpacity style={[styles.saveButton, { backgroundColor: colors.primary }]} onPress={saveRoutine}>
+          <Text style={[styles.saveButtonText, { color: colors.background }]}>저장</Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.content}>
         {/* 루틴 이름 입력 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>루틴 이름</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>루틴 이름</Text>
           <TextInput
-            style={styles.nameInput}
+            style={[styles.nameInput, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
             placeholder="루틴 이름을 입력하세요"
-            placeholderTextColor={Colors.dark.textSecondary}
+            placeholderTextColor={colors.textSecondary}
             value={routineName}
             onChangeText={setRoutineName}
           />
@@ -211,66 +212,66 @@ export default function RoutineBuilderScreen() {
         {/* 운동 목록 */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>운동 목록 ({selectedExercises.length}개)</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>운동 목록 ({selectedExercises.length}개)</Text>
             <TouchableOpacity
-              style={styles.addExerciseButton}
+              style={[styles.addExerciseButton, { backgroundColor: colors.primary + "20" }]}
               onPress={() => setShowExerciseLibrary(true)}
             >
-              <Ionicons name="add" size={20} color={Colors.dark.primary} />
-              <Text style={styles.addExerciseText}>운동 추가</Text>
+              <Ionicons name="add" size={20} color={colors.primary} />
+              <Text style={[styles.addExerciseText, { color: colors.primary }]}>운동 추가</Text>
             </TouchableOpacity>
           </View>
 
           {selectedExercises.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Ionicons name="fitness-outline" size={48} color={Colors.dark.textSecondary} />
-              <Text style={styles.emptyTitle}>운동을 추가해보세요</Text>
-              <Text style={styles.emptyDescription}>
+            <View style={[styles.emptyState, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Ionicons name="fitness-outline" size={48} color={colors.textSecondary} />
+              <Text style={[styles.emptyTitle, { color: colors.text }]}>운동을 추가해보세요</Text>
+              <Text style={[styles.emptyDescription, { color: colors.textSecondary }]}>
                 위 운동 추가 버튼을 눌러 루틴에 운동을 추가할 수 있습니다.
               </Text>
             </View>
           ) : (
             <View style={styles.exerciseList}>
               {selectedExercises.map((exercise, index) => (
-                <View key={`${exercise.id}_${index}`} style={styles.exerciseItem}>
+                <View key={`${exercise.id}_${index}`} style={[styles.exerciseItem, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                   <View style={styles.exerciseHeader}>
-                    <Text style={styles.exerciseItemName}>{exercise.name}</Text>
+                    <Text style={[styles.exerciseItemName, { color: colors.text }]}>{exercise.name}</Text>
                     <TouchableOpacity
                       style={styles.removeButton}
                       onPress={() => removeExercise(index)}
                     >
-                      <Ionicons name="close-circle" size={20} color={Colors.dark.textSecondary} />
+                      <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
                     </TouchableOpacity>
                   </View>
 
                   <View style={styles.exerciseControls}>
                     <View style={styles.controlGroup}>
-                      <Text style={styles.controlLabel}>세트</Text>
-                      <View style={styles.numberInput}>
+                      <Text style={[styles.controlLabel, { color: colors.textSecondary }]}>세트</Text>
+                      <View style={[styles.numberInput, { backgroundColor: colors.background, borderColor: colors.border }]}>
                         <TouchableOpacity
                           style={styles.numberButton}
                           onPress={() => updateExercise(index, 'sets', String(Math.max(1, exercise.sets - 1)))}
                         >
-                          <Ionicons name="remove" size={16} color={Colors.dark.textSecondary} />
+                          <Ionicons name="remove" size={16} color={colors.textSecondary} />
                         </TouchableOpacity>
-                        <Text style={styles.numberValue}>{exercise.sets}</Text>
+                        <Text style={[styles.numberValue, { color: colors.text }]}>{exercise.sets}</Text>
                         <TouchableOpacity
                           style={styles.numberButton}
                           onPress={() => updateExercise(index, 'sets', String(exercise.sets + 1))}
                         >
-                          <Ionicons name="add" size={16} color={Colors.dark.textSecondary} />
+                          <Ionicons name="add" size={16} color={colors.textSecondary} />
                         </TouchableOpacity>
                       </View>
                     </View>
 
                     <View style={styles.controlGroup}>
-                      <Text style={styles.controlLabel}>횟수/시간</Text>
+                      <Text style={[styles.controlLabel, { color: colors.textSecondary }]}>횟수/시간</Text>
                       <TextInput
-                        style={styles.repsInput}
+                        style={[styles.repsInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
                         value={exercise.reps}
                         onChangeText={(value) => updateExercise(index, 'reps', value)}
                         placeholder="10회"
-                        placeholderTextColor={Colors.dark.textSecondary}
+                        placeholderTextColor={colors.textSecondary}
                       />
                     </View>
                   </View>
@@ -287,7 +288,6 @@ export default function RoutineBuilderScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.dark.background,
   },
   header: {
     flexDirection: "row",
@@ -296,7 +296,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 20,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.dark.border,
   },
   backButton: {
     padding: 4,
@@ -304,19 +303,16 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: Colors.dark.text,
   },
   headerSpacer: {
     width: 32,
   },
   saveButton: {
-    backgroundColor: Colors.dark.primary,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
   },
   saveButtonText: {
-    color: Colors.dark.background,
     fontWeight: "600",
     fontSize: 14,
   },
@@ -336,50 +332,40 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: Colors.dark.text,
     marginBottom: 12,
   },
   nameInput: {
-    backgroundColor: Colors.dark.surface,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: Colors.dark.text,
     borderWidth: 1,
-    borderColor: Colors.dark.border,
   },
   addExerciseButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Colors.dark.primary + "20",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
     gap: 4,
   },
   addExerciseText: {
-    color: Colors.dark.primary,
     fontWeight: "500",
     fontSize: 14,
   },
   emptyState: {
     alignItems: "center",
     padding: 40,
-    backgroundColor: Colors.dark.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: Colors.dark.border,
   },
   emptyTitle: {
     fontSize: 16,
     fontWeight: "600",
-    color: Colors.dark.text,
     marginTop: 12,
     marginBottom: 6,
   },
   emptyDescription: {
     fontSize: 14,
-    color: Colors.dark.textSecondary,
     textAlign: "center",
     lineHeight: 20,
   },
@@ -387,11 +373,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   exerciseItem: {
-    backgroundColor: Colors.dark.surface,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: Colors.dark.border,
   },
   exerciseHeader: {
     flexDirection: "row",
@@ -402,7 +386,6 @@ const styles = StyleSheet.create({
   exerciseItemName: {
     fontSize: 16,
     fontWeight: "600",
-    color: Colors.dark.text,
   },
   removeButton: {
     padding: 4,
@@ -416,16 +399,13 @@ const styles = StyleSheet.create({
   },
   controlLabel: {
     fontSize: 12,
-    color: Colors.dark.textSecondary,
     marginBottom: 8,
   },
   numberInput: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Colors.dark.background,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: Colors.dark.border,
   },
   numberButton: {
     padding: 12,
@@ -435,46 +415,37 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 16,
     fontWeight: "600",
-    color: Colors.dark.text,
   },
   repsInput: {
-    backgroundColor: Colors.dark.background,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    color: Colors.dark.text,
     borderWidth: 1,
-    borderColor: Colors.dark.border,
   },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Colors.dark.surface,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     marginHorizontal: 20,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: Colors.dark.border,
     gap: 12,
   },
   searchInput: {
     flex: 1,
     fontSize: 14,
-    color: Colors.dark.text,
   },
   exerciseLibrary: {
     flex: 1,
     paddingHorizontal: 20,
   },
   exerciseCard: {
-    backgroundColor: Colors.dark.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: Colors.dark.border,
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
@@ -486,7 +457,6 @@ const styles = StyleSheet.create({
   exerciseName: {
     fontSize: 16,
     fontWeight: "600",
-    color: Colors.dark.text,
   },
   exerciseTags: {
     flexDirection: "row",
@@ -497,7 +467,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
-    backgroundColor: Colors.dark.textSecondary + "20",
   },
   chestTag: {
     backgroundColor: "#FF6B9D" + "20",
@@ -519,16 +488,13 @@ const styles = StyleSheet.create({
   },
   muscleTagText: {
     fontSize: 10,
-    color: Colors.dark.text,
     fontWeight: "600",
   },
   difficultyText: {
     fontSize: 10,
-    color: Colors.dark.textSecondary,
     fontStyle: "italic",
   },
   defaultSets: {
     fontSize: 12,
-    color: Colors.dark.textSecondary,
   },
 });

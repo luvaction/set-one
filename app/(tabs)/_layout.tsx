@@ -1,26 +1,28 @@
-import { Colors } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { StyleSheet } from "react-native";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function TabLayout() {
+  const { colors } = useTheme();
+
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]} edges={["top", "bottom"]}>
         <Tabs
           screenOptions={{
             headerShown: false,
             tabBarStyle: {
-              backgroundColor: Colors.dark.surface,
-              borderTopColor: Colors.dark.border,
+              backgroundColor: colors.surface,
+              borderTopColor: colors.border,
               borderTopWidth: 1,
               height: 60,
               paddingBottom: 8,
               paddingTop: 8,
             },
-            tabBarActiveTintColor: Colors.dark.primary,
-            tabBarInactiveTintColor: Colors.dark.tabIconDefault,
+            tabBarActiveTintColor: colors.primary,
+            tabBarInactiveTintColor: colors.tabIconDefault,
             tabBarLabelStyle: {
               fontSize: 11,
               fontWeight: "600",
@@ -58,7 +60,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: "프로필",
+          title: "MY",
           tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color} />,
         }}
       />
@@ -71,6 +73,5 @@ export default function TabLayout() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: Colors.dark.background,
   },
 });

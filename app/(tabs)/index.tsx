@@ -1,63 +1,65 @@
-import { Colors } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function HomeScreen() {
+  const { colors } = useTheme();
+
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* 인사말 */}
       <View style={styles.header}>
-        <Text style={styles.greeting}>안녕하세요!</Text>
-        <Text style={styles.subGreeting}>오늘도 Set1부터 시작해볼까요?</Text>
+        <Text style={[styles.greeting, { color: colors.text }]}>안녕하세요!</Text>
+        <Text style={[styles.subGreeting, { color: colors.textSecondary }]}>오늘도 Set1부터 시작해볼까요?</Text>
       </View>
 
       {/* 빠른 시작 버튼 */}
-      <TouchableOpacity style={styles.quickStartButton}>
+      <TouchableOpacity style={[styles.quickStartButton, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <View style={styles.quickStartContent}>
-          <Ionicons name="play-circle" size={32} color={Colors.dark.primary} />
+          <Ionicons name="play-circle" size={32} color={colors.primary} />
           <View style={styles.quickStartText}>
-            <Text style={styles.quickStartTitle}>빠른 시작</Text>
-            <Text style={styles.quickStartSubtitle}>마지막 루틴 계속하기</Text>
+            <Text style={[styles.quickStartTitle, { color: colors.text }]}>빠른 시작</Text>
+            <Text style={[styles.quickStartSubtitle, { color: colors.textSecondary }]}>마지막 루틴 계속하기</Text>
           </View>
         </View>
-        <Ionicons name="chevron-forward" size={24} color={Colors.dark.textSecondary} />
+        <Ionicons name="chevron-forward" size={24} color={colors.textSecondary} />
       </TouchableOpacity>
 
       {/* 오늘의 통계 */}
       <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>0</Text>
-          <Text style={styles.statLabel}>완료한 세트</Text>
+        <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text style={[styles.statValue, { color: colors.primary }]}>0</Text>
+          <Text style={[styles.statLabel, { color: colors.textSecondary }]}>완료한 세트</Text>
         </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>0분</Text>
-          <Text style={styles.statLabel}>운동 시간</Text>
+        <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text style={[styles.statValue, { color: colors.primary }]}>0분</Text>
+          <Text style={[styles.statLabel, { color: colors.textSecondary }]}>운동 시간</Text>
         </View>
       </View>
 
       {/* 추천 루틴 */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>추천 루틴</Text>
-        <TouchableOpacity style={styles.routineCard}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>추천 루틴</Text>
+        <TouchableOpacity style={[styles.routineCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.routineHeader}>
-            <Text style={styles.routineTitle}>초보자 맨몸 운동</Text>
-            <View style={styles.routineBadge}>
-              <Text style={styles.routineBadgeText}>맨몸</Text>
+            <Text style={[styles.routineTitle, { color: colors.text }]}>초보자 맨몸 운동</Text>
+            <View style={[styles.routineBadge, { backgroundColor: colors.primary + "20" }]}>
+              <Text style={[styles.routineBadgeText, { color: colors.primary }]}>맨몸</Text>
             </View>
           </View>
-          <Text style={styles.routineDescription}>푸시업, 스쿼트, 플랭크 등 5가지 운동</Text>
-          <Text style={styles.routineDuration}>⏱ 약 20분</Text>
+          <Text style={[styles.routineDescription, { color: colors.textSecondary }]}>푸시업, 스쿼트, 플랭크 등 5가지 운동</Text>
+          <Text style={[styles.routineDuration, { color: colors.icon }]}>⏱ 약 20분</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.routineCard}>
+        <TouchableOpacity style={[styles.routineCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.routineHeader}>
-            <Text style={styles.routineTitle}>가슴 집중 웨이트</Text>
+            <Text style={[styles.routineTitle, { color: colors.text }]}>가슴 집중 웨이트</Text>
             <View style={[styles.routineBadge, styles.routineBadgeWeight]}>
-              <Text style={styles.routineBadgeText}>웨이트</Text>
+              <Text style={[styles.routineBadgeText, { color: colors.primary }]}>웨이트</Text>
             </View>
           </View>
-          <Text style={styles.routineDescription}>벤치프레스, 덤벨 플라이, 푸시업</Text>
-          <Text style={styles.routineDuration}>⏱ 약 40분</Text>
+          <Text style={[styles.routineDescription, { color: colors.textSecondary }]}>벤치프레스, 덤벨 플라이, 푸시업</Text>
+          <Text style={[styles.routineDuration, { color: colors.icon }]}>⏱ 약 40분</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -67,7 +69,6 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.dark.background,
     padding: 20,
   },
   header: {
@@ -77,15 +78,12 @@ const styles = StyleSheet.create({
   greeting: {
     fontSize: 28,
     fontWeight: "bold",
-    color: Colors.dark.text,
     marginBottom: 4,
   },
   subGreeting: {
     fontSize: 16,
-    color: Colors.dark.textSecondary,
   },
   quickStartButton: {
-    backgroundColor: Colors.dark.surface,
     borderRadius: 16,
     padding: 20,
     flexDirection: "row",
@@ -93,7 +91,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: Colors.dark.border,
   },
   quickStartContent: {
     flexDirection: "row",
@@ -106,11 +103,9 @@ const styles = StyleSheet.create({
   quickStartTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: Colors.dark.text,
   },
   quickStartSubtitle: {
     fontSize: 14,
-    color: Colors.dark.textSecondary,
   },
   statsContainer: {
     flexDirection: "row",
@@ -119,22 +114,18 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: Colors.dark.surface,
     borderRadius: 12,
     padding: 16,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: Colors.dark.border,
   },
   statValue: {
     fontSize: 24,
     fontWeight: "bold",
-    color: Colors.dark.primary,
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: Colors.dark.textSecondary,
   },
   section: {
     gap: 12,
@@ -143,15 +134,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    color: Colors.dark.text,
   },
   routineCard: {
-    backgroundColor: Colors.dark.surface,
     borderRadius: 12,
     padding: 16,
     gap: 8,
     borderWidth: 1,
-    borderColor: Colors.dark.border,
   },
   routineHeader: {
     flexDirection: "row",
@@ -161,10 +149,8 @@ const styles = StyleSheet.create({
   routineTitle: {
     fontSize: 16,
     fontWeight: "600",
-    color: Colors.dark.text,
   },
   routineBadge: {
-    backgroundColor: Colors.dark.primary + "20",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 6,
@@ -174,15 +160,12 @@ const styles = StyleSheet.create({
   },
   routineBadgeText: {
     fontSize: 12,
-    color: Colors.dark.primary,
     fontWeight: "600",
   },
   routineDescription: {
     fontSize: 14,
-    color: Colors.dark.textSecondary,
   },
   routineDuration: {
     fontSize: 12,
-    color: Colors.dark.icon,
   },
 });

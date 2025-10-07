@@ -1,4 +1,3 @@
-import { Colors } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { useState, useEffect } from "react";
 import {
@@ -10,9 +9,11 @@ import {
   TextInput,
   View,
   ActivityIndicator,
+  Switch,
 } from "react-native";
 import { profileService } from "@/services/profile";
 import { CreateProfileData } from "@/models";
+import { useTheme } from "@/contexts/ThemeContext";
 
 const emptyProfile: CreateProfileData = {
   name: "",
@@ -27,6 +28,7 @@ const emptyProfile: CreateProfileData = {
 };
 
 export default function ProfileScreen() {
+  const { theme, colors, toggleTheme } = useTheme();
   const [profile, setProfile] = useState<CreateProfileData>(emptyProfile);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingProfile, setEditingProfile] = useState<CreateProfileData>(profile);
@@ -85,23 +87,23 @@ export default function ProfileScreen() {
 
   if (loading) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.dark.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView>
         {/* 헤더 */}
         <View style={styles.header}>
-          <Text style={styles.title}>프로필</Text>
+          <Text style={[styles.title, { color: colors.text }]}>MY</Text>
           <Pressable style={styles.editButton} onPress={handleEdit}>
-            <Ionicons name="create-outline" size={20} color={Colors.dark.primary} />
-            <Text style={styles.editButtonText}>편집</Text>
+            <Ionicons name="create-outline" size={20} color={colors.primary} />
+            <Text style={[styles.editButtonText, { color: colors.primary }]}>편집</Text>
           </Pressable>
         </View>
 
@@ -110,97 +112,117 @@ export default function ProfileScreen() {
           <>
             {/* 기본 정보 */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>기본 정보</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>기본 정보</Text>
 
-              <View style={styles.infoCard}>
+              <View style={[styles.infoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>이름</Text>
-                  <Text style={styles.infoValue}>{profile.name}</Text>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>이름</Text>
+                  <Text style={[styles.infoValue, { color: colors.text }]}>{profile.name}</Text>
                 </View>
-                <View style={styles.divider} />
+                <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>성별</Text>
-                  <Text style={styles.infoValue}>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>성별</Text>
+                  <Text style={[styles.infoValue, { color: colors.text }]}>
                     {profile.gender === "male" ? "남성" : profile.gender === "female" ? "여성" : "-"}
                   </Text>
                 </View>
-                <View style={styles.divider} />
+                <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>생년월일</Text>
-                  <Text style={styles.infoValue}>{profile.birthDate || "-"}</Text>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>생년월일</Text>
+                  <Text style={[styles.infoValue, { color: colors.text }]}>{profile.birthDate || "-"}</Text>
                 </View>
               </View>
             </View>
 
             {/* 신체 정보 */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>신체 정보</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>신체 정보</Text>
 
-              <View style={styles.infoCard}>
+              <View style={[styles.infoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>키</Text>
-                  <Text style={styles.infoValue}>{profile.height} cm</Text>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>키</Text>
+                  <Text style={[styles.infoValue, { color: colors.text }]}>{profile.height} cm</Text>
                 </View>
-                <View style={styles.divider} />
+                <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>현재 체중</Text>
-                  <Text style={styles.infoValue}>{profile.weight} kg</Text>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>현재 체중</Text>
+                  <Text style={[styles.infoValue, { color: colors.text }]}>{profile.weight} kg</Text>
                 </View>
-                <View style={styles.divider} />
+                <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>목표 체중</Text>
-                  <Text style={styles.infoValue}>{profile.targetWeight} kg</Text>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>목표 체중</Text>
+                  <Text style={[styles.infoValue, { color: colors.text }]}>{profile.targetWeight} kg</Text>
                 </View>
-                <View style={styles.divider} />
+                <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>BMI</Text>
-                  <Text style={styles.infoValue}>{bmi}</Text>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>BMI</Text>
+                  <Text style={[styles.infoValue, { color: colors.text }]}>{bmi}</Text>
                 </View>
               </View>
             </View>
 
             {/* 운동 목표 */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>운동 목표</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>운동 목표</Text>
 
-              <View style={styles.infoCard}>
+              <View style={[styles.infoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>목표</Text>
-                  <Text style={styles.infoValue}>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>목표</Text>
+                  <Text style={[styles.infoValue, { color: colors.text }]}>
                     {profile.goal ? goalText[profile.goal] : "-"}
                   </Text>
                 </View>
-                <View style={styles.divider} />
+                <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>활동 레벨</Text>
-                  <Text style={styles.infoValue}>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>활동 레벨</Text>
+                  <Text style={[styles.infoValue, { color: colors.text }]}>
                     {profile.activityLevel ? activityText[profile.activityLevel] : "-"}
                   </Text>
                 </View>
-                <View style={styles.divider} />
+                <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>주간 목표</Text>
-                  <Text style={styles.infoValue}>주 {profile.weeklyGoal}회</Text>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>주간 목표</Text>
+                  <Text style={[styles.infoValue, { color: colors.text }]}>주 {profile.weeklyGoal}회</Text>
                 </View>
               </View>
             </View>
           </>
         ) : (
           <View style={styles.emptyState}>
-            <Ionicons name="person-outline" size={64} color={Colors.dark.icon} />
-            <Text style={styles.emptyText}>프로필을 설정해주세요</Text>
-            <Pressable style={styles.setupButton} onPress={handleEdit}>
+            <Ionicons name="person-outline" size={64} color={colors.icon} />
+            <Text style={[styles.emptyText, { color: colors.text }]}>프로필을 설정해주세요</Text>
+            <Pressable style={[styles.setupButton, { backgroundColor: colors.primary }]} onPress={handleEdit}>
               <Text style={styles.setupButtonText}>프로필 설정</Text>
             </Pressable>
           </View>
         )}
+
+        {/* 설정 섹션 */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>설정</Text>
+
+          <View style={[styles.infoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={styles.infoRow}>
+              <View style={styles.settingLabelContainer}>
+                <Ionicons name="moon" size={20} color={colors.text} />
+                <Text style={[styles.infoLabel, { color: colors.text }]}>다크 모드</Text>
+              </View>
+              <Switch
+                value={theme === 'dark'}
+                onValueChange={toggleTheme}
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor="#FFFFFF"
+              />
+            </View>
+          </View>
+        </View>
       </ScrollView>
 
       {/* 편집 모달 */}
@@ -211,33 +233,35 @@ export default function ProfileScreen() {
         onRequestClose={() => setShowEditModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
             <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={styles.modalTitle}>프로필 편집</Text>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>프로필 편집</Text>
 
               {/* 이름 */}
-              <Text style={styles.inputLabel}>이름</Text>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>이름</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
                 value={editingProfile.name}
                 onChangeText={(text) => setEditingProfile({ ...editingProfile, name: text })}
                 placeholder="이름을 입력하세요"
-                placeholderTextColor={Colors.dark.textSecondary}
+                placeholderTextColor={colors.textSecondary}
               />
 
               {/* 성별 */}
-              <Text style={styles.inputLabel}>성별</Text>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>성별</Text>
               <View style={styles.buttonGroup}>
                 <Pressable
                   style={[
                     styles.optionButton,
-                    editingProfile.gender === "male" && styles.optionButtonActive,
+                    { backgroundColor: colors.background, borderColor: colors.border },
+                    editingProfile.gender === "male" && { backgroundColor: colors.primary, borderColor: colors.primary },
                   ]}
                   onPress={() => setEditingProfile({ ...editingProfile, gender: "male" })}
                 >
                   <Text
                     style={[
                       styles.optionButtonText,
+                      { color: colors.textSecondary },
                       editingProfile.gender === "male" && styles.optionButtonTextActive,
                     ]}
                   >
@@ -247,13 +271,15 @@ export default function ProfileScreen() {
                 <Pressable
                   style={[
                     styles.optionButton,
-                    editingProfile.gender === "female" && styles.optionButtonActive,
+                    { backgroundColor: colors.background, borderColor: colors.border },
+                    editingProfile.gender === "female" && { backgroundColor: colors.primary, borderColor: colors.primary },
                   ]}
                   onPress={() => setEditingProfile({ ...editingProfile, gender: "female" })}
                 >
                   <Text
                     style={[
                       styles.optionButtonText,
+                      { color: colors.textSecondary },
                       editingProfile.gender === "female" && styles.optionButtonTextActive,
                     ]}
                   >
@@ -263,61 +289,63 @@ export default function ProfileScreen() {
               </View>
 
               {/* 생년월일 */}
-              <Text style={styles.inputLabel}>생년월일</Text>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>생년월일</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
                 value={editingProfile.birthDate}
                 onChangeText={(text) => setEditingProfile({ ...editingProfile, birthDate: text })}
                 placeholder="YYYY-MM-DD"
-                placeholderTextColor={Colors.dark.textSecondary}
+                placeholderTextColor={colors.textSecondary}
               />
 
               {/* 키 */}
-              <Text style={styles.inputLabel}>키 (cm)</Text>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>키 (cm)</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
                 value={editingProfile.height > 0 ? String(editingProfile.height) : ""}
                 onChangeText={(text) => setEditingProfile({ ...editingProfile, height: Number(text) || 0 })}
                 placeholder="170"
-                placeholderTextColor={Colors.dark.textSecondary}
+                placeholderTextColor={colors.textSecondary}
                 keyboardType="numeric"
               />
 
               {/* 체중 */}
-              <Text style={styles.inputLabel}>현재 체중 (kg)</Text>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>현재 체중 (kg)</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
                 value={editingProfile.weight > 0 ? String(editingProfile.weight) : ""}
                 onChangeText={(text) => setEditingProfile({ ...editingProfile, weight: Number(text) || 0 })}
                 placeholder="70"
-                placeholderTextColor={Colors.dark.textSecondary}
+                placeholderTextColor={colors.textSecondary}
                 keyboardType="numeric"
               />
 
               {/* 목표 체중 */}
-              <Text style={styles.inputLabel}>목표 체중 (kg)</Text>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>목표 체중 (kg)</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
                 value={editingProfile.targetWeight > 0 ? String(editingProfile.targetWeight) : ""}
                 onChangeText={(text) => setEditingProfile({ ...editingProfile, targetWeight: Number(text) || 0 })}
                 placeholder="65"
-                placeholderTextColor={Colors.dark.textSecondary}
+                placeholderTextColor={colors.textSecondary}
                 keyboardType="numeric"
               />
 
               {/* 목표 */}
-              <Text style={styles.inputLabel}>운동 목표</Text>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>운동 목표</Text>
               <View style={styles.buttonGroup}>
                 <Pressable
                   style={[
                     styles.optionButton,
-                    editingProfile.goal === "lose" && styles.optionButtonActive,
+                    { backgroundColor: colors.background, borderColor: colors.border },
+                    editingProfile.goal === "lose" && { backgroundColor: colors.primary, borderColor: colors.primary },
                   ]}
                   onPress={() => setEditingProfile({ ...editingProfile, goal: "lose" })}
                 >
                   <Text
                     style={[
                       styles.optionButtonText,
+                      { color: colors.textSecondary },
                       editingProfile.goal === "lose" && styles.optionButtonTextActive,
                     ]}
                   >
@@ -327,13 +355,15 @@ export default function ProfileScreen() {
                 <Pressable
                   style={[
                     styles.optionButton,
-                    editingProfile.goal === "gain" && styles.optionButtonActive,
+                    { backgroundColor: colors.background, borderColor: colors.border },
+                    editingProfile.goal === "gain" && { backgroundColor: colors.primary, borderColor: colors.primary },
                   ]}
                   onPress={() => setEditingProfile({ ...editingProfile, goal: "gain" })}
                 >
                   <Text
                     style={[
                       styles.optionButtonText,
+                      { color: colors.textSecondary },
                       editingProfile.goal === "gain" && styles.optionButtonTextActive,
                     ]}
                   >
@@ -343,13 +373,15 @@ export default function ProfileScreen() {
                 <Pressable
                   style={[
                     styles.optionButton,
-                    editingProfile.goal === "maintain" && styles.optionButtonActive,
+                    { backgroundColor: colors.background, borderColor: colors.border },
+                    editingProfile.goal === "maintain" && { backgroundColor: colors.primary, borderColor: colors.primary },
                   ]}
                   onPress={() => setEditingProfile({ ...editingProfile, goal: "maintain" })}
                 >
                   <Text
                     style={[
                       styles.optionButtonText,
+                      { color: colors.textSecondary },
                       editingProfile.goal === "maintain" && styles.optionButtonTextActive,
                     ]}
                   >
@@ -359,18 +391,20 @@ export default function ProfileScreen() {
               </View>
 
               {/* 활동 레벨 */}
-              <Text style={styles.inputLabel}>활동 레벨</Text>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>활동 레벨</Text>
               <View style={styles.buttonGroup}>
                 <Pressable
                   style={[
                     styles.optionButton,
-                    editingProfile.activityLevel === "low" && styles.optionButtonActive,
+                    { backgroundColor: colors.background, borderColor: colors.border },
+                    editingProfile.activityLevel === "low" && { backgroundColor: colors.primary, borderColor: colors.primary },
                   ]}
                   onPress={() => setEditingProfile({ ...editingProfile, activityLevel: "low" })}
                 >
                   <Text
                     style={[
                       styles.optionButtonText,
+                      { color: colors.textSecondary },
                       editingProfile.activityLevel === "low" && styles.optionButtonTextActive,
                     ]}
                   >
@@ -380,13 +414,15 @@ export default function ProfileScreen() {
                 <Pressable
                   style={[
                     styles.optionButton,
-                    editingProfile.activityLevel === "medium" && styles.optionButtonActive,
+                    { backgroundColor: colors.background, borderColor: colors.border },
+                    editingProfile.activityLevel === "medium" && { backgroundColor: colors.primary, borderColor: colors.primary },
                   ]}
                   onPress={() => setEditingProfile({ ...editingProfile, activityLevel: "medium" })}
                 >
                   <Text
                     style={[
                       styles.optionButtonText,
+                      { color: colors.textSecondary },
                       editingProfile.activityLevel === "medium" && styles.optionButtonTextActive,
                     ]}
                   >
@@ -396,13 +432,15 @@ export default function ProfileScreen() {
                 <Pressable
                   style={[
                     styles.optionButton,
-                    editingProfile.activityLevel === "high" && styles.optionButtonActive,
+                    { backgroundColor: colors.background, borderColor: colors.border },
+                    editingProfile.activityLevel === "high" && { backgroundColor: colors.primary, borderColor: colors.primary },
                   ]}
                   onPress={() => setEditingProfile({ ...editingProfile, activityLevel: "high" })}
                 >
                   <Text
                     style={[
                       styles.optionButtonText,
+                      { color: colors.textSecondary },
                       editingProfile.activityLevel === "high" && styles.optionButtonTextActive,
                     ]}
                   >
@@ -412,26 +450,26 @@ export default function ProfileScreen() {
               </View>
 
               {/* 주간 목표 */}
-              <Text style={styles.inputLabel}>주간 운동 목표 (회)</Text>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>주간 운동 목표 (회)</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
                 value={editingProfile.weeklyGoal > 0 ? String(editingProfile.weeklyGoal) : ""}
                 onChangeText={(text) => setEditingProfile({ ...editingProfile, weeklyGoal: Number(text) || 0 })}
                 placeholder="3"
-                placeholderTextColor={Colors.dark.textSecondary}
+                placeholderTextColor={colors.textSecondary}
                 keyboardType="numeric"
               />
 
               {/* 버튼 */}
               <View style={styles.modalButtons}>
                 <Pressable
-                  style={[styles.modalButton, styles.cancelButton]}
+                  style={[styles.modalButton, styles.cancelButton, { backgroundColor: colors.background, borderColor: colors.border }]}
                   onPress={() => setShowEditModal(false)}
                 >
-                  <Text style={styles.cancelButtonText}>취소</Text>
+                  <Text style={[styles.cancelButtonText, { color: colors.text }]}>취소</Text>
                 </Pressable>
                 <Pressable
-                  style={[styles.modalButton, styles.saveButton]}
+                  style={[styles.modalButton, styles.saveButton, { backgroundColor: colors.primary }]}
                   onPress={handleSave}
                 >
                   <Text style={styles.saveButtonText}>저장</Text>
@@ -448,12 +486,16 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.dark.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  settingLabelContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   header: {
     flexDirection: "row",
@@ -465,7 +507,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: "bold",
-    color: Colors.dark.text,
   },
   editButton: {
     flexDirection: "row",
@@ -473,7 +514,6 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   editButtonText: {
-    color: Colors.dark.primary,
     fontSize: 16,
     fontWeight: "600",
   },
@@ -484,15 +524,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: Colors.dark.text,
     marginBottom: 12,
   },
   infoCard: {
-    backgroundColor: Colors.dark.surface,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: Colors.dark.border,
   },
   infoRow: {
     flexDirection: "row",
@@ -502,16 +539,13 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 14,
-    color: Colors.dark.textSecondary,
   },
   infoValue: {
     fontSize: 16,
     fontWeight: "600",
-    color: Colors.dark.text,
   },
   divider: {
     height: 1,
-    backgroundColor: Colors.dark.border,
   },
   emptyState: {
     alignItems: "center",
@@ -520,18 +554,16 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: Colors.dark.text,
     marginTop: 16,
     marginBottom: 24,
   },
   setupButton: {
-    backgroundColor: Colors.dark.primary,
     paddingHorizontal: 32,
     paddingVertical: 12,
     borderRadius: 8,
   },
   setupButtonText: {
-    color: "#000000",
+    color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "600",
   },
@@ -542,7 +574,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   modalContent: {
-    backgroundColor: Colors.dark.surface,
     borderRadius: 16,
     padding: 24,
     width: "90%",
@@ -551,23 +582,18 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    color: Colors.dark.text,
     marginBottom: 20,
   },
   inputLabel: {
     fontSize: 14,
-    color: Colors.dark.text,
     marginBottom: 8,
     marginTop: 12,
   },
   input: {
-    backgroundColor: Colors.dark.background,
     borderRadius: 8,
     padding: 12,
-    color: Colors.dark.text,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: Colors.dark.border,
   },
   buttonGroup: {
     flexDirection: "row",
@@ -578,22 +604,17 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
-    backgroundColor: Colors.dark.background,
     borderWidth: 1,
-    borderColor: Colors.dark.border,
     alignItems: "center",
   },
   optionButtonActive: {
-    backgroundColor: Colors.dark.primary,
-    borderColor: Colors.dark.primary,
   },
   optionButtonText: {
     fontSize: 14,
-    color: Colors.dark.textSecondary,
     fontWeight: "600",
   },
   optionButtonTextActive: {
-    color: "#000000",
+    color: "#FFFFFF",
   },
   modalButtons: {
     flexDirection: "row",
@@ -607,20 +628,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   cancelButton: {
-    backgroundColor: Colors.dark.background,
     borderWidth: 1,
-    borderColor: Colors.dark.border,
   },
   cancelButtonText: {
-    color: Colors.dark.text,
     fontSize: 16,
     fontWeight: "600",
   },
   saveButton: {
-    backgroundColor: Colors.dark.primary,
   },
   saveButtonText: {
-    color: "#000000",
+    color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "600",
   },

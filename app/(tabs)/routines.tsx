@@ -1,8 +1,8 @@
-import { Colors } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View, Modal } from "react-native";
 import { useState } from "react";
+import { useTheme } from "@/contexts/ThemeContext";
 
 const categories = [
   { id: "all", name: "전체", icon: "grid" },
@@ -265,6 +265,7 @@ const myRoutines = [
 ];
 
 export default function RoutinesScreen() {
+  const { colors } = useTheme();
   const [selectedTab, setSelectedTab] = useState<"library" | "my" | "recommended">("library");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedPurpose, setSelectedPurpose] = useState("all");
@@ -324,42 +325,42 @@ export default function RoutinesScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView>
         {/* 헤더 */}
         <View style={styles.header}>
-          <Text style={styles.title}>루틴</Text>
+          <Text style={[styles.title, { color: colors.text }]}>루틴</Text>
           <TouchableOpacity
             style={styles.addButton}
             onPress={() => router.push("/routine-builder")}
           >
-            <Ionicons name="add-circle" size={28} color={Colors.dark.primary} />
+            <Ionicons name="add-circle" size={28} color={colors.primary} />
           </TouchableOpacity>
         </View>
 
         {/* 세그먼트 컨트롤 */}
-        <View style={styles.segmentContainer}>
+        <View style={[styles.segmentContainer, { backgroundColor: colors.surface }]}>
           <TouchableOpacity
-            style={[styles.segmentButton, selectedTab === "library" && styles.segmentButtonActive]}
+            style={[styles.segmentButton, selectedTab === "library" && { backgroundColor: colors.primary }]}
             onPress={() => setSelectedTab("library")}
           >
-            <Text style={[styles.segmentText, selectedTab === "library" && styles.segmentTextActive]}>
+            <Text style={[styles.segmentText, { color: colors.textSecondary }, selectedTab === "library" && styles.segmentTextActive]}>
               라이브러리
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.segmentButton, selectedTab === "recommended" && styles.segmentButtonActive]}
+            style={[styles.segmentButton, selectedTab === "recommended" && { backgroundColor: colors.primary }]}
             onPress={() => setSelectedTab("recommended")}
           >
-            <Text style={[styles.segmentText, selectedTab === "recommended" && styles.segmentTextActive]}>
+            <Text style={[styles.segmentText, { color: colors.textSecondary }, selectedTab === "recommended" && styles.segmentTextActive]}>
               추천 루틴
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.segmentButton, selectedTab === "my" && styles.segmentButtonActive]}
+            style={[styles.segmentButton, selectedTab === "my" && { backgroundColor: colors.primary }]}
             onPress={() => setSelectedTab("my")}
           >
-            <Text style={[styles.segmentText, selectedTab === "my" && styles.segmentTextActive]}>
+            <Text style={[styles.segmentText, { color: colors.textSecondary }, selectedTab === "my" && styles.segmentTextActive]}>
               내 루틴
             </Text>
           </TouchableOpacity>
@@ -369,9 +370,9 @@ export default function RoutinesScreen() {
         {selectedTab === "library" && (
           <>
             {/* 검색창 */}
-            <View style={styles.searchContainer}>
-              <Ionicons name="search" size={20} color={Colors.dark.textSecondary} />
-              <Text style={styles.searchInput}>운동 이름이나 근육 부위로 검색...</Text>
+            <View style={[styles.searchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Ionicons name="search" size={20} color={colors.textSecondary} />
+              <Text style={[styles.searchInput, { color: colors.textSecondary }]}>운동 이름이나 근육 부위로 검색...</Text>
             </View>
 
             {/* 트리 구조 카테고리 */}
@@ -380,20 +381,20 @@ export default function RoutinesScreen() {
                 <View key={categoryKey}>
                   {/* 메인 카테고리 헤더 */}
                   <TouchableOpacity
-                    style={styles.categoryHeader}
+                    style={[styles.categoryHeader, { backgroundColor: colors.surface, borderColor: colors.border }]}
                     onPress={() => setExpandedCategories(prev => ({
                       ...prev,
                       [categoryKey]: !prev[categoryKey]
                     }))}
                   >
                     <View style={styles.categoryHeaderContent}>
-                      <Ionicons name={categoryData.icon as any} size={20} color={Colors.dark.primary} />
-                      <Text style={styles.categoryHeaderText}>{categoryData.name}</Text>
+                      <Ionicons name={categoryData.icon as any} size={20} color={colors.primary} />
+                      <Text style={[styles.categoryHeaderText, { color: colors.text }]}>{categoryData.name}</Text>
                     </View>
                     <Ionicons
                       name={expandedCategories[categoryKey] ? "chevron-down" : "chevron-forward"}
                       size={20}
-                      color={Colors.dark.textSecondary}
+                      color={colors.textSecondary}
                     />
                   </TouchableOpacity>
 
@@ -403,17 +404,17 @@ export default function RoutinesScreen() {
                       {Object.entries(categoryData.subcategories).map(([subKey, subData]) => (
                         <View key={subKey}>
                           <TouchableOpacity
-                            style={styles.subcategoryHeader}
+                            style={[styles.subcategoryHeader, { backgroundColor: colors.surface + "80", borderColor: colors.border + "50" }]}
                             onPress={() => setExpandedCategories(prev => ({
                               ...prev,
                               [`${categoryKey}_${subKey}`]: !prev[`${categoryKey}_${subKey}`]
                             }))}
                           >
-                            <Text style={styles.subcategoryHeaderText}>{subData.name}</Text>
+                            <Text style={[styles.subcategoryHeaderText, { color: colors.text }]}>{subData.name}</Text>
                             <Ionicons
                               name={expandedCategories[`${categoryKey}_${subKey}`] ? "chevron-down" : "chevron-forward"}
                               size={16}
-                              color={Colors.dark.textSecondary}
+                              color={colors.textSecondary}
                             />
                           </TouchableOpacity>
 
@@ -425,9 +426,9 @@ export default function RoutinesScreen() {
                                 if (!exercise) return null;
 
                                 return (
-                                  <TouchableOpacity key={exercise.id} style={styles.exerciseLibraryCard}>
+                                  <TouchableOpacity key={exercise.id} style={[styles.exerciseLibraryCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                                     <View style={styles.exerciseLibraryInfo}>
-                                      <Text style={styles.exerciseLibraryName}>{exercise.name}</Text>
+                                      <Text style={[styles.exerciseLibraryName, { color: colors.text }]}>{exercise.name}</Text>
                                       <View style={styles.exerciseTags}>
                                         <View style={[styles.muscleTag,
                                           exercise.targetMuscle === "가슴" && styles.chestTag,
@@ -443,11 +444,11 @@ export default function RoutinesScreen() {
                                           exercise.targetMuscle === "전신" && styles.fullBodyTag,
                                           exercise.targetMuscle === "이두" && styles.bicepsTag,
                                         ]}>
-                                          <Text style={styles.muscleTagText}>{exercise.targetMuscle}</Text>
+                                          <Text style={[styles.muscleTagText, { color: colors.text }]}>{exercise.targetMuscle}</Text>
                                         </View>
-                                        <Text style={styles.difficultyText}>{exercise.difficulty}</Text>
+                                        <Text style={[styles.difficultyText, { color: colors.textSecondary }]}>{exercise.difficulty}</Text>
                                       </View>
-                                      <Text style={styles.exerciseDefaultSets}>
+                                      <Text style={[styles.exerciseDefaultSets, { color: colors.textSecondary }]}>
                                         권장: {exercise.defaultSets}세트 × {exercise.defaultReps}
                                       </Text>
                                     </View>
@@ -455,7 +456,7 @@ export default function RoutinesScreen() {
                                       style={styles.addToRoutineButton}
                                       onPress={() => handleAddExerciseToRoutine(exercise)}
                                     >
-                                      <Ionicons name="add-circle" size={24} color={Colors.dark.primary} />
+                                      <Ionicons name="add-circle" size={24} color={colors.primary} />
                                     </TouchableOpacity>
                                   </TouchableOpacity>
                                 );
@@ -476,9 +477,9 @@ export default function RoutinesScreen() {
         {selectedTab === "recommended" && (
           <>
             {/* 검색창 */}
-            <View style={styles.searchContainer}>
-              <Ionicons name="search" size={20} color={Colors.dark.textSecondary} />
-              <Text style={styles.searchInput}>루틴 이름이나 운동명으로 검색...</Text>
+            <View style={[styles.searchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Ionicons name="search" size={20} color={colors.textSecondary} />
+              <Text style={[styles.searchInput, { color: colors.textSecondary }]}>루틴 이름이나 운동명으로 검색...</Text>
             </View>
 
             {/* 목적별 그룹 트리 구조 */}
@@ -487,23 +488,23 @@ export default function RoutinesScreen() {
                 <View key={groupKey}>
                   {/* 목적별 그룹 헤더 */}
                   <TouchableOpacity
-                    style={styles.categoryHeader}
+                    style={[styles.categoryHeader, { backgroundColor: colors.surface, borderColor: colors.border }]}
                     onPress={() => setExpandedCategories(prev => ({
                       ...prev,
                       [`recommended_${groupKey}`]: !prev[`recommended_${groupKey}`]
                     }))}
                   >
                     <View style={styles.categoryHeaderContent}>
-                      <Ionicons name={groupData.icon as any} size={20} color={Colors.dark.primary} />
+                      <Ionicons name={groupData.icon as any} size={20} color={colors.primary} />
                       <View style={styles.groupHeaderInfo}>
-                        <Text style={styles.categoryHeaderText}>{groupData.name}</Text>
-                        <Text style={styles.groupDescription}>{groupData.description}</Text>
+                        <Text style={[styles.categoryHeaderText, { color: colors.text }]}>{groupData.name}</Text>
+                        <Text style={[styles.groupDescription, { color: colors.textSecondary }]}>{groupData.description}</Text>
                       </View>
                     </View>
                     <Ionicons
                       name={expandedCategories[`recommended_${groupKey}`] ? "chevron-down" : "chevron-forward"}
                       size={20}
-                      color={Colors.dark.textSecondary}
+                      color={colors.textSecondary}
                     />
                   </TouchableOpacity>
 
@@ -515,30 +516,30 @@ export default function RoutinesScreen() {
                         if (!routine) return null;
 
                         return (
-                          <TouchableOpacity key={routine.id} style={styles.routineCard}>
+                          <TouchableOpacity key={routine.id} style={[styles.routineCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                             <View style={styles.routineHeader}>
                               <View style={styles.routineInfo}>
-                                <Text style={styles.routineName}>{routine.name}</Text>
+                                <Text style={[styles.routineName, { color: colors.text }]}>{routine.name}</Text>
                                 <View style={styles.routineMeta}>
                                   <View style={[styles.levelBadge,
                                     routine.level === "초급" && styles.levelBeginner,
                                     routine.level === "중급" && styles.levelIntermediate,
                                     routine.level === "고급" && styles.levelAdvanced
                                   ]}>
-                                    <Text style={styles.levelText}>{routine.level}</Text>
+                                    <Text style={[styles.levelText, { color: colors.text }]}>{routine.level}</Text>
                                   </View>
-                                  <Text style={styles.routineDuration}>⏱ {routine.duration}</Text>
+                                  <Text style={[styles.routineDuration, { color: colors.icon }]}>⏱ {routine.duration}</Text>
                                 </View>
                               </View>
-                              <TouchableOpacity style={styles.addToMyButton}>
-                                <Ionicons name="add" size={20} color={Colors.dark.primary} />
+                              <TouchableOpacity style={[styles.addToMyButton, { backgroundColor: colors.primary + "20" }]}>
+                                <Ionicons name="add" size={20} color={colors.primary} />
                               </TouchableOpacity>
                             </View>
                             <View style={styles.exerciseList}>
                               {routine.exercises.map((exercise, index) => (
                                 <View key={index} style={styles.exerciseItem}>
                                   <View style={styles.exerciseMainInfo}>
-                                    <Text style={styles.exerciseName}>• {exercise.name}</Text>
+                                    <Text style={[styles.exerciseName, { color: colors.text }]}>• {exercise.name}</Text>
                                     <View style={styles.exerciseTags}>
                                       <View style={[styles.muscleTag,
                                         exercise.targetMuscle === "가슴" && styles.chestTag,
@@ -554,12 +555,12 @@ export default function RoutinesScreen() {
                                         exercise.targetMuscle === "전신" && styles.fullBodyTag,
                                         exercise.targetMuscle === "이두" && styles.bicepsTag,
                                       ]}>
-                                        <Text style={styles.muscleTagText}>{exercise.targetMuscle}</Text>
+                                        <Text style={[styles.muscleTagText, { color: colors.text }]}>{exercise.targetMuscle}</Text>
                                       </View>
-                                      <Text style={styles.difficultyText}>{exercise.difficulty}</Text>
+                                      <Text style={[styles.difficultyText, { color: colors.textSecondary }]}>{exercise.difficulty}</Text>
                                     </View>
                                   </View>
-                                  <Text style={styles.exerciseDetails}>{exercise.sets}세트 × {exercise.reps}</Text>
+                                  <Text style={[styles.exerciseDetails, { color: colors.textSecondary }]}>{exercise.sets}세트 × {exercise.reps}</Text>
                                 </View>
                               ))}
                             </View>
@@ -578,27 +579,27 @@ export default function RoutinesScreen() {
         {selectedTab === "my" && (
           <>
             {/* 검색창 */}
-            <View style={styles.searchContainer}>
-              <Ionicons name="search" size={20} color={Colors.dark.textSecondary} />
-              <Text style={styles.searchInput}>내 루틴 검색...</Text>
+            <View style={[styles.searchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Ionicons name="search" size={20} color={colors.textSecondary} />
+              <Text style={[styles.searchInput, { color: colors.textSecondary }]}>내 루틴 검색...</Text>
             </View>
 
             <View style={styles.routinesList}>
               {filteredMyRoutines.map((routine) => (
-              <TouchableOpacity key={routine.id} style={[styles.routineCard, routine.isRecommended && styles.recommendedCard]}>
+              <TouchableOpacity key={routine.id} style={[styles.routineCard, { backgroundColor: colors.surface, borderColor: colors.border }, routine.isRecommended && { borderColor: colors.primary + "40", backgroundColor: colors.primary + "05" }]}>
                 <View style={styles.routineHeader}>
                   <View style={styles.routineInfo}>
                     <View style={styles.routineNameRow}>
-                      <Text style={styles.routineName}>{routine.name}</Text>
+                      <Text style={[styles.routineName, { color: colors.text }]}>{routine.name}</Text>
                       {routine.isRecommended && (
-                        <View style={styles.recommendedBadge}>
-                          <Text style={styles.recommendedText}>추천</Text>
+                        <View style={[styles.recommendedBadge, { backgroundColor: colors.primary }]}>
+                          <Text style={[styles.recommendedText, { color: colors.background }]}>추천</Text>
                         </View>
                       )}
                     </View>
                     <View style={styles.routineMeta}>
-                      <Text style={styles.lastUsed}>마지막 사용: {routine.lastUsed}</Text>
-                      <Text style={styles.routineDuration}>⏱ {routine.duration}</Text>
+                      <Text style={[styles.lastUsed, { color: colors.icon }]}>마지막 사용: {routine.lastUsed}</Text>
+                      <Text style={[styles.routineDuration, { color: colors.icon }]}>⏱ {routine.duration}</Text>
                     </View>
                   </View>
                   <View style={styles.routineActions}>
@@ -613,10 +614,10 @@ export default function RoutinesScreen() {
                         }
                       })}
                     >
-                      <Ionicons name="create-outline" size={20} color={Colors.dark.textSecondary} />
+                      <Ionicons name="create-outline" size={20} color={colors.textSecondary} />
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.actionButton}>
-                      <Ionicons name="trash-outline" size={20} color={Colors.dark.textSecondary} />
+                      <Ionicons name="trash-outline" size={20} color={colors.textSecondary} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -624,7 +625,7 @@ export default function RoutinesScreen() {
                   {routine.exercises.map((exercise, index) => (
                     <View key={index} style={styles.exerciseItem}>
                       <View style={styles.exerciseMainInfo}>
-                        <Text style={styles.exerciseName}>• {exercise.name}</Text>
+                        <Text style={[styles.exerciseName, { color: colors.text }]}>• {exercise.name}</Text>
                         <View style={styles.exerciseTags}>
                           <View style={[styles.muscleTag,
                             exercise.targetMuscle === "가슴" && styles.chestTag,
@@ -633,22 +634,22 @@ export default function RoutinesScreen() {
                             exercise.targetMuscle === "코어" && styles.coreTag,
                             exercise.targetMuscle === "삼두" && styles.tricepsTag,
                           ]}>
-                            <Text style={styles.muscleTagText}>{exercise.targetMuscle}</Text>
+                            <Text style={[styles.muscleTagText, { color: colors.text }]}>{exercise.targetMuscle}</Text>
                           </View>
-                          <Text style={styles.difficultyText}>{exercise.difficulty}</Text>
+                          <Text style={[styles.difficultyText, { color: colors.textSecondary }]}>{exercise.difficulty}</Text>
                         </View>
                       </View>
                       <View style={styles.exerciseActions}>
-                        <Text style={styles.exerciseDetails}>{exercise.sets}세트 × {exercise.reps}</Text>
+                        <Text style={[styles.exerciseDetails, { color: colors.textSecondary }]}>{exercise.sets}세트 × {exercise.reps}</Text>
                         <TouchableOpacity style={styles.removeExerciseButton}>
-                          <Ionicons name="close-circle" size={16} color={Colors.dark.textSecondary} />
+                          <Ionicons name="close-circle" size={16} color={colors.textSecondary} />
                         </TouchableOpacity>
                       </View>
                     </View>
                   ))}
-                  <TouchableOpacity style={styles.addExerciseButton}>
-                    <Ionicons name="add-circle-outline" size={16} color={Colors.dark.primary} />
-                    <Text style={styles.addExerciseText}>운동 추가</Text>
+                  <TouchableOpacity style={[styles.addExerciseButton, { backgroundColor: colors.primary + "10" }]}>
+                    <Ionicons name="add-circle-outline" size={16} color={colors.primary} />
+                    <Text style={[styles.addExerciseText, { color: colors.primary }]}>운동 추가</Text>
                   </TouchableOpacity>
                 </View>
               </TouchableOpacity>
@@ -666,40 +667,40 @@ export default function RoutinesScreen() {
         onRequestClose={() => setShowAddToRoutineModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
                 {selectedExerciseForAdd?.name} 추가
               </Text>
               <TouchableOpacity
                 style={styles.modalCloseButton}
                 onPress={() => setShowAddToRoutineModal(false)}
               >
-                <Ionicons name="close" size={24} color={Colors.dark.textSecondary} />
+                <Ionicons name="close" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
 
             <View style={styles.modalOptions}>
-              <TouchableOpacity style={styles.modalOption} onPress={addToNewRoutine}>
-                <Ionicons name="add-circle" size={24} color={Colors.dark.primary} />
-                <Text style={styles.modalOptionText}>새 루틴 만들기</Text>
+              <TouchableOpacity style={[styles.modalOption, { backgroundColor: colors.background }]} onPress={addToNewRoutine}>
+                <Ionicons name="add-circle" size={24} color={colors.primary} />
+                <Text style={[styles.modalOptionText, { color: colors.text }]}>새 루틴 만들기</Text>
               </TouchableOpacity>
 
               {filteredMyRoutines.length > 0 && (
                 <>
-                  <View style={styles.modalDivider} />
-                  <Text style={styles.modalSectionTitle}>기존 루틴에 추가</Text>
+                  <View style={[styles.modalDivider, { backgroundColor: colors.border }]} />
+                  <Text style={[styles.modalSectionTitle, { color: colors.textSecondary }]}>기존 루틴에 추가</Text>
                   {filteredMyRoutines.map((routine) => (
                     <TouchableOpacity
                       key={routine.id}
-                      style={styles.modalOption}
+                      style={[styles.modalOption, { backgroundColor: colors.background }]}
                       onPress={() => {
                         // TODO: 기존 루틴에 추가하는 로직
                         setShowAddToRoutineModal(false);
                       }}
                     >
-                      <Ionicons name="list" size={20} color={Colors.dark.textSecondary} />
-                      <Text style={styles.modalOptionText}>{routine.name}</Text>
+                      <Ionicons name="list" size={20} color={colors.textSecondary} />
+                      <Text style={[styles.modalOptionText, { color: colors.text }]}>{routine.name}</Text>
                     </TouchableOpacity>
                   ))}
                 </>
@@ -715,7 +716,7 @@ export default function RoutinesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.dark.background,
+    
   },
   header: {
     flexDirection: "row",
@@ -727,14 +728,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: "bold",
-    color: Colors.dark.text,
+    
   },
   addButton: {
     padding: 4,
   },
   segmentContainer: {
     flexDirection: "row",
-    backgroundColor: Colors.dark.surface,
+    
     borderRadius: 8,
     padding: 4,
     marginHorizontal: 20,
@@ -747,15 +748,15 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   segmentButtonActive: {
-    backgroundColor: Colors.dark.primary,
+    
   },
   segmentText: {
     fontSize: 14,
     fontWeight: "500",
-    color: Colors.dark.textSecondary,
+    
   },
   segmentTextActive: {
-    color: Colors.dark.background,
+    
     fontWeight: "600",
   },
   categoryContainer: {
@@ -768,25 +769,25 @@ const styles = StyleSheet.create({
   categoryButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Colors.dark.surface,
+    
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 8,
     gap: 8,
     borderWidth: 1,
-    borderColor: Colors.dark.border,
+    
   },
   categoryButtonActive: {
-    backgroundColor: Colors.dark.primary,
-    borderColor: Colors.dark.primary,
+    
+    
   },
   categoryText: {
     fontSize: 14,
     fontWeight: "500",
-    color: Colors.dark.textSecondary,
+    
   },
   categoryTextActive: {
-    color: Colors.dark.background,
+    
     fontWeight: "600",
   },
   routinesList: {
@@ -794,11 +795,11 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   routineCard: {
-    backgroundColor: Colors.dark.surface,
+    
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: Colors.dark.border,
+    
     gap: 12,
   },
   routineHeader: {
@@ -813,7 +814,7 @@ const styles = StyleSheet.create({
   routineName: {
     fontSize: 16,
     fontWeight: "600",
-    color: Colors.dark.text,
+    
   },
   routineMeta: {
     flexDirection: "row",
@@ -837,20 +838,20 @@ const styles = StyleSheet.create({
   levelText: {
     fontSize: 11,
     fontWeight: "600",
-    color: Colors.dark.text,
+    
   },
   routineDuration: {
     fontSize: 12,
-    color: Colors.dark.icon,
+    
   },
   routineDescription: {
     fontSize: 14,
-    color: Colors.dark.textSecondary,
+    
     lineHeight: 20,
   },
   addToMyButton: {
     padding: 8,
-    backgroundColor: Colors.dark.primary + "20",
+    
     borderRadius: 8,
   },
   routineActions: {
@@ -862,7 +863,7 @@ const styles = StyleSheet.create({
   },
   lastUsed: {
     fontSize: 12,
-    color: Colors.dark.icon,
+    
   },
   emptyState: {
     alignItems: "center",
@@ -873,13 +874,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: "600",
-    color: Colors.dark.text,
+    
     marginTop: 16,
     marginBottom: 8,
   },
   emptyDescription: {
     fontSize: 14,
-    color: Colors.dark.textSecondary,
+    
     textAlign: "center",
     lineHeight: 20,
   },
@@ -898,7 +899,7 @@ const styles = StyleSheet.create({
   },
   exerciseName: {
     fontSize: 14,
-    color: Colors.dark.text,
+    
     fontWeight: "500",
   },
   exerciseTags: {
@@ -910,7 +911,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
-    backgroundColor: Colors.dark.textSecondary + "20",
+    
   },
   chestTag: {
     backgroundColor: "#FF6B9D" + "20",
@@ -929,17 +930,17 @@ const styles = StyleSheet.create({
   },
   muscleTagText: {
     fontSize: 10,
-    color: Colors.dark.text,
+    
     fontWeight: "600",
   },
   difficultyText: {
     fontSize: 10,
-    color: Colors.dark.textSecondary,
+    
     fontStyle: "italic",
   },
   exerciseDetails: {
     fontSize: 12,
-    color: Colors.dark.textSecondary,
+    
   },
   exerciseActions: {
     flexDirection: "row",
@@ -955,18 +956,18 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 8,
     paddingHorizontal: 12,
-    backgroundColor: Colors.dark.primary + "10",
+    
     borderRadius: 8,
     marginTop: 4,
   },
   addExerciseText: {
     fontSize: 12,
-    color: Colors.dark.primary,
+    
     fontWeight: "500",
   },
   recommendedCard: {
-    borderColor: Colors.dark.primary + "40",
-    backgroundColor: Colors.dark.primary + "05",
+    
+    
   },
   routineNameRow: {
     flexDirection: "row",
@@ -974,44 +975,44 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   recommendedBadge: {
-    backgroundColor: Colors.dark.primary,
+    
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
   },
   recommendedText: {
     fontSize: 10,
-    color: Colors.dark.background,
+    
     fontWeight: "600",
   },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Colors.dark.surface,
+    
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     marginHorizontal: 20,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: Colors.dark.border,
+    
     gap: 12,
   },
   searchInput: {
     flex: 1,
     fontSize: 14,
-    color: Colors.dark.textSecondary,
+    
   },
   exerciseLibrary: {
     paddingHorizontal: 20,
     gap: 8,
   },
   exerciseLibraryCard: {
-    backgroundColor: Colors.dark.surface,
+    
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: Colors.dark.border,
+    
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
@@ -1023,11 +1024,11 @@ const styles = StyleSheet.create({
   exerciseLibraryName: {
     fontSize: 16,
     fontWeight: "600",
-    color: Colors.dark.text,
+    
   },
   exerciseDefaultSets: {
     fontSize: 12,
-    color: Colors.dark.textSecondary,
+    
   },
   addToRoutineButton: {
     padding: 8,
@@ -1044,18 +1045,18 @@ const styles = StyleSheet.create({
   filterLabel: {
     fontSize: 16,
     fontWeight: "600",
-    color: Colors.dark.text,
+    
     marginHorizontal: 20,
     marginTop: 8,
     marginBottom: 8,
   },
   categoryHeader: {
-    backgroundColor: Colors.dark.surface,
+    
     borderRadius: 12,
     padding: 16,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: Colors.dark.border,
+    
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -1070,19 +1071,19 @@ const styles = StyleSheet.create({
   categoryHeaderText: {
     fontSize: 18,
     fontWeight: "600",
-    color: Colors.dark.text,
+    
   },
   subcategoryContainer: {
     marginLeft: 16,
     marginBottom: 12,
   },
   subcategoryHeader: {
-    backgroundColor: Colors.dark.surface + "80",
+    
     borderRadius: 8,
     padding: 12,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: Colors.dark.border + "50",
+    
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -1090,7 +1091,7 @@ const styles = StyleSheet.create({
   subcategoryHeaderText: {
     fontSize: 16,
     fontWeight: "500",
-    color: Colors.dark.text,
+    
   },
   groupHeaderInfo: {
     flex: 1,
@@ -1098,7 +1099,7 @@ const styles = StyleSheet.create({
   },
   groupDescription: {
     fontSize: 14,
-    color: Colors.dark.textSecondary,
+    
     lineHeight: 18,
   },
   modalOverlay: {
@@ -1107,7 +1108,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalContent: {
-    backgroundColor: Colors.dark.surface,
+    
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingBottom: 40,
@@ -1118,12 +1119,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.dark.border,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: Colors.dark.text,
+    
   },
   modalCloseButton: {
     padding: 4,
@@ -1135,7 +1135,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     padding: 16,
-    backgroundColor: Colors.dark.background,
+    
     borderRadius: 12,
     marginBottom: 8,
     gap: 12,
@@ -1143,17 +1143,17 @@ const styles = StyleSheet.create({
   modalOptionText: {
     fontSize: 16,
     fontWeight: "500",
-    color: Colors.dark.text,
+    
   },
   modalDivider: {
     height: 1,
-    backgroundColor: Colors.dark.border,
+    
     marginVertical: 16,
   },
   modalSectionTitle: {
     fontSize: 14,
     fontWeight: "600",
-    color: Colors.dark.textSecondary,
+    
     marginBottom: 12,
   },
 });
