@@ -1,19 +1,11 @@
+import { useTheme } from "@/contexts/ThemeContext";
+import { CreateRoutineData } from "@/models";
+import { routineService } from "@/services/routine";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import { useState, useEffect } from "react";
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-  Alert
-} from "react-native";
+import { useEffect, useState } from "react";
+import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useTheme } from "@/contexts/ThemeContext";
-import { routineService } from "@/services/routine";
-import { CreateRoutineData } from "@/models";
 
 // 운동 데이터 (routines.tsx에서 가져온 것과 동일)
 const exercises = {
@@ -37,7 +29,15 @@ const exercises = {
 
   // 웨이트
   flatBenchPress: { id: "flatBenchPress", name: "플랫 벤치프레스", category: "weights", targetMuscle: "가슴", difficulty: "중급", defaultSets: 3, defaultReps: "8-12" },
-  inclineBenchPress: { id: "inclineBenchPress", name: "인클라인 벤치프레스", category: "weights", targetMuscle: "가슴 상부", difficulty: "중급", defaultSets: 3, defaultReps: "8-12" },
+  inclineBenchPress: {
+    id: "inclineBenchPress",
+    name: "인클라인 벤치프레스",
+    category: "weights",
+    targetMuscle: "가슴 상부",
+    difficulty: "중급",
+    defaultSets: 3,
+    defaultReps: "8-12",
+  },
   dumbbellFly: { id: "dumbbellFly", name: "덤벨 플라이", category: "weights", targetMuscle: "가슴", difficulty: "초급", defaultSets: 3, defaultReps: "10-15" },
 };
 
@@ -55,7 +55,7 @@ export default function RoutineBuilderScreen() {
   const params = useLocalSearchParams();
   const isEditing = !!params.routineId;
 
-  const [routineName, setRoutineName] = useState(params.name as string || "");
+  const [routineName, setRoutineName] = useState((params.name as string) || "");
   const [selectedExercises, setSelectedExercises] = useState<Exercise[]>([]);
   const [showExerciseLibrary, setShowExerciseLibrary] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -80,7 +80,16 @@ export default function RoutineBuilderScreen() {
       const routine = await routineService.getRoutineById(params.routineId as string);
       if (routine) {
         setRoutineName(routine.name);
-        setSelectedExercises(routine.exercises);
+        setSelectedExercises(
+          routine.exercises.map((ex) => ({
+            id: ex.id,
+            name: ex.name,
+            sets: ex.sets,
+            reps: ex.reps,
+            targetMuscle: ex.targetMuscle || "", // Ensure targetMuscle is string
+            difficulty: ex.difficulty || "", // Ensure difficulty is string
+          }))
+        );
       }
     } catch (error) {
       console.error("Failed to load routine:", error);
@@ -89,12 +98,11 @@ export default function RoutineBuilderScreen() {
   };
 
   const exerciseList = Object.values(exercises);
-  const filteredExercises = exerciseList.filter(exercise =>
-    exercise.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    exercise.targetMuscle.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredExercises = exerciseList.filter(
+    (exercise) => exercise.name.toLowerCase().includes(searchQuery.toLowerCase()) || exercise.targetMuscle.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const addExercise = (exercise: typeof exercises[keyof typeof exercises]) => {
+  const addExercise = (exercise: (typeof exercises)[keyof typeof exercises]) => {
     const newExercise: Exercise = {
       id: exercise.id,
       name: exercise.name,
@@ -111,9 +119,9 @@ export default function RoutineBuilderScreen() {
     setSelectedExercises(selectedExercises.filter((_, i) => i !== index));
   };
 
-  const updateExercise = (index: number, field: 'sets' | 'reps', value: string) => {
+  const updateExercise = (index: number, field: "sets" | "reps", value: string) => {
     const updated = [...selectedExercises];
-    if (field === 'sets') {
+    if (field === "sets") {
       updated[index].sets = parseInt(value) || 1;
     } else {
       updated[index].reps = value;
@@ -141,15 +149,11 @@ export default function RoutineBuilderScreen() {
       if (isEditing && params.routineId) {
         // 수정 모드
         await routineService.updateRoutine(params.routineId as string, routineData);
-        Alert.alert("저장 완료", "루틴이 수정되었습니다.", [
-          { text: "확인", onPress: () => router.back() }
-        ]);
+        Alert.alert("저장 완료", "루틴이 수정되었습니다.", [{ text: "확인", onPress: () => router.back() }]);
       } else {
         // 새로 생성
         await routineService.createRoutine(routineData);
-        Alert.alert("저장 완료", "루틴이 저장되었습니다.", [
-          { text: "확인", onPress: () => router.back() }
-        ]);
+        Alert.alert("저장 완료", "루틴이 저장되었습니다.", [{ text: "확인", onPress: () => router.back() }]);
       }
     } catch (error) {
       console.error("Failed to save routine:", error);
@@ -161,10 +165,7 @@ export default function RoutineBuilderScreen() {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => setShowExerciseLibrary(false)}
-          >
+          <TouchableOpacity style={styles.backButton} onPress={() => setShowExerciseLibrary(false)}>
             <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: colors.text }]}>운동 선택</Text>
@@ -192,15 +193,18 @@ export default function RoutineBuilderScreen() {
               <View style={styles.exerciseInfo}>
                 <Text style={[styles.exerciseName, { color: colors.text }]}>{exercise.name}</Text>
                 <View style={styles.exerciseTags}>
-                  <View style={[styles.muscleTag,
-                    exercise.targetMuscle === "가슴" && styles.chestTag,
-                    exercise.targetMuscle === "등" && styles.backTag,
-                    exercise.targetMuscle === "하체" && styles.legTag,
-                    exercise.targetMuscle === "코어" && styles.coreTag,
-                    exercise.targetMuscle === "삼두" && styles.tricepsTag,
-                    exercise.targetMuscle === "가슴 상부" && styles.chestTag,
-                    exercise.targetMuscle === "이두" && styles.bicepsTag,
-                  ]}>
+                  <View
+                    style={[
+                      styles.muscleTag,
+                      exercise.targetMuscle === "가슴" && styles.chestTag,
+                      exercise.targetMuscle === "등" && styles.backTag,
+                      exercise.targetMuscle === "하체" && styles.legTag,
+                      exercise.targetMuscle === "코어" && styles.coreTag,
+                      exercise.targetMuscle === "삼두" && styles.tricepsTag,
+                      exercise.targetMuscle === "가슴 상부" && styles.chestTag,
+                      exercise.targetMuscle === "이두" && styles.bicepsTag,
+                    ]}
+                  >
                     <Text style={[styles.muscleTagText, { color: colors.text }]}>{exercise.targetMuscle}</Text>
                   </View>
                   <Text style={[styles.difficultyText, { color: colors.textSecondary }]}>{exercise.difficulty}</Text>
@@ -220,17 +224,13 @@ export default function RoutineBuilderScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>
-          {isEditing ? "루틴 수정" : "새 루틴"}
-        </Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{isEditing ? "루틴 수정" : "새 루틴"}</Text>
         <TouchableOpacity style={[styles.saveButton, { backgroundColor: colors.primary }]} onPress={saveRoutine}>
-          <Text style={[styles.saveButtonText, { color: colors.background }]}>저장</Text>
+          {/* ⭐️ [수정] buttonText 사용 */}
+          <Text style={[styles.saveButtonText, { color: colors.buttonText }]}>저장</Text>
         </TouchableOpacity>
       </View>
 
@@ -251,10 +251,7 @@ export default function RoutineBuilderScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>운동 목록 ({selectedExercises.length}개)</Text>
-            <TouchableOpacity
-              style={[styles.addExerciseButton, { backgroundColor: colors.primary + "20" }]}
-              onPress={() => setShowExerciseLibrary(true)}
-            >
+            <TouchableOpacity style={[styles.addExerciseButton, { backgroundColor: colors.primary + "20" }]} onPress={() => setShowExerciseLibrary(true)}>
               <Ionicons name="add" size={20} color={colors.primary} />
               <Text style={[styles.addExerciseText, { color: colors.primary }]}>운동 추가</Text>
             </TouchableOpacity>
@@ -264,9 +261,7 @@ export default function RoutineBuilderScreen() {
             <View style={[styles.emptyState, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <Ionicons name="fitness-outline" size={48} color={colors.textSecondary} />
               <Text style={[styles.emptyTitle, { color: colors.text }]}>운동을 추가해보세요</Text>
-              <Text style={[styles.emptyDescription, { color: colors.textSecondary }]}>
-                위 운동 추가 버튼을 눌러 루틴에 운동을 추가할 수 있습니다.
-              </Text>
+              <Text style={[styles.emptyDescription, { color: colors.textSecondary }]}>위 운동 추가 버튼을 눌러 루틴에 운동을 추가할 수 있습니다.</Text>
             </View>
           ) : (
             <View style={styles.exerciseList}>
@@ -274,10 +269,7 @@ export default function RoutineBuilderScreen() {
                 <View key={`${exercise.id}_${index}`} style={[styles.exerciseItem, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                   <View style={styles.exerciseHeader}>
                     <Text style={[styles.exerciseItemName, { color: colors.text }]}>{exercise.name}</Text>
-                    <TouchableOpacity
-                      style={styles.removeButton}
-                      onPress={() => removeExercise(index)}
-                    >
+                    <TouchableOpacity style={styles.removeButton} onPress={() => removeExercise(index)}>
                       <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
                     </TouchableOpacity>
                   </View>
@@ -286,17 +278,11 @@ export default function RoutineBuilderScreen() {
                     <View style={styles.controlGroup}>
                       <Text style={[styles.controlLabel, { color: colors.textSecondary }]}>세트</Text>
                       <View style={[styles.numberInput, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                        <TouchableOpacity
-                          style={styles.numberButton}
-                          onPress={() => updateExercise(index, 'sets', String(Math.max(1, exercise.sets - 1)))}
-                        >
+                        <TouchableOpacity style={styles.numberButton} onPress={() => updateExercise(index, "sets", String(Math.max(1, exercise.sets - 1)))}>
                           <Ionicons name="remove" size={16} color={colors.textSecondary} />
                         </TouchableOpacity>
                         <Text style={[styles.numberValue, { color: colors.text }]}>{exercise.sets}</Text>
-                        <TouchableOpacity
-                          style={styles.numberButton}
-                          onPress={() => updateExercise(index, 'sets', String(exercise.sets + 1))}
-                        >
+                        <TouchableOpacity style={styles.numberButton} onPress={() => updateExercise(index, "sets", String(exercise.sets + 1))}>
                           <Ionicons name="add" size={16} color={colors.textSecondary} />
                         </TouchableOpacity>
                       </View>
@@ -307,7 +293,7 @@ export default function RoutineBuilderScreen() {
                       <TextInput
                         style={[styles.repsInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
                         value={exercise.reps}
-                        onChangeText={(value) => updateExercise(index, 'reps', value)}
+                        onChangeText={(value) => updateExercise(index, "reps", value)}
                         placeholder="10회"
                         placeholderTextColor={colors.textSecondary}
                       />
@@ -353,6 +339,7 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontWeight: "600",
     fontSize: 14,
+    // ⭐️ [수정] color 속성 제거 (인라인 스타일로 대체)
   },
   content: {
     flex: 1,

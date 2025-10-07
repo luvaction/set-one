@@ -10,7 +10,8 @@
       "Bash(for file in index.tsx history.tsx routines.tsx workout.tsx)",
       "Bash(do echo \"=== $file ===\")",
       "Bash(head:*)",
-      "Bash(done)"
+      "Bash(done)",
+      "mcp__ide__getDiagnostics"
     ],
     "deny": [],
     "ask": []

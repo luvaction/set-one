@@ -1,19 +1,9 @@
-import { Ionicons } from "@expo/vector-icons";
-import { useState, useEffect } from "react";
-import {
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-  ActivityIndicator,
-  Switch,
-} from "react-native";
-import { profileService } from "@/services/profile";
-import { CreateProfileData } from "@/models";
 import { useTheme } from "@/contexts/ThemeContext";
+import { CreateProfileData } from "@/models";
+import { profileService } from "@/services/profile";
+import { Ionicons } from "@expo/vector-icons";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 
 const emptyProfile: CreateProfileData = {
   name: "",
@@ -81,9 +71,7 @@ export default function ProfileScreen() {
     high: "높음 (주 5회 이상)",
   };
 
-  const bmi = profile.height > 0 && profile.weight > 0
-    ? (profile.weight / Math.pow(profile.height / 100, 2)).toFixed(1)
-    : "0";
+  const bmi = profile.height > 0 && profile.weight > 0 ? (profile.weight / Math.pow(profile.height / 100, 2)).toFixed(1) : "0";
 
   if (loading) {
     return (
@@ -123,9 +111,7 @@ export default function ProfileScreen() {
 
                 <View style={styles.infoRow}>
                   <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>성별</Text>
-                  <Text style={[styles.infoValue, { color: colors.text }]}>
-                    {profile.gender === "male" ? "남성" : profile.gender === "female" ? "여성" : "-"}
-                  </Text>
+                  <Text style={[styles.infoValue, { color: colors.text }]}>{profile.gender === "male" ? "남성" : profile.gender === "female" ? "여성" : "-"}</Text>
                 </View>
                 <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
@@ -173,17 +159,13 @@ export default function ProfileScreen() {
               <View style={[styles.infoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <View style={styles.infoRow}>
                   <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>목표</Text>
-                  <Text style={[styles.infoValue, { color: colors.text }]}>
-                    {profile.goal ? goalText[profile.goal] : "-"}
-                  </Text>
+                  <Text style={[styles.infoValue, { color: colors.text }]}>{profile.goal ? goalText[profile.goal] : "-"}</Text>
                 </View>
                 <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
                 <View style={styles.infoRow}>
                   <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>활동 레벨</Text>
-                  <Text style={[styles.infoValue, { color: colors.text }]}>
-                    {profile.activityLevel ? activityText[profile.activityLevel] : "-"}
-                  </Text>
+                  <Text style={[styles.infoValue, { color: colors.text }]}>{profile.activityLevel ? activityText[profile.activityLevel] : "-"}</Text>
                 </View>
                 <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
@@ -199,7 +181,8 @@ export default function ProfileScreen() {
             <Ionicons name="person-outline" size={64} color={colors.icon} />
             <Text style={[styles.emptyText, { color: colors.text }]}>프로필을 설정해주세요</Text>
             <Pressable style={[styles.setupButton, { backgroundColor: colors.primary }]} onPress={handleEdit}>
-              <Text style={styles.setupButtonText}>프로필 설정</Text>
+              {/* ⭐️ [수정] buttonText 사용 */}
+              <Text style={[styles.setupButtonText, { color: colors.buttonText }]}>프로필 설정</Text>
             </Pressable>
           </View>
         )}
@@ -214,24 +197,14 @@ export default function ProfileScreen() {
                 <Ionicons name="moon" size={20} color={colors.text} />
                 <Text style={[styles.infoLabel, { color: colors.text }]}>다크 모드</Text>
               </View>
-              <Switch
-                value={theme === 'dark'}
-                onValueChange={toggleTheme}
-                trackColor={{ false: colors.border, true: colors.primary }}
-                thumbColor="#FFFFFF"
-              />
+              <Switch value={theme === "dark"} onValueChange={toggleTheme} trackColor={{ false: colors.border, true: colors.primary }} thumbColor="#FFFFFF" />
             </View>
           </View>
         </View>
       </ScrollView>
 
       {/* 편집 모달 */}
-      <Modal
-        visible={showEditModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowEditModal(false)}
-      >
+      <Modal visible={showEditModal} transparent animationType="slide" onRequestClose={() => setShowEditModal(false)}>
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
             <ScrollView showsVerticalScrollIndicator={false}>
@@ -262,7 +235,7 @@ export default function ProfileScreen() {
                     style={[
                       styles.optionButtonText,
                       { color: colors.textSecondary },
-                      editingProfile.gender === "male" && styles.optionButtonTextActive,
+                      editingProfile.gender === "male" && { color: colors.buttonText }, // ⭐️ [수정] buttonText 사용
                     ]}
                   >
                     남성
@@ -280,7 +253,7 @@ export default function ProfileScreen() {
                     style={[
                       styles.optionButtonText,
                       { color: colors.textSecondary },
-                      editingProfile.gender === "female" && styles.optionButtonTextActive,
+                      editingProfile.gender === "female" && { color: colors.buttonText }, // ⭐️ [수정] buttonText 사용
                     ]}
                   >
                     여성
@@ -346,7 +319,7 @@ export default function ProfileScreen() {
                     style={[
                       styles.optionButtonText,
                       { color: colors.textSecondary },
-                      editingProfile.goal === "lose" && styles.optionButtonTextActive,
+                      editingProfile.goal === "lose" && { color: colors.buttonText }, // ⭐️ [수정] buttonText 사용
                     ]}
                   >
                     감량
@@ -364,7 +337,7 @@ export default function ProfileScreen() {
                     style={[
                       styles.optionButtonText,
                       { color: colors.textSecondary },
-                      editingProfile.goal === "gain" && styles.optionButtonTextActive,
+                      editingProfile.goal === "gain" && { color: colors.buttonText }, // ⭐️ [수정] buttonText 사용
                     ]}
                   >
                     증량
@@ -382,7 +355,7 @@ export default function ProfileScreen() {
                     style={[
                       styles.optionButtonText,
                       { color: colors.textSecondary },
-                      editingProfile.goal === "maintain" && styles.optionButtonTextActive,
+                      editingProfile.goal === "maintain" && { color: colors.buttonText }, // ⭐️ [수정] buttonText 사용
                     ]}
                   >
                     유지
@@ -405,7 +378,7 @@ export default function ProfileScreen() {
                     style={[
                       styles.optionButtonText,
                       { color: colors.textSecondary },
-                      editingProfile.activityLevel === "low" && styles.optionButtonTextActive,
+                      editingProfile.activityLevel === "low" && { color: colors.buttonText }, // ⭐️ [수정] buttonText 사용
                     ]}
                   >
                     낮음
@@ -423,7 +396,7 @@ export default function ProfileScreen() {
                     style={[
                       styles.optionButtonText,
                       { color: colors.textSecondary },
-                      editingProfile.activityLevel === "medium" && styles.optionButtonTextActive,
+                      editingProfile.activityLevel === "medium" && { color: colors.buttonText }, // ⭐️ [수정] buttonText 사용
                     ]}
                   >
                     보통
@@ -441,7 +414,7 @@ export default function ProfileScreen() {
                     style={[
                       styles.optionButtonText,
                       { color: colors.textSecondary },
-                      editingProfile.activityLevel === "high" && styles.optionButtonTextActive,
+                      editingProfile.activityLevel === "high" && { color: colors.buttonText }, // ⭐️ [수정] buttonText 사용
                     ]}
                   >
                     높음
@@ -468,11 +441,9 @@ export default function ProfileScreen() {
                 >
                   <Text style={[styles.cancelButtonText, { color: colors.text }]}>취소</Text>
                 </Pressable>
-                <Pressable
-                  style={[styles.modalButton, styles.saveButton, { backgroundColor: colors.primary }]}
-                  onPress={handleSave}
-                >
-                  <Text style={styles.saveButtonText}>저장</Text>
+                <Pressable style={[styles.modalButton, styles.saveButton, { backgroundColor: colors.primary }]} onPress={handleSave}>
+                  {/* ⭐️ [수정] buttonText 사용 */}
+                  <Text style={[styles.saveButtonText, { color: colors.buttonText }]}>저장</Text>
                 </Pressable>
               </View>
             </ScrollView>
@@ -563,7 +534,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   setupButtonText: {
-    color: "#FFFFFF",
+    // ⭐️ [수정] 색상 제거. props로 받도록 변경
     fontSize: 16,
     fontWeight: "600",
   },
@@ -607,15 +578,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: "center",
   },
-  optionButtonActive: {
-  },
+  optionButtonActive: {},
   optionButtonText: {
     fontSize: 14,
     fontWeight: "600",
   },
-  optionButtonTextActive: {
-    color: "#FFFFFF",
-  },
+  // ⭐️ [수정] optionButtonTextActive 스타일에서 색상 제거. 인라인 스타일로 color.buttonText 적용
+  optionButtonTextActive: {},
   modalButtons: {
     flexDirection: "row",
     gap: 12,
@@ -634,10 +603,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-  saveButton: {
-  },
+  saveButton: {},
   saveButtonText: {
-    color: "#FFFFFF",
+    // ⭐️ [수정] 색상 제거. props로 받도록 변경
     fontSize: 16,
     fontWeight: "600",
   },

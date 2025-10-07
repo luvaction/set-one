@@ -1,27 +1,11 @@
-import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
-import {
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
-import { Calendar, DateData } from "react-native-calendars";
 import { useTheme } from "@/contexts/ThemeContext";
-
-interface WorkoutRecord {
-  date: string;
-  routineName: string;
-  exercises: {
-    name: string;
-    sets: { reps: number; weight: number }[];
-  }[];
-  duration: number; // 분 단위
-  memo?: string;
-}
+import { WorkoutRecord } from "@/models";
+import { workoutRecordService } from "@/services";
+import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
+import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Calendar, DateData } from "react-native-calendars";
 
 export default function HistoryScreen() {
   const { colors } = useTheme();
@@ -32,6 +16,22 @@ export default function HistoryScreen() {
   const [records, setRecords] = useState<WorkoutRecord[]>([]);
   const [currentRecord, setCurrentRecord] = useState<WorkoutRecord | null>(null);
   const [memo, setMemo] = useState("");
+
+  // 화면 포커스될 때마다 기록 로드
+  useFocusEffect(
+    useCallback(() => {
+      loadRecords();
+    }, [])
+  );
+
+  const loadRecords = async () => {
+    try {
+      const allRecords = await workoutRecordService.getAllRecords();
+      setRecords(allRecords);
+    } catch (error) {
+      console.error("Failed to load workout records:", error);
+    }
+  };
 
   // 날짜별 마킹 데이터
   const markedDates = records.reduce((acc, record) => {
@@ -53,7 +53,7 @@ export default function HistoryScreen() {
   }
 
   const goToToday = () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString().split("T")[0];
     setSelectedDate(today);
     setCurrentMonth(today);
   };
@@ -68,13 +68,14 @@ export default function HistoryScreen() {
     }
   };
 
-  const handleSaveRecord = () => {
+  const handleSaveRecord = async () => {
     if (currentRecord) {
-      setRecords(
-        records.map((r) =>
-          r.date === currentRecord.date ? { ...currentRecord, memo } : r
-        )
-      );
+      try {
+        await workoutRecordService.updateRecord(currentRecord.id, { memo });
+        await loadRecords();
+      } catch (error) {
+        console.error("Failed to save memo:", error);
+      }
     }
     setShowEditModal(false);
   };
@@ -92,22 +93,26 @@ export default function HistoryScreen() {
 
       {/* 탭 버튼 */}
       <View style={[styles.tabContainer, { backgroundColor: colors.surface }]}>
-        <Pressable
-          style={[styles.tab, activeTab === "record" && { backgroundColor: colors.primary }]}
-          onPress={() => setActiveTab("record")}
-        >
+        <Pressable style={[styles.tab, activeTab === "record" && { backgroundColor: colors.primary }]} onPress={() => setActiveTab("record")}>
           <Text
-            style={[styles.tabText, { color: colors.textSecondary }, activeTab === "record" && styles.activeTabText]}
+            style={[
+              styles.tabText,
+              { color: colors.textSecondary },
+              // ⭐️ [수정] 활성화된 탭 텍스트 색상을 buttonText로 설정
+              activeTab === "record" && { color: colors.buttonText },
+            ]}
           >
             기록
           </Text>
         </Pressable>
-        <Pressable
-          style={[styles.tab, activeTab === "stats" && { backgroundColor: colors.primary }]}
-          onPress={() => setActiveTab("stats")}
-        >
+        <Pressable style={[styles.tab, activeTab === "stats" && { backgroundColor: colors.primary }]} onPress={() => setActiveTab("stats")}>
           <Text
-            style={[styles.tabText, { color: colors.textSecondary }, activeTab === "stats" && styles.activeTabText]}
+            style={[
+              styles.tabText,
+              { color: colors.textSecondary },
+              // ⭐️ [수정] 활성화된 탭 텍스트 색상을 buttonText로 설정
+              activeTab === "stats" && { color: colors.buttonText },
+            ]}
           >
             통계
           </Text>
@@ -115,81 +120,115 @@ export default function HistoryScreen() {
       </View>
 
       {activeTab === "record" ? (
-      <ScrollView>
-        {/* 이번 주 통계 */}
-        <View style={styles.statsContainer}>
-          <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Text style={[styles.statValue, { color: colors.primary }]}>{totalWorkouts}</Text>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>총 운동 횟수</Text>
+        <ScrollView>
+          {/* 이번 주 통계 */}
+          <View style={styles.statsContainer}>
+            <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Text style={[styles.statValue, { color: colors.primary }]}>{totalWorkouts}</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>총 운동 횟수</Text>
+            </View>
+            <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Text style={[styles.statValue, { color: colors.primary }]}>{totalDuration}분</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>총 운동 시간</Text>
+            </View>
           </View>
-          <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Text style={[styles.statValue, { color: colors.primary }]}>{totalDuration}분</Text>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>총 운동 시간</Text>
-          </View>
-        </View>
 
-        {/* 캘린더 */}
-        <View style={styles.section}>
-          <View style={styles.calendarHeaderWrapper}>
-            <Pressable style={[styles.todayButton, { backgroundColor: colors.primary }]} onPress={goToToday}>
-              <Text style={styles.todayButtonText}>Today</Text>
-            </Pressable>
-          </View>
-          <View style={[styles.calendarContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Calendar
-              key={currentMonth}
-              current={currentMonth || undefined}
-              onDayPress={handleDayPress}
-              onMonthChange={(month) => setCurrentMonth(month.dateString)}
-              markedDates={markedDates}
-              theme={{
-                calendarBackground: colors.surface,
-                textSectionTitleColor: colors.primary,
-                selectedDayBackgroundColor: colors.primary,
-                selectedDayTextColor: "#000000",
-                todayTextColor: colors.primary,
-                dayTextColor: colors.text,
-                textDisabledColor: colors.textSecondary,
-                monthTextColor: colors.primary,
-                arrowColor: colors.primary,
-                dotColor: colors.primary,
-                selectedDotColor: "#000000",
-              }}
-            />
-          </View>
-        </View>
-
-        {/* 선택한 날짜 기록 */}
-        {selectedDate && (
+          {/* 캘린더 */}
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>{selectedDate} 기록</Text>
-
-            {selectedDateRecords.length > 0 ? (
-              selectedDateRecords.map((record, idx) => (
-                <View key={idx} style={[styles.recordCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                  <Text style={[styles.recordTitle, { color: colors.text }]}>{record.routineName}</Text>
-                  <Text style={[styles.recordDuration, { color: colors.textSecondary }]}>{record.duration}분</Text>
-                  {record.exercises.map((ex, exIdx) => (
-                    <View key={exIdx} style={styles.exerciseItem}>
-                      <Text style={[styles.exerciseName, { color: colors.text }]}>{ex.name}</Text>
-                      <Text style={[styles.exerciseSets, { color: colors.textSecondary }]}>
-                        {ex.sets.length} 세트
-                      </Text>
-                    </View>
-                  ))}
-                  {record.memo && (
-                    <Text style={[styles.recordMemo, { color: colors.textSecondary }]}>📝 {record.memo}</Text>
-                  )}
-                </View>
-              ))
-            ) : (
-              <View style={styles.emptyState}>
-                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>이 날의 운동 기록이 없어요</Text>
-              </View>
-            )}
+            <View style={styles.calendarHeaderWrapper}>
+              <Pressable style={[styles.todayButton, { backgroundColor: colors.primary }]} onPress={goToToday}>
+                {/* ⭐️ [수정] buttonText 사용 */}
+                <Text style={[styles.todayButtonText, { color: colors.buttonText }]}>Today</Text>
+              </Pressable>
+            </View>
+            <View style={[styles.calendarContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Calendar
+                key={currentMonth}
+                current={currentMonth || undefined}
+                onDayPress={handleDayPress}
+                onMonthChange={(month) => setCurrentMonth(month.dateString)}
+                markedDates={markedDates}
+                theme={{
+                  calendarBackground: colors.surface,
+                  textSectionTitleColor: colors.primary,
+                  selectedDayBackgroundColor: colors.primary,
+                  // ⭐️ [수정] 캘린더 선택된 날짜 텍스트 색상
+                  selectedDayTextColor: colors.buttonText,
+                  todayTextColor: colors.primary,
+                  dayTextColor: colors.text,
+                  textDisabledColor: colors.textSecondary,
+                  monthTextColor: colors.primary,
+                  arrowColor: colors.primary,
+                  dotColor: colors.primary,
+                  // ⭐️ [수정] 캘린더 선택된 점 색상
+                  selectedDotColor: colors.buttonText,
+                }}
+              />
+            </View>
           </View>
-        )}
-      </ScrollView>
+
+          {/* 선택한 날짜 기록 */}
+          {selectedDate && (
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>{selectedDate} 기록</Text>
+
+              {selectedDateRecords.length > 0 ? (
+                selectedDateRecords.map((record, idx) => (
+                  <Pressable
+                    key={idx}
+                    style={[styles.recordCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                    onPress={() => {
+                      setCurrentRecord(record);
+                      setMemo(record.memo || "");
+                      setShowEditModal(true);
+                    }}
+                  >
+                    <View style={styles.recordHeader}>
+                      <Text style={[styles.recordTitle, { color: colors.text }]}>{record.routineName}</Text>
+                      <View style={[styles.statusBadge, { backgroundColor: record.status === "completed" ? colors.primary + "20" : colors.textSecondary + "20" }]}>
+                        <Text style={[styles.statusText, { color: record.status === "completed" ? colors.primary : colors.textSecondary }]}>
+                          {record.status === "completed" ? "완료" : "중단"}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.recordStats}>
+                      <View style={styles.statItem}>
+                        <Ionicons name="time-outline" size={16} color={colors.textSecondary} />
+                        <Text style={[styles.statText, { color: colors.textSecondary }]}>{record.duration}분</Text>
+                      </View>
+                      <View style={styles.statItem}>
+                        <Ionicons name="fitness-outline" size={16} color={colors.textSecondary} />
+                        <Text style={[styles.statText, { color: colors.textSecondary }]}>{record.completionRate}%</Text>
+                      </View>
+                      {record.totalVolume !== undefined && record.totalVolume > 0 && (
+                        <View style={styles.statItem}>
+                          <Ionicons name="barbell-outline" size={16} color={colors.textSecondary} />
+                          <Text style={[styles.statText, { color: colors.textSecondary }]}>{record.totalVolume}kg</Text>
+                        </View>
+                      )}
+                    </View>
+
+                    {record.exercises.map((ex, exIdx) => (
+                      <View key={exIdx} style={styles.exerciseItem}>
+                        <Text style={[styles.exerciseName, { color: colors.text }]}>{ex.exerciseName}</Text>
+                        <Text style={[styles.exerciseSets, { color: colors.textSecondary }]}>
+                          {ex.sets.filter((s) => s.isCompleted).length}/{ex.sets.length} 세트
+                        </Text>
+                      </View>
+                    ))}
+
+                    {record.memo && <Text style={[styles.recordMemo, { color: colors.textSecondary }]}>📝 {record.memo}</Text>}
+                  </Pressable>
+                ))
+              ) : (
+                <View style={styles.emptyState}>
+                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>이 날의 운동 기록이 없어요</Text>
+                </View>
+              )}
+            </View>
+          )}
+        </ScrollView>
       ) : (
         <View style={styles.comingSoonContainer}>
           <Text style={[styles.comingSoonText, { color: colors.text }]}>Coming Soon</Text>
@@ -198,22 +237,28 @@ export default function HistoryScreen() {
       )}
 
       {/* 기록 편집 모달 */}
-      <Modal
-        visible={showEditModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowEditModal(false)}
-      >
+      <Modal visible={showEditModal} transparent animationType="slide" onRequestClose={() => setShowEditModal(false)}>
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
             <Text style={[styles.modalTitle, { color: colors.text }]}>기록 편집</Text>
 
             {currentRecord && (
               <>
-                <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>루틴: {currentRecord.routineName}</Text>
+                <View style={styles.modalInfoRow}>
+                  <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>루틴: {currentRecord.routineName}</Text>
+                  <View style={[styles.statusBadge, { backgroundColor: currentRecord.status === "completed" ? colors.primary + "20" : colors.textSecondary + "20" }]}>
+                    <Text style={[styles.statusText, { color: currentRecord.status === "completed" ? colors.primary : colors.textSecondary }]}>
+                      {currentRecord.status === "completed" ? "완료" : "중단"}
+                    </Text>
+                  </View>
+                </View>
                 <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>시간: {currentRecord.duration}분</Text>
+                <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>완료율: {currentRecord.completionRate}%</Text>
+                {currentRecord.totalVolume !== undefined && currentRecord.totalVolume > 0 && (
+                  <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>총 볼륨: {currentRecord.totalVolume}kg</Text>
+                )}
 
-                <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>메모</Text>
+                <Text style={[styles.modalLabel, { color: colors.textSecondary, marginTop: 12 }]}>메모</Text>
                 <TextInput
                   style={[styles.memoInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
                   value={memo}
@@ -232,11 +277,9 @@ export default function HistoryScreen() {
               >
                 <Text style={[styles.cancelButtonText, { color: colors.text }]}>취소</Text>
               </Pressable>
-              <Pressable
-                style={[styles.modalButton, styles.saveButton, { backgroundColor: colors.primary }]}
-                onPress={handleSaveRecord}
-              >
-                <Text style={[styles.saveButtonText, { color: colors.text }]}>저장</Text>
+              <Pressable style={[styles.modalButton, styles.saveButton, { backgroundColor: colors.primary }]} onPress={handleSaveRecord}>
+                {/* ⭐️ [수정] buttonText 사용 */}
+                <Text style={[styles.saveButtonText, { color: colors.buttonText }]}>저장</Text>
               </Pressable>
             </View>
           </View>
@@ -304,10 +347,39 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderWidth: 1,
   },
+  recordHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
   recordTitle: {
     fontSize: 16,
     fontWeight: "600",
-    marginBottom: 4,
+    flex: 1,
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  recordStats: {
+    flexDirection: "row",
+    gap: 16,
+    marginBottom: 12,
+    flexWrap: "wrap",
+  },
+  statItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  statText: {
+    fontSize: 13,
   },
   recordDuration: {
     fontSize: 14,
@@ -353,6 +425,12 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 16,
   },
+  modalInfoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
   modalLabel: {
     fontSize: 14,
     marginBottom: 8,
@@ -383,11 +461,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-  saveButton: {
-  },
+  saveButton: {},
   saveButtonText: {
     fontSize: 16,
     fontWeight: "600",
+    // ⭐️ [수정] color 속성 제거 (인라인 스타일로 대체)
   },
   tabContainer: {
     flexDirection: "row",
@@ -403,14 +481,13 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     alignItems: "center",
   },
-  activeTab: {
-  },
+  activeTab: {},
   tabText: {
     fontSize: 14,
     fontWeight: "600",
   },
   activeTabText: {
-    color: "#FFFFFF",
+    // ⭐️ [수정] color 속성 제거 (인라인 스타일로 대체)
   },
   todayButton: {
     paddingHorizontal: 12,
@@ -418,7 +495,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   todayButtonText: {
-    color: "#FFFFFF",
+    // ⭐️ [수정] color 속성 제거 (인라인 스타일로 대체)
     fontSize: 14,
     fontWeight: "600",
   },

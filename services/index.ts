@@ -6,4 +6,5 @@ export { storage } from "./storage/asyncStorage";
 export * from "./profile";
 export * from "./exercise";
 export * from "./routine";
-export * from "./workoutRecord";
+export { workoutRecordService } from "./workoutRecord";
+export { workoutSessionService } from "./workoutSession";

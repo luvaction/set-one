@@ -1,9 +1,39 @@
 import { Ionicons } from "@expo/vector-icons";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View, Alert } from "react-native";
+import { useState, useCallback } from "react";
+import { router, useFocusEffect } from "expo-router";
 import { useTheme } from "@/contexts/ThemeContext";
+import { routineService, workoutSessionService } from "@/services";
+import { Routine } from "@/models";
 
 export default function HomeScreen() {
   const { colors } = useTheme();
+  const [recommendedRoutines, setRecommendedRoutines] = useState<Routine[]>([]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadRecommendedRoutines();
+    }, [])
+  );
+
+  const loadRecommendedRoutines = async () => {
+    try {
+      const routines = await routineService.getRecommendedRoutines();
+      setRecommendedRoutines(routines.slice(0, 3)); // 첫 3개만
+    } catch (error) {
+      console.error("Failed to load recommended routines:", error);
+    }
+  };
+
+  const handlePlayRoutine = async (routine: Routine) => {
+    try {
+      await workoutSessionService.startSession(routine);
+      router.push("/(tabs)/workout");
+    } catch (error) {
+      console.error("Failed to start workout:", error);
+      Alert.alert("오류", "운동 시작에 실패했습니다.");
+    }
+  };
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>

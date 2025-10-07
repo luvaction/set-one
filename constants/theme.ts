@@ -2,6 +2,7 @@ import { Platform } from "react-native";
 
 const tintColorDark = "#00FF88";
 const primaryLight = "#10B981"; // emerald green for light mode
+
 export const Colors = {
   light: {
     text: "#11181C",
@@ -15,9 +16,9 @@ export const Colors = {
     tabIconSelected: primaryLight,
     primary: primaryLight,
     border: "#E0E0E0",
+    buttonText: "#11181C",
   },
   dark: {
-    // Set1 앱 다크모드 컬러
     text: "#FFFFFF",
     textSecondary: "#A0A0A0",
     background: "#0A0A0A",
@@ -29,6 +30,7 @@ export const Colors = {
     tabIconSelected: tintColorDark,
     primary: "#00FF88",
     border: "#333333",
+    buttonText: "#000000",
   },
 };
 
