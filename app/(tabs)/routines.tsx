@@ -1,8 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View, Modal } from "react-native";
-import { useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View, Modal, Alert } from "react-native";
+import { useState, useCallback } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
+import { routineService } from "@/services/routine";
+import { Routine } from "@/models";
 
 const categories = [
   { id: "all", name: "전체", icon: "grid" },
@@ -276,6 +278,30 @@ export default function RoutinesScreen() {
   const [showAddToRoutineModal, setShowAddToRoutineModal] = useState(false);
   const [selectedExerciseForAdd, setSelectedExerciseForAdd] = useState<any>(null);
 
+  // 사용자 루틴 상태
+  const [myRoutines, setMyRoutines] = useState<Routine[]>([]);
+  const [recommendedRoutinesList, setRecommendedRoutinesList] = useState<Routine[]>([]);
+
+  // 화면이 포커스될 때마다 루틴 데이터 불러오기
+  useFocusEffect(
+    useCallback(() => {
+      loadRoutines();
+    }, [])
+  );
+
+  const loadRoutines = async () => {
+    try {
+      const [userRoutines, recommended] = await Promise.all([
+        routineService.getUserRoutines(),
+        routineService.getRecommendedRoutines(),
+      ]);
+      setMyRoutines(userRoutines);
+      setRecommendedRoutinesList(recommended);
+    } catch (error) {
+      console.error("Failed to load routines:", error);
+    }
+  };
+
   // 라이브러리용 개별 운동 필터링
   const exerciseList = Object.values(exercises);
   const filteredExercises = exerciseList.filter(exercise => {
@@ -322,6 +348,31 @@ export default function RoutinesScreen() {
       }
     });
     setShowAddToRoutineModal(false);
+  };
+
+  // 루틴 삭제 함수
+  const handleDeleteRoutine = (routineId: string, routineName: string) => {
+    Alert.alert(
+      "루틴 삭제",
+      `"${routineName}" 루틴을 삭제하시겠습니까?`,
+      [
+        { text: "취소", style: "cancel" },
+        {
+          text: "삭제",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await routineService.deleteRoutine(routineId);
+              await loadRoutines(); // 목록 새로고침
+              Alert.alert("성공", "루틴이 삭제되었습니다.");
+            } catch (error) {
+              console.error("Failed to delete routine:", error);
+              Alert.alert("오류", "루틴 삭제에 실패했습니다.");
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -616,9 +667,14 @@ export default function RoutinesScreen() {
                     >
                       <Ionicons name="create-outline" size={20} color={colors.textSecondary} />
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.actionButton}>
-                      <Ionicons name="trash-outline" size={20} color={colors.textSecondary} />
-                    </TouchableOpacity>
+                    {!routine.isRecommended && (
+                      <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={() => handleDeleteRoutine(routine.id, routine.name)}
+                      >
+                        <Ionicons name="trash-outline" size={20} color={colors.textSecondary} />
+                      </TouchableOpacity>
+                    )}
                   </View>
                 </View>
                 <View style={styles.exerciseList}>

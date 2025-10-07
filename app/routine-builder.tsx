@@ -12,6 +12,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "@/contexts/ThemeContext";
+import { routineService } from "@/services/routine";
+import { CreateRoutineData } from "@/models";
 
 // 운동 데이터 (routines.tsx에서 가져온 것과 동일)
 const exercises = {
@@ -58,9 +60,12 @@ export default function RoutineBuilderScreen() {
   const [showExerciseLibrary, setShowExerciseLibrary] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // 미리 선택된 운동이 있으면 추가
+  // 수정 모드: 기존 루틴 데이터 불러오기
   useEffect(() => {
-    if (params.preSelectedExercise) {
+    if (isEditing && params.routineId) {
+      loadRoutine();
+    } else if (params.preSelectedExercise) {
+      // 미리 선택된 운동이 있으면 추가
       try {
         const preSelected = JSON.parse(params.preSelectedExercise as string);
         setSelectedExercises([preSelected]);
@@ -68,7 +73,20 @@ export default function RoutineBuilderScreen() {
         console.error("Failed to parse preSelectedExercise:", error);
       }
     }
-  }, [params.preSelectedExercise]);
+  }, [params.routineId, params.preSelectedExercise]);
+
+  const loadRoutine = async () => {
+    try {
+      const routine = await routineService.getRoutineById(params.routineId as string);
+      if (routine) {
+        setRoutineName(routine.name);
+        setSelectedExercises(routine.exercises);
+      }
+    } catch (error) {
+      console.error("Failed to load routine:", error);
+      Alert.alert("오류", "루틴 불러오기에 실패했습니다.");
+    }
+  };
 
   const exerciseList = Object.values(exercises);
   const filteredExercises = exerciseList.filter(exercise =>
@@ -103,7 +121,7 @@ export default function RoutineBuilderScreen() {
     setSelectedExercises(updated);
   };
 
-  const saveRoutine = () => {
+  const saveRoutine = async () => {
     if (!routineName.trim()) {
       Alert.alert("오류", "루틴 이름을 입력해주세요.");
       return;
@@ -113,10 +131,30 @@ export default function RoutineBuilderScreen() {
       return;
     }
 
-    // TODO: 실제 저장 로직 구현
-    Alert.alert("저장 완료", "루틴이 저장되었습니다.", [
-      { text: "확인", onPress: () => router.back() }
-    ]);
+    try {
+      const routineData: CreateRoutineData = {
+        name: routineName,
+        exercises: selectedExercises,
+        isRecommended: false,
+      };
+
+      if (isEditing && params.routineId) {
+        // 수정 모드
+        await routineService.updateRoutine(params.routineId as string, routineData);
+        Alert.alert("저장 완료", "루틴이 수정되었습니다.", [
+          { text: "확인", onPress: () => router.back() }
+        ]);
+      } else {
+        // 새로 생성
+        await routineService.createRoutine(routineData);
+        Alert.alert("저장 완료", "루틴이 저장되었습니다.", [
+          { text: "확인", onPress: () => router.back() }
+        ]);
+      }
+    } catch (error) {
+      console.error("Failed to save routine:", error);
+      Alert.alert("오류", "루틴 저장에 실패했습니다.");
+    }
   };
 
   if (showExerciseLibrary) {
