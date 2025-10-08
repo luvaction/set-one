@@ -7,28 +7,64 @@ import { useEffect, useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+// reps를 표시용 문자열로 변환하는 헬퍼 함수
+const formatReps = (reps: { min: number; max: number } | string): string => {
+  if (typeof reps === "string") {
+    return reps;
+  }
+  if (reps.min === reps.max) {
+    return `${reps.min}`;
+  }
+  return `${reps.min}-${reps.max}`;
+};
+
+// 문자열을 reps 객체로 파싱하는 헬퍼 함수
+const parseReps = (reps: string): { min: number; max: number } | string => {
+  // 숫자가 없으면 문자열 그대로 반환 (예: "30초")
+  if (!/\d/.test(reps)) {
+    return reps;
+  }
+
+  // "10-15" 형태
+  if (reps.includes("-")) {
+    const parts = reps.split("-").map((s) => parseInt(s.trim()));
+    if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+      return { min: parts[0], max: parts[1] };
+    }
+  }
+
+  // "10" 형태 (단일 숫자)
+  const num = parseInt(reps);
+  if (!isNaN(num)) {
+    return { min: num, max: num };
+  }
+
+  // 파싱 실패 시 문자열 그대로 반환
+  return reps;
+};
+
 // 운동 데이터 (routines.tsx에서 가져온 것과 동일)
 const exercises = {
   // 푸시업 계열 (맨몸)
-  regularPushup: { id: "regularPushup", name: "일반 푸시업", category: "bodyweight", targetMuscle: "가슴", difficulty: "초급", defaultSets: 3, defaultReps: "10-15" },
-  diamondPushup: { id: "diamondPushup", name: "다이아몬드 푸시업", category: "bodyweight", targetMuscle: "삼두", difficulty: "중급", defaultSets: 3, defaultReps: "8-12" },
-  widePushup: { id: "widePushup", name: "와이드 푸시업", category: "bodyweight", targetMuscle: "가슴", difficulty: "초급", defaultSets: 3, defaultReps: "10-15" },
-  inclinePushup: { id: "inclinePushup", name: "인클라인 푸시업", category: "bodyweight", targetMuscle: "가슴", difficulty: "초급", defaultSets: 3, defaultReps: "15-20" },
+  regularPushup: { id: "regularPushup", name: "일반 푸시업", category: "bodyweight", targetMuscle: "가슴", difficulty: "초급", defaultSets: 3, defaultReps: { min: 10, max: 15 } },
+  diamondPushup: { id: "diamondPushup", name: "다이아몬드 푸시업", category: "bodyweight", targetMuscle: "삼두", difficulty: "중급", defaultSets: 3, defaultReps: { min: 8, max: 12 } },
+  widePushup: { id: "widePushup", name: "와이드 푸시업", category: "bodyweight", targetMuscle: "가슴", difficulty: "초급", defaultSets: 3, defaultReps: { min: 10, max: 15 } },
+  inclinePushup: { id: "inclinePushup", name: "인클라인 푸시업", category: "bodyweight", targetMuscle: "가슴", difficulty: "초급", defaultSets: 3, defaultReps: { min: 15, max: 20 } },
 
   // 풀업/친업 계열 (맨몸)
-  regularPullup: { id: "regularPullup", name: "풀업", category: "bodyweight", targetMuscle: "등", difficulty: "중급", defaultSets: 3, defaultReps: "5-10" },
-  chinup: { id: "chinup", name: "친업", category: "bodyweight", targetMuscle: "이두", difficulty: "중급", defaultSets: 3, defaultReps: "6-10" },
+  regularPullup: { id: "regularPullup", name: "풀업", category: "bodyweight", targetMuscle: "등", difficulty: "중급", defaultSets: 3, defaultReps: { min: 5, max: 10 } },
+  chinup: { id: "chinup", name: "친업", category: "bodyweight", targetMuscle: "이두", difficulty: "중급", defaultSets: 3, defaultReps: { min: 6, max: 10 } },
 
   // 스쿼트 계열 (맨몸)
-  bodyweightSquat: { id: "bodyweightSquat", name: "바디웨이트 스쿼트", category: "bodyweight", targetMuscle: "하체", difficulty: "초급", defaultSets: 3, defaultReps: "15-20" },
-  jumpSquat: { id: "jumpSquat", name: "점프 스쿼트", category: "bodyweight", targetMuscle: "하체", difficulty: "중급", defaultSets: 3, defaultReps: "10-15" },
+  bodyweightSquat: { id: "bodyweightSquat", name: "바디웨이트 스쿼트", category: "bodyweight", targetMuscle: "하체", difficulty: "초급", defaultSets: 3, defaultReps: { min: 15, max: 20 } },
+  jumpSquat: { id: "jumpSquat", name: "점프 스쿼트", category: "bodyweight", targetMuscle: "하체", difficulty: "중급", defaultSets: 3, defaultReps: { min: 10, max: 15 } },
 
   // 플랭크 계열 (맨몸)
   regularPlank: { id: "regularPlank", name: "플랭크", category: "bodyweight", targetMuscle: "코어", difficulty: "초급", defaultSets: 3, defaultReps: "30-60초" },
   sidePlank: { id: "sidePlank", name: "사이드 플랭크", category: "bodyweight", targetMuscle: "코어", difficulty: "중급", defaultSets: 3, defaultReps: "20-45초" },
 
   // 웨이트
-  flatBenchPress: { id: "flatBenchPress", name: "플랫 벤치프레스", category: "weights", targetMuscle: "가슴", difficulty: "중급", defaultSets: 3, defaultReps: "8-12" },
+  flatBenchPress: { id: "flatBenchPress", name: "플랫 벤치프레스", category: "weights", targetMuscle: "가슴", difficulty: "중급", defaultSets: 3, defaultReps: { min: 8, max: 12 } },
   inclineBenchPress: {
     id: "inclineBenchPress",
     name: "인클라인 벤치프레스",
@@ -36,9 +72,9 @@ const exercises = {
     targetMuscle: "가슴 상부",
     difficulty: "중급",
     defaultSets: 3,
-    defaultReps: "8-12",
+    defaultReps: { min: 8, max: 12 },
   },
-  dumbbellFly: { id: "dumbbellFly", name: "덤벨 플라이", category: "weights", targetMuscle: "가슴", difficulty: "초급", defaultSets: 3, defaultReps: "10-15" },
+  dumbbellFly: { id: "dumbbellFly", name: "덤벨 플라이", category: "weights", targetMuscle: "가슴", difficulty: "초급", defaultSets: 3, defaultReps: { min: 10, max: 15 } },
 };
 
 type Exercise = {
@@ -85,7 +121,7 @@ export default function RoutineBuilderScreen() {
             id: ex.id,
             name: ex.name,
             sets: ex.sets,
-            reps: ex.reps,
+            reps: formatReps(ex.reps), // 객체를 문자열로 변환
             targetMuscle: ex.targetMuscle || "", // Ensure targetMuscle is string
             difficulty: ex.difficulty || "", // Ensure difficulty is string
           }))
@@ -107,7 +143,7 @@ export default function RoutineBuilderScreen() {
       id: exercise.id,
       name: exercise.name,
       sets: exercise.defaultSets,
-      reps: exercise.defaultReps,
+      reps: formatReps(exercise.defaultReps), // 객체를 문자열로 변환
       targetMuscle: exercise.targetMuscle,
       difficulty: exercise.difficulty,
     };
@@ -129,6 +165,15 @@ export default function RoutineBuilderScreen() {
     setSelectedExercises(updated);
   };
 
+  const moveExercise = (index: number, direction: "up" | "down") => {
+    const newIndex = direction === "up" ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= selectedExercises.length) return;
+
+    const updated = [...selectedExercises];
+    [updated[index], updated[newIndex]] = [updated[newIndex], updated[index]];
+    setSelectedExercises(updated);
+  };
+
   const saveRoutine = async () => {
     if (!routineName.trim()) {
       Alert.alert("오류", "루틴 이름을 입력해주세요.");
@@ -142,7 +187,10 @@ export default function RoutineBuilderScreen() {
     try {
       const routineData: CreateRoutineData = {
         name: routineName,
-        exercises: selectedExercises,
+        exercises: selectedExercises.map((ex) => ({
+          ...ex,
+          reps: parseReps(ex.reps), // 문자열을 객체로 변환
+        })),
         isRecommended: false,
       };
 
@@ -210,7 +258,7 @@ export default function RoutineBuilderScreen() {
                   <Text style={[styles.difficultyText, { color: colors.textSecondary }]}>{exercise.difficulty}</Text>
                 </View>
                 <Text style={[styles.defaultSets, { color: colors.textSecondary }]}>
-                  권장: {exercise.defaultSets}세트 × {exercise.defaultReps}
+                  권장: {exercise.defaultSets}세트 × {formatReps(exercise.defaultReps)}
                 </Text>
               </View>
               <Ionicons name="add-circle" size={24} color={colors.primary} />
@@ -267,10 +315,32 @@ export default function RoutineBuilderScreen() {
               {selectedExercises.map((exercise, index) => (
                 <View key={`${exercise.id}_${index}`} style={[styles.exerciseItem, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                   <View style={styles.exerciseHeader}>
-                    <Text style={[styles.exerciseItemName, { color: colors.text }]}>{exercise.name}</Text>
-                    <TouchableOpacity style={styles.removeButton} onPress={() => removeExercise(index)}>
-                      <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
-                    </TouchableOpacity>
+                    <View style={styles.exerciseHeaderLeft}>
+                      <Text style={[styles.exerciseItemName, { color: colors.text }]}>
+                        {index + 1}. {exercise.name}
+                      </Text>
+                    </View>
+                    <View style={styles.exerciseHeaderRight}>
+                      <View style={styles.orderButtons}>
+                        <TouchableOpacity
+                          style={[styles.orderButton, index === 0 && styles.orderButtonDisabled]}
+                          onPress={() => moveExercise(index, "up")}
+                          disabled={index === 0}
+                        >
+                          <Ionicons name="chevron-up" size={16} color={index === 0 ? colors.border : colors.textSecondary} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.orderButton, index === selectedExercises.length - 1 && styles.orderButtonDisabled]}
+                          onPress={() => moveExercise(index, "down")}
+                          disabled={index === selectedExercises.length - 1}
+                        >
+                          <Ionicons name="chevron-down" size={16} color={index === selectedExercises.length - 1 ? colors.border : colors.textSecondary} />
+                        </TouchableOpacity>
+                      </View>
+                      <TouchableOpacity style={styles.removeButton} onPress={() => removeExercise(index)}>
+                        <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
+                      </TouchableOpacity>
+                    </View>
                   </View>
 
                   <View style={styles.exerciseControls}>
@@ -406,9 +476,27 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 12,
   },
+  exerciseHeaderLeft: {
+    flex: 1,
+  },
+  exerciseHeaderRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   exerciseItemName: {
     fontSize: 16,
     fontWeight: "600",
+  },
+  orderButtons: {
+    flexDirection: "row",
+    gap: 4,
+  },
+  orderButton: {
+    padding: 4,
+  },
+  orderButtonDisabled: {
+    opacity: 0.3,
   },
   removeButton: {
     padding: 4,

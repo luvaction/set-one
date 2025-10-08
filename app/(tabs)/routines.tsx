@@ -1,11 +1,12 @@
 import { useTheme } from "@/contexts/ThemeContext";
 import { Routine } from "@/models";
 import { routineService, workoutSessionService } from "@/services";
+import { exerciseService } from "@/services/exercise";
 import { convertExerciseToRoutine } from "@/utils/workoutHelpers";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
 
 // reps를 표시용 문자열로 변환하는 헬퍼 함수
 const formatReps = (reps: { min: number; max: number } | string): string => {
@@ -286,14 +287,24 @@ export default function RoutinesScreen() {
   const [showAddToRoutineModal, setShowAddToRoutineModal] = useState(false);
   const [selectedExerciseForAdd, setSelectedExerciseForAdd] = useState<any>(null);
 
+  // 커스텀 운동 추가 모달
+  const [showCustomExerciseModal, setShowCustomExerciseModal] = useState(false);
+  const [customExerciseName, setCustomExerciseName] = useState("");
+  const [customExerciseCategory, setCustomExerciseCategory] = useState("bodyweight");
+  const [customExerciseMuscle, setCustomExerciseMuscle] = useState("");
+  const [customExerciseDifficulty, setCustomExerciseDifficulty] = useState("초급");
+  const [editingExerciseId, setEditingExerciseId] = useState<string | null>(null);
+
   // 사용자 루틴 상태
   const [myRoutines, setMyRoutines] = useState<Routine[]>([]);
   const [recommendedRoutinesList, setRecommendedRoutinesList] = useState<Routine[]>([]);
+  const [customExercises, setCustomExercises] = useState<any[]>([]);
 
   // 화면이 포커스될 때마다 루틴 데이터 불러오기
   useFocusEffect(
     useCallback(() => {
       loadRoutines();
+      loadCustomExercises();
     }, [])
   );
 
@@ -307,8 +318,117 @@ export default function RoutinesScreen() {
     }
   };
 
-  // 라이브러리용 개별 운동 필터링
-  const exerciseList = Object.values(exercises);
+  const loadCustomExercises = async () => {
+    try {
+      const customExercisesOnly = await exerciseService.getCustomExercises();
+      setCustomExercises(customExercisesOnly);
+    } catch (error) {
+      console.error("Failed to load custom exercises:", error);
+    }
+  };
+
+  const handleCreateCustomExercise = async () => {
+    if (!customExerciseName.trim()) {
+      Alert.alert("오류", "운동 이름을 입력해주세요.");
+      return;
+    }
+    if (!customExerciseMuscle.trim()) {
+      Alert.alert("오류", "운동 부위를 입력해주세요.");
+      return;
+    }
+
+    try {
+      if (editingExerciseId) {
+        // 수정 모드
+        await exerciseService.updateExercise(editingExerciseId, {
+          name: customExerciseName,
+          category: customExerciseCategory,
+          muscleGroups: [customExerciseMuscle],
+        });
+        Alert.alert("완료", "커스텀 운동이 수정되었습니다.");
+      } else {
+        // 추가 모드
+        await exerciseService.createExercise({
+          name: customExerciseName,
+          category: customExerciseCategory,
+          muscleGroups: [customExerciseMuscle],
+          isCustom: true,
+        });
+        Alert.alert("완료", "커스텀 운동이 추가되었습니다.");
+      }
+
+      // 모달 닫고 초기화
+      setShowCustomExerciseModal(false);
+      setCustomExerciseName("");
+      setCustomExerciseMuscle("");
+      setCustomExerciseCategory("bodyweight");
+      setCustomExerciseDifficulty("초급");
+      setEditingExerciseId(null);
+
+      // 커스텀 운동 목록 다시 로드
+      await loadCustomExercises();
+    } catch (error) {
+      console.error("Failed to save custom exercise:", error);
+      Alert.alert("오류", "커스텀 운동 저장에 실패했습니다.");
+    }
+  };
+
+  const handleEditCustomExercise = (exercise: any) => {
+    setEditingExerciseId(exercise.id);
+    setCustomExerciseName(exercise.name);
+    setCustomExerciseCategory(exercise.category);
+    setCustomExerciseMuscle(exercise.muscleGroups?.[0] || "");
+    setShowCustomExerciseModal(true);
+  };
+
+  const handleDeleteCustomExercise = (exerciseId: string) => {
+    Alert.alert("운동 삭제", "이 커스텀 운동을 삭제하시겠습니까?", [
+      { text: "취소", style: "cancel" },
+      {
+        text: "삭제",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await exerciseService.deleteExercise(exerciseId);
+            Alert.alert("완료", "커스텀 운동이 삭제되었습니다.");
+            await loadCustomExercises();
+          } catch (error) {
+            console.error("Failed to delete custom exercise:", error);
+            Alert.alert("오류", "커스텀 운동 삭제에 실패했습니다.");
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleCustomExerciseLongPress = (exercise: any) => {
+    Alert.alert("커스텀 운동 관리", `"${exercise.name}" 운동을 관리합니다.`, [
+      { text: "취소", style: "cancel" },
+      {
+        text: "수정",
+        onPress: () => handleEditCustomExercise(exercise),
+      },
+      {
+        text: "삭제",
+        style: "destructive",
+        onPress: () => handleDeleteCustomExercise(exercise.id),
+      },
+    ]);
+  };
+
+  // 라이브러리용 개별 운동 필터링 (기본 운동 + 커스텀 운동)
+  const defaultExerciseList = Object.values(exercises);
+  const customExerciseList = customExercises.map((ex) => ({
+    id: ex.id,
+    name: ex.name,
+    category: ex.category,
+    targetMuscle: ex.muscleGroups?.[0] || "",
+    difficulty: "초급",
+    defaultSets: 3,
+    defaultReps: "10-15",
+    isCustom: true,
+  }));
+  const exerciseList = [...defaultExerciseList, ...customExerciseList];
   const filteredExercises = exerciseList.filter((exercise) => {
     const matchesCategory = selectedCategory === "all" || exercise.category === selectedCategory;
     const matchesDifficulty = selectedDifficulty === "all" || exercise.difficulty === selectedDifficulty;
@@ -477,6 +597,14 @@ export default function RoutinesScreen() {
               )}
             </View>
 
+            {/* 커스텀 운동 추가 버튼 */}
+            <View style={styles.customExerciseButtonContainer}>
+              <TouchableOpacity style={[styles.customExerciseButton, { backgroundColor: colors.primary }]} onPress={() => setShowCustomExerciseModal(true)}>
+                <Ionicons name="add-circle" size={20} color={colors.buttonText} />
+                <Text style={[styles.customExerciseButtonText, { color: colors.buttonText }]}>커스텀 운동 추가</Text>
+              </TouchableOpacity>
+            </View>
+
             {/* 난이도 필터 */}
             <View style={styles.filterContainer}>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
@@ -513,11 +641,30 @@ export default function RoutinesScreen() {
                 // 검색 중일 때는 필터링된 결과만 평평하게 표시
                 <View style={styles.exerciseList}>
                   {filteredExercises.length > 0 ? (
-                    filteredExercises.map((exercise) => (
-                      <View key={exercise.id} style={[styles.exerciseLibraryCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                        <View style={styles.exerciseLibraryInfo}>
-                          <Text style={[styles.exerciseLibraryName, { color: colors.text }]}>{exercise.name}</Text>
-                          <View style={styles.exerciseTags}>
+                    filteredExercises.map((exercise) => {
+                      const CardComponent = exercise.isCustom ? TouchableOpacity : View;
+                      const cardProps = exercise.isCustom
+                        ? {
+                            activeOpacity: 0.7,
+                            onLongPress: () => {
+                              const customEx = customExercises.find((ex) => ex.id === exercise.id);
+                              if (customEx) handleCustomExerciseLongPress(customEx);
+                            },
+                          }
+                        : {};
+
+                      return (
+                        <CardComponent key={exercise.id} style={[styles.exerciseLibraryCard, { backgroundColor: colors.surface, borderColor: colors.border }]} {...cardProps}>
+                          <View style={styles.exerciseLibraryInfo}>
+                            <View style={styles.exerciseNameRow}>
+                              <Text style={[styles.exerciseLibraryName, { color: colors.text }]}>{exercise.name}</Text>
+                              {exercise.isCustom && (
+                                <View style={[styles.customBadge, { backgroundColor: colors.primary }]}>
+                                  <Text style={[styles.customBadgeText, { color: colors.buttonText }]}>커스텀</Text>
+                                </View>
+                              )}
+                            </View>
+                            <View style={styles.exerciseTags}>
                             <View
                               style={[
                                 styles.muscleTag,
@@ -559,9 +706,21 @@ export default function RoutinesScreen() {
                           <TouchableOpacity style={styles.addToRoutineButton} onPress={() => handleAddExerciseToRoutine(exercise)}>
                             <Ionicons name="add-circle" size={24} color={colors.primary} />
                           </TouchableOpacity>
+                          {exercise.isCustom && (
+                            <TouchableOpacity
+                              style={styles.actionButton}
+                              onPress={() => {
+                                const customEx = customExercises.find((ex) => ex.id === exercise.id);
+                                if (customEx) handleCustomExerciseLongPress(customEx);
+                              }}
+                            >
+                              <Ionicons name="ellipsis-vertical" size={20} color={colors.textSecondary} />
+                            </TouchableOpacity>
+                          )}
                         </View>
-                      </View>
-                    ))
+                      </CardComponent>
+                      );
+                    })
                   ) : (
                     <View style={styles.emptySearchResult}>
                       <Ionicons name="search-outline" size={48} color={colors.icon} />
@@ -673,6 +832,86 @@ export default function RoutinesScreen() {
                   )}
                 </View>
                 ))
+              )}
+
+              {/* 커스텀 운동 섹션 */}
+              {!searchQuery && customExercises.length > 0 && (
+                <View>
+                  <TouchableOpacity
+                    style={[styles.categoryHeader, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                    onPress={() =>
+                      setExpandedCategories((prev) => ({
+                        ...prev,
+                        custom: !prev.custom,
+                      }))
+                    }
+                  >
+                    <View style={styles.categoryHeaderContent}>
+                      <Ionicons name="star" size={20} color={colors.primary} />
+                      <Text style={[styles.categoryHeaderText, { color: colors.text }]}>커스텀 운동</Text>
+                    </View>
+                    <Ionicons name={expandedCategories.custom ? "chevron-down" : "chevron-forward"} size={20} color={colors.textSecondary} />
+                  </TouchableOpacity>
+
+                  {expandedCategories.custom && (
+                    <View style={styles.exerciseList}>
+                      {customExercises.map((ex) => {
+                        const exercise = {
+                          id: ex.id,
+                          name: ex.name,
+                          category: ex.category,
+                          targetMuscle: ex.muscleGroups?.[0] || "",
+                          difficulty: "초급",
+                          defaultSets: 3,
+                          defaultReps: "10-15",
+                          isCustom: true,
+                        };
+
+                        return (
+                          <TouchableOpacity
+                            key={exercise.id}
+                            style={[styles.exerciseLibraryCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                            activeOpacity={0.7}
+                            onLongPress={() => handleCustomExerciseLongPress(ex)}
+                          >
+                            <View style={styles.exerciseLibraryInfo}>
+                              <View style={styles.exerciseNameRow}>
+                                <Text style={[styles.exerciseLibraryName, { color: colors.text }]}>{exercise.name}</Text>
+                                <View style={[styles.customBadge, { backgroundColor: colors.primary }]}>
+                                  <Text style={[styles.customBadgeText, { color: colors.buttonText }]}>커스텀</Text>
+                                </View>
+                              </View>
+                              <View style={styles.exerciseTags}>
+                                {exercise.targetMuscle && (
+                                  <View style={[styles.muscleTag, { backgroundColor: colors.primary + "20" }]}>
+                                    <Text style={[styles.muscleTagText, { color: colors.text }]}>{exercise.targetMuscle}</Text>
+                                  </View>
+                                )}
+                                <View style={[styles.difficultyTag, styles.beginnerTag]}>
+                                  <Text style={[styles.difficultyTagText, { color: "#FFFFFF" }]}>{exercise.difficulty}</Text>
+                                </View>
+                              </View>
+                              <Text style={[styles.exerciseDefaultSets, { color: colors.textSecondary }]}>
+                                권장: {exercise.defaultSets}세트 × {exercise.defaultReps}
+                              </Text>
+                            </View>
+                            <View style={styles.exerciseCardActions}>
+                              <TouchableOpacity style={styles.playIconButton} onPress={() => handlePlayExercise(exercise)}>
+                                <Ionicons name="play-circle" size={28} color={colors.primary} />
+                              </TouchableOpacity>
+                              <TouchableOpacity style={styles.addToRoutineButton} onPress={() => handleAddExerciseToRoutine(exercise)}>
+                                <Ionicons name="add-circle" size={24} color={colors.primary} />
+                              </TouchableOpacity>
+                              <TouchableOpacity style={styles.actionButton} onPress={() => handleCustomExerciseLongPress(ex)}>
+                                <Ionicons name="ellipsis-vertical" size={20} color={colors.textSecondary} />
+                              </TouchableOpacity>
+                            </View>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  )}
+                </View>
               )}
             </View>
           </>
@@ -864,7 +1103,7 @@ export default function RoutinesScreen() {
                                     </View>
                                   </View>
                                   <Text style={[styles.exerciseDetails, { color: colors.textSecondary }]}>
-                                    {exercise.sets}세트 × {exercise.reps}
+                                    {exercise.sets}세트 × {formatReps(exercise.reps)}
                                   </Text>
                                 </View>
                               ))}
@@ -988,7 +1227,7 @@ export default function RoutinesScreen() {
                         </View>
                         <View style={styles.exerciseActions}>
                           <Text style={[styles.exerciseDetails, { color: colors.textSecondary }]}>
-                            {exercise.sets}세트 × {exercise.reps}
+                            {exercise.sets}세트 × {formatReps(exercise.reps)}
                           </Text>
                           <TouchableOpacity style={styles.removeExerciseButton}>
                             <Ionicons name="close-circle" size={16} color={colors.textSecondary} />
@@ -1047,6 +1286,98 @@ export default function RoutinesScreen() {
             </View>
           </View>
         </View>
+      </Modal>
+
+      {/* 커스텀 운동 추가/수정 모달 */}
+      <Modal visible={showCustomExerciseModal} transparent animationType="fade" onRequestClose={() => setShowCustomExerciseModal(false)}>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
+            <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+              <View style={[styles.customExerciseModalContent, { backgroundColor: colors.surface }]}>
+                  <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                    <Text style={[styles.modalTitle, { color: colors.text }]}>{editingExerciseId ? "커스텀 운동 수정" : "커스텀 운동 추가"}</Text>
+
+                    {/* 운동 이름 */}
+                    <Text style={[styles.inputLabel, { color: colors.text }]}>운동 이름</Text>
+                    <TextInput
+                      style={[styles.modalInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                      value={customExerciseName}
+                      onChangeText={setCustomExerciseName}
+                      placeholder="예: 사이타마 푸시업"
+                      placeholderTextColor={colors.textSecondary}
+                      returnKeyType="next"
+                    />
+
+                    {/* 운동 부위 */}
+                    <Text style={[styles.inputLabel, { color: colors.text }]}>운동 부위</Text>
+                    <TextInput
+                      style={[styles.modalInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                      value={customExerciseMuscle}
+                      onChangeText={setCustomExerciseMuscle}
+                      placeholder="예: 가슴, 등, 하체, 코어 등"
+                      placeholderTextColor={colors.textSecondary}
+                      returnKeyType="done"
+                    />
+
+                    {/* 카테고리 선택 */}
+                    <Text style={[styles.inputLabel, { color: colors.text }]}>카테고리</Text>
+                    <View style={styles.categoryButtons}>
+                      <TouchableOpacity
+                        style={[
+                          styles.categoryButton,
+                          { backgroundColor: colors.background, borderColor: colors.border },
+                          customExerciseCategory === "bodyweight" && { backgroundColor: colors.primary, borderColor: colors.primary },
+                        ]}
+                        onPress={() => setCustomExerciseCategory("bodyweight")}
+                      >
+                        <Text style={[styles.categoryButtonText, { color: colors.text }, customExerciseCategory === "bodyweight" && { color: colors.buttonText }]}>맨몸</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.categoryButton,
+                          { backgroundColor: colors.background, borderColor: colors.border },
+                          customExerciseCategory === "weights" && { backgroundColor: colors.primary, borderColor: colors.primary },
+                        ]}
+                        onPress={() => setCustomExerciseCategory("weights")}
+                      >
+                        <Text style={[styles.categoryButtonText, { color: colors.text }, customExerciseCategory === "weights" && { color: colors.buttonText }]}>웨이트</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.categoryButton,
+                          { backgroundColor: colors.background, borderColor: colors.border },
+                          customExerciseCategory === "cardio" && { backgroundColor: colors.primary, borderColor: colors.primary },
+                        ]}
+                        onPress={() => setCustomExerciseCategory("cardio")}
+                      >
+                        <Text style={[styles.categoryButtonText, { color: colors.text }, customExerciseCategory === "cardio" && { color: colors.buttonText }]}>유산소</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* 버튼 */}
+                    <View style={styles.modalButtons}>
+                      <TouchableOpacity
+                        style={[styles.modalButton, styles.cancelButton, { backgroundColor: colors.background, borderColor: colors.border }]}
+                        onPress={() => {
+                          setShowCustomExerciseModal(false);
+                          setEditingExerciseId(null);
+                          setCustomExerciseName("");
+                          setCustomExerciseMuscle("");
+                          setCustomExerciseCategory("bodyweight");
+                          Keyboard.dismiss();
+                        }}
+                      >
+                        <Text style={[styles.cancelButtonText, { color: colors.text }]}>취소</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={[styles.modalButton, styles.saveButton, { backgroundColor: colors.primary }]} onPress={handleCreateCustomExercise}>
+                        <Text style={[styles.saveButtonText, { color: colors.buttonText }]}>{editingExerciseId ? "수정" : "저장"}</Text>
+                      </TouchableOpacity>
+                    </View>
+                </ScrollView>
+              </View>
+            </TouchableWithoutFeedback>
+          </KeyboardAvoidingView>
+        </TouchableWithoutFeedback>
       </Modal>
     </View>
   );
@@ -1441,12 +1772,26 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "flex-end",
+    justifyContent: "center",
+    alignItems: "center",
   },
   modalContent: {
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
+    padding: 24,
     paddingBottom: 40,
+  },
+  customExerciseModalContent: {
+    width: "90%",
+    maxWidth: 500,
+    maxHeight: "80%",
+    borderRadius: 20,
+    padding: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   modalHeader: {
     flexDirection: "row",
@@ -1456,8 +1801,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: "600",
+    fontSize: 20,
+    fontWeight: "700",
+    marginBottom: 24,
   },
   modalCloseButton: {
     padding: 4,
@@ -1531,5 +1877,87 @@ const styles = StyleSheet.create({
   },
   emptySearchText: {
     fontSize: 16,
+  },
+  customExerciseButtonContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  customExerciseButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
+  },
+  customExerciseButtonText: {
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  inputLabel: {
+    fontSize: 15,
+    fontWeight: "600",
+    marginBottom: 10,
+  },
+  modalInput: {
+    borderWidth: 1.5,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    marginBottom: 20,
+  },
+  categoryButtons: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 20,
+  },
+  categoryButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    alignItems: "center",
+  },
+  categoryButtonText: {
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  exerciseNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  customBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  customBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  modalButtons: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 24,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  cancelButton: {
+    borderWidth: 1.5,
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  saveButton: {},
+  saveButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
   },
 });

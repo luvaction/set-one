@@ -84,6 +84,68 @@ export default function ProfileScreen() {
     );
   };
 
+  const handleShowStorageData = async () => {
+    try {
+      const STORAGE_KEYS = {
+        PROFILE: "@set1/profile",
+        CUSTOM_EXERCISES: "@set1/custom_exercises",
+        HIDDEN_EXERCISE_IDS: "@set1/hidden_exercise_ids",
+        USER_ROUTINES: "@set1/user_routines",
+        ACTIVE_WORKOUT_SESSION: "@set1/active_session",
+        WORKOUT_RECORDS: "@set1/workout_records",
+        SETTINGS: "@set1/settings",
+      };
+
+      console.log("\n========== AsyncStorage Data ==========");
+
+      for (const [name, key] of Object.entries(STORAGE_KEYS)) {
+        const data = await storage.getItem(key);
+        console.log(`\n[${name}] (${key}):`);
+        console.log(JSON.stringify(data, null, 2));
+      }
+
+      console.log("\n=======================================\n");
+
+      Alert.alert("완료", "저장소 데이터를 콘솔에 출력했습니다.\n개발자 도구를 확인하세요.");
+    } catch (error) {
+      console.error("Failed to show storage data:", error);
+      Alert.alert("오류", "저장소 데이터 조회에 실패했습니다.");
+    }
+  };
+
+  const handleClearCustomExercises = async () => {
+    Alert.alert("커스텀 운동 초기화", "커스텀 운동을 모두 삭제하고 '사이타마 푸시업'만 추가하시겠습니까?", [
+      { text: "취소", style: "cancel" },
+      {
+        text: "초기화",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            // 커스텀 운동 스토리지 비우기
+            await storage.removeItem("@set1/custom_exercises");
+
+            // 사이타마 푸시업만 추가
+            const saitamaPushup = {
+              id: `ex_custom_${Date.now()}_saitama`,
+              name: "사이타마 푸시업",
+              category: "bodyweight",
+              muscleGroups: ["가슴", "삼두", "어깨"],
+              isCustom: true,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            };
+
+            await storage.setArray("@set1/custom_exercises", [saitamaPushup]);
+            Alert.alert("완료", "커스텀 운동이 초기화되었습니다.\n💪 사이타마 푸시업 100개!\n\n루틴 탭에서 확인하세요.");
+          } catch (error) {
+            console.error("Failed to clear custom exercises:", error);
+            Alert.alert("오류", "커스텀 운동 초기화에 실패했습니다.");
+          }
+        },
+      },
+    ]);
+  };
+
   const goalText = {
     lose: "체중 감량",
     gain: "근육 증가",
@@ -235,6 +297,24 @@ export default function ProfileScreen() {
               <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>앱 버전</Text>
               <Text style={[styles.infoValue, { color: colors.text }]}>1.0.0</Text>
             </View>
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+            <Pressable style={styles.infoRow} onPress={handleShowStorageData}>
+              <View style={styles.settingLabelContainer}>
+                <Ionicons name="code-outline" size={20} color={colors.primary} />
+                <Text style={[styles.infoLabel, { color: colors.text }]}>저장소 데이터 보기</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+            </Pressable>
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+            <Pressable style={styles.infoRow} onPress={handleClearCustomExercises}>
+              <View style={styles.settingLabelContainer}>
+                <Ionicons name="refresh-outline" size={20} color="#FF9800" />
+                <Text style={[styles.infoLabel, { color: "#FF9800" }]}>커스텀 운동 초기화</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+            </Pressable>
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
             <Pressable style={styles.infoRow} onPress={handleClearAllData}>

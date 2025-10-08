@@ -8,7 +8,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 
 import { Calendar, DateData } from "react-native-calendars";
 
 export default function HistoryScreen() {
-  const { colors } = useTheme();
+  const { theme, colors } = useTheme();
   const [activeTab, setActiveTab] = useState<"record" | "stats">("record");
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [currentMonth, setCurrentMonth] = useState<string>("");
@@ -116,25 +116,29 @@ export default function HistoryScreen() {
                 <Text style={[styles.todayButtonText, { color: colors.buttonText }]}>Today</Text>
               </Pressable>
             </View>
-            <View style={[styles.calendarContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={[styles.calendarContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
               <Calendar
-                key={currentMonth}
+                key={`${theme}-${currentMonth}`}
                 current={currentMonth || undefined}
                 onDayPress={handleDayPress}
                 onMonthChange={(month) => setCurrentMonth(month.dateString)}
                 markedDates={markedDates}
                 theme={{
-                  calendarBackground: colors.surface,
-                  textSectionTitleColor: colors.primary,
+                  backgroundColor: colors.background,
+                  calendarBackground: colors.background,
+                  textSectionTitleColor: colors.text,
                   selectedDayBackgroundColor: colors.primary,
                   selectedDayTextColor: colors.buttonText,
                   todayTextColor: colors.primary,
                   dayTextColor: colors.text,
                   textDisabledColor: colors.textSecondary,
-                  monthTextColor: colors.primary,
-                  arrowColor: colors.primary,
+                  monthTextColor: colors.text,
+                  arrowColor: colors.text,
                   dotColor: colors.primary,
                   selectedDotColor: colors.buttonText,
+                  textDayFontWeight: "400",
+                  textMonthFontWeight: "600",
+                  textDayHeaderFontWeight: "600",
                 }}
               />
             </View>
