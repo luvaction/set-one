@@ -2,7 +2,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { WorkoutRecord } from "@/models";
 import { workoutRecordService } from "@/services";
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Calendar, DateData } from "react-native-calendars";
@@ -216,9 +216,23 @@ export default function HistoryScreen() {
           )}
         </ScrollView>
       ) : (
-        <View style={styles.comingSoonContainer}>
-          <Text style={[styles.comingSoonText, { color: colors.text }]}>Coming Soon</Text>
-          <Text style={[styles.comingSoonSubtext, { color: colors.textSecondary }]}>통계 기능이 곧 추가됩니다</Text>
+        <View style={styles.statisticsTabContainer}>
+          <Pressable
+            style={[styles.statisticsCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            onPress={() => router.push("/statistics")}
+          >
+            <View style={styles.statisticsIconContainer}>
+              <Ionicons name="bar-chart" size={48} color={colors.primary} />
+            </View>
+            <Text style={[styles.statisticsTitle, { color: colors.text }]}>운동 통계 보기</Text>
+            <Text style={[styles.statisticsDescription, { color: colors.textSecondary }]}>
+              볼륨 추이, 운동 부위 분포, 인사이트 확인
+            </Text>
+            <View style={[styles.statisticsButton, { backgroundColor: colors.primary }]}>
+              <Text style={[styles.statisticsButtonText, { color: colors.buttonText }]}>통계 보러가기</Text>
+              <Ionicons name="chevron-forward" size={20} color={colors.buttonText} />
+            </View>
+          </Pressable>
         </View>
       )}
 
@@ -492,18 +506,51 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
   },
-  comingSoonContainer: {
+  statisticsTabContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingVertical: 100,
+    paddingHorizontal: 20,
+    paddingVertical: 60,
   },
-  comingSoonText: {
-    fontSize: 24,
-    fontWeight: "bold",
+  statisticsCard: {
+    width: "100%",
+    maxWidth: 400,
+    padding: 32,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignItems: "center",
+    gap: 16,
+  },
+  statisticsIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 8,
   },
-  comingSoonSubtext: {
-    fontSize: 14,
+  statisticsTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  statisticsDescription: {
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: "center",
+  },
+  statisticsButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    gap: 8,
+    marginTop: 8,
+  },
+  statisticsButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
   },
 });

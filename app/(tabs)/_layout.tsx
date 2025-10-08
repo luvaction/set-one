@@ -64,6 +64,12 @@ export default function TabLayout() {
           tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="statistics"
+        options={{
+          href: null,
+        }}
+      />
         </Tabs>
       </SafeAreaView>
     </SafeAreaProvider>
