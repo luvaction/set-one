@@ -166,4 +166,17 @@ export const routineService = {
     await storage.updateInArray(STORAGE_KEYS.USER_ROUTINES, updatedRoutine);
     return updatedRoutine;
   },
+
+  // 루틴 순서 변경 (사용자 루틴만)
+  async reorderRoutines(routineIds: string[]): Promise<void> {
+    const userRoutines = await this.getUserRoutines();
+
+    // ID 순서대로 루틴 재정렬
+    const reorderedRoutines = routineIds
+      .map(id => userRoutines.find(r => r.id === id))
+      .filter((r): r is Routine => r !== undefined);
+
+    // 전체 루틴 배열 교체
+    await storage.setArray(STORAGE_KEYS.USER_ROUTINES, reorderedRoutines);
+  },
 };

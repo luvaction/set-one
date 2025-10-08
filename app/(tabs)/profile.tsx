@@ -4,7 +4,7 @@ import { profileService } from "@/services/profile";
 import { storage } from "@/services/storage/asyncStorage";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 
 const emptyProfile: CreateProfileData = {
   name: "",
@@ -331,9 +331,10 @@ export default function ProfileScreen() {
       {/* 편집 모달 */}
       <Modal visible={showEditModal} transparent animationType="slide" onRequestClose={() => setShowEditModal(false)}>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>프로필 편집</Text>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.keyboardAvoidingView}>
+            <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+              <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                <Text style={[styles.modalTitle, { color: colors.text }]}>프로필 편집</Text>
 
               {/* 이름 */}
               <Text style={[styles.inputLabel, { color: colors.text }]}>이름</Text>
@@ -525,8 +526,9 @@ export default function ProfileScreen() {
                   <Text style={[styles.saveButtonText, { color: colors.buttonText }]}>저장</Text>
                 </Pressable>
               </View>
-            </ScrollView>
-          </View>
+              </ScrollView>
+            </View>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
     </View>
@@ -622,11 +624,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  keyboardAvoidingView: {
+    width: "90%",
+  },
   modalContent: {
     borderRadius: 16,
     padding: 24,
-    width: "90%",
-    maxHeight: "90%",
+    maxHeight: "75%",
   },
   modalTitle: {
     fontSize: 20,

@@ -502,7 +502,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   exerciseList: {
-    gap: 12,
+    gap: 16,
   },
   exerciseItem: {
     borderRadius: 12,

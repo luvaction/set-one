@@ -8,6 +8,7 @@ import {
   ExerciseTypeDistribution,
   Insight,
 } from "@/services/statistics";
+import { profileService } from "@/services/profile";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
@@ -29,16 +30,18 @@ export default function StatisticsScreen() {
   const [selectedExercises, setSelectedExercises] = useState<Set<string>>(new Set());
   const [exerciseTypeDistribution, setExerciseTypeDistribution] = useState<ExerciseTypeDistribution[]>([]);
   const [insights, setInsights] = useState<Insight[]>([]);
+  const [weeklyGoal, setWeeklyGoal] = useState<number | null>(null);
 
   const loadStatistics = useCallback(async () => {
     try {
-      const [stats, weekComp, prs, exStats, exerciseTypes, insightsData] = await Promise.all([
+      const [stats, weekComp, prs, exStats, exerciseTypes, insightsData, profileData] = await Promise.all([
         statisticsService.getCoreStats(),
         statisticsService.getWeekComparison(),
         statisticsService.getPersonalRecords(),
         statisticsService.getExerciseStats(),
         statisticsService.getExerciseTypeDistribution(),
         statisticsService.getInsights(),
+        profileService.getProfile(),
       ]);
 
       setCoreStats(stats);
@@ -47,6 +50,7 @@ export default function StatisticsScreen() {
       setExerciseStats(exStats);
       setExerciseTypeDistribution(exerciseTypes);
       setInsights(insightsData);
+      setWeeklyGoal(profileData?.weeklyGoal || null);
 
       // 처음에는 모든 운동 선택
       if (selectedExercises.size === 0 && exStats.length > 0) {
@@ -103,6 +107,13 @@ export default function StatisticsScreen() {
     );
   }
 
+  // 주간 목표 달성률 계산
+  const goalAchievementRate =
+    weeklyGoal && weekComparison && weeklyGoal > 0
+      ? Math.min(100, (weekComparison.thisWeek.workouts / weeklyGoal) * 100)
+      : null;
+  const isGoalSet = weeklyGoal !== null && weeklyGoal > 0;
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
@@ -134,11 +145,15 @@ export default function StatisticsScreen() {
             </View>
 
             <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
-              <Text style={styles.statIcon}>⏱️</Text>
+              <Text style={styles.statIcon}>🎯</Text>
               <Text style={[styles.statValue, { color: colors.text }]}>
-                {Math.floor(coreStats.totalDuration / 60)}h {coreStats.totalDuration % 60}m
+                {isGoalSet ? `${goalAchievementRate?.toFixed(0)}%` : "-"}
               </Text>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>총 시간</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary, fontSize: 11, textAlign: "center" }]}>
+                {isGoalSet
+                  ? `주간 목표 달성\n(${weekComparison?.thisWeek.workouts}회/${weeklyGoal}회)`
+                  : "목표 미설정"}
+              </Text>
             </View>
           </View>
         )}
@@ -465,7 +480,7 @@ export default function StatisticsScreen() {
                           {/* 막대 위 숫자 */}
                           <SvgText
                             x={x + barWidth / 2}
-                            y={Math.max(padding.top + 12, y - 8)}
+                            y={y - 8}
                             fontSize="11"
                             fill={colors.text}
                             textAnchor="middle"
@@ -723,6 +738,7 @@ const styles = StyleSheet.create({
   exerciseStatsContainer: {
     padding: 16,
     borderRadius: 16,
+    marginTop: 20,
   },
   exerciseStatItem: {
     paddingVertical: 16,
