@@ -1648,7 +1648,7 @@ const styles = StyleSheet.create({
   categoryContent: {
     paddingHorizontal: 20,
     gap: 12,
-  }, // ❌ 원래 중복 스타일이었던 첫 번째 categoryButton, categoryButtonActive, categoryText, categoryTextActive는 삭제됨
+  },
   routinesList: {
     paddingHorizontal: 20,
     gap: 12,
