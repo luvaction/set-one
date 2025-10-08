@@ -5,6 +5,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import DraggableFlatList, { RenderItemParams, ScaleDecorator } from "react-native-draggable-flatlist";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 // reps를 표시용 문자열로 변환하는 헬퍼 함수
@@ -47,16 +49,40 @@ const parseReps = (reps: string): { min: number; max: number } | string => {
 const exercises = {
   // 푸시업 계열 (맨몸)
   regularPushup: { id: "regularPushup", name: "일반 푸시업", category: "bodyweight", targetMuscle: "가슴", difficulty: "초급", defaultSets: 3, defaultReps: { min: 10, max: 15 } },
-  diamondPushup: { id: "diamondPushup", name: "다이아몬드 푸시업", category: "bodyweight", targetMuscle: "삼두", difficulty: "중급", defaultSets: 3, defaultReps: { min: 8, max: 12 } },
+  diamondPushup: {
+    id: "diamondPushup",
+    name: "다이아몬드 푸시업",
+    category: "bodyweight",
+    targetMuscle: "삼두",
+    difficulty: "중급",
+    defaultSets: 3,
+    defaultReps: { min: 8, max: 12 },
+  },
   widePushup: { id: "widePushup", name: "와이드 푸시업", category: "bodyweight", targetMuscle: "가슴", difficulty: "초급", defaultSets: 3, defaultReps: { min: 10, max: 15 } },
-  inclinePushup: { id: "inclinePushup", name: "인클라인 푸시업", category: "bodyweight", targetMuscle: "가슴", difficulty: "초급", defaultSets: 3, defaultReps: { min: 15, max: 20 } },
+  inclinePushup: {
+    id: "inclinePushup",
+    name: "인클라인 푸시업",
+    category: "bodyweight",
+    targetMuscle: "가슴",
+    difficulty: "초급",
+    defaultSets: 3,
+    defaultReps: { min: 15, max: 20 },
+  },
 
   // 풀업/친업 계열 (맨몸)
   regularPullup: { id: "regularPullup", name: "풀업", category: "bodyweight", targetMuscle: "등", difficulty: "중급", defaultSets: 3, defaultReps: { min: 5, max: 10 } },
   chinup: { id: "chinup", name: "친업", category: "bodyweight", targetMuscle: "이두", difficulty: "중급", defaultSets: 3, defaultReps: { min: 6, max: 10 } },
 
   // 스쿼트 계열 (맨몸)
-  bodyweightSquat: { id: "bodyweightSquat", name: "바디웨이트 스쿼트", category: "bodyweight", targetMuscle: "하체", difficulty: "초급", defaultSets: 3, defaultReps: { min: 15, max: 20 } },
+  bodyweightSquat: {
+    id: "bodyweightSquat",
+    name: "바디웨이트 스쿼트",
+    category: "bodyweight",
+    targetMuscle: "하체",
+    difficulty: "초급",
+    defaultSets: 3,
+    defaultReps: { min: 15, max: 20 },
+  },
   jumpSquat: { id: "jumpSquat", name: "점프 스쿼트", category: "bodyweight", targetMuscle: "하체", difficulty: "중급", defaultSets: 3, defaultReps: { min: 10, max: 15 } },
 
   // 플랭크 계열 (맨몸)
@@ -64,7 +90,15 @@ const exercises = {
   sidePlank: { id: "sidePlank", name: "사이드 플랭크", category: "bodyweight", targetMuscle: "코어", difficulty: "중급", defaultSets: 3, defaultReps: "20-45초" },
 
   // 웨이트
-  flatBenchPress: { id: "flatBenchPress", name: "플랫 벤치프레스", category: "weights", targetMuscle: "가슴", difficulty: "중급", defaultSets: 3, defaultReps: { min: 8, max: 12 } },
+  flatBenchPress: {
+    id: "flatBenchPress",
+    name: "플랫 벤치프레스",
+    category: "weights",
+    targetMuscle: "가슴",
+    difficulty: "중급",
+    defaultSets: 3,
+    defaultReps: { min: 8, max: 12 },
+  },
   inclineBenchPress: {
     id: "inclineBenchPress",
     name: "인클라인 벤치프레스",
@@ -174,6 +208,58 @@ export default function RoutineBuilderScreen() {
     setSelectedExercises(updated);
   };
 
+  const renderExerciseItem = ({ item, getIndex, drag, isActive }: RenderItemParams<Exercise>) => {
+    const index = getIndex();
+    const safeIndex = index ?? -1; // null 또는 undefined인 경우 -1 사용 (배열 인덱스 오류 방지)
+    const displayIndex = safeIndex !== -1 ? safeIndex + 1 : 1;
+
+    return (
+      <ScaleDecorator>
+        <View style={[styles.exerciseItem, { backgroundColor: colors.surface, borderColor: colors.border }, isActive && { opacity: 0.7 }]}>
+          <View style={styles.exerciseHeader}>
+            <View style={styles.exerciseHeaderLeft}>
+              <TouchableOpacity onLongPress={drag} style={styles.dragHandle}>
+                <Ionicons name="menu" size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
+              <Text style={[styles.exerciseItemName, { color: colors.text }]}>
+                {displayIndex}. {item.name} {/* 👈 수정: displayIndex 사용 */}
+              </Text>
+            </View>
+            <TouchableOpacity style={styles.removeButton} onPress={() => removeExercise(safeIndex)}>
+              <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.exerciseControls}>
+            <View style={styles.controlGroup}>
+              <Text style={[styles.controlLabel, { color: colors.textSecondary }]}>세트</Text>
+              <View style={[styles.numberInput, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                <TouchableOpacity style={styles.numberButton} onPress={() => updateExercise(safeIndex, "sets", String(Math.max(1, item.sets - 1)))}>
+                  <Ionicons name="remove" size={16} color={colors.textSecondary} />
+                </TouchableOpacity>
+                <Text style={[styles.numberValue, { color: colors.text }]}>{item.sets}</Text>
+                <TouchableOpacity style={styles.numberButton} onPress={() => updateExercise(safeIndex, "sets", String(item.sets + 1))}>
+                  <Ionicons name="add" size={16} color={colors.textSecondary} />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.controlGroup}>
+              <Text style={[styles.controlLabel, { color: colors.textSecondary }]}>횟수/시간</Text>
+              <TextInput
+                style={[styles.repsInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                value={item.reps}
+                onChangeText={(value) => updateExercise(safeIndex, "reps", value)}
+                placeholder="10회"
+                placeholderTextColor={colors.textSecondary}
+              />
+            </View>
+          </View>
+        </View>
+      </ScaleDecorator>
+    );
+  };
+
   const saveRoutine = async () => {
     if (!routineName.trim()) {
       Alert.alert("오류", "루틴 이름을 입력해주세요.");
@@ -211,170 +297,123 @@ export default function RoutineBuilderScreen() {
 
   if (showExerciseLibrary) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => setShowExerciseLibrary(false)}>
-            <Ionicons name="arrow-back" size={24} color={colors.text} />
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>운동 선택</Text>
-          <View style={styles.headerSpacer} />
-        </View>
-
-        <View style={[styles.searchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Ionicons name="search" size={20} color={colors.textSecondary} />
-          <TextInput
-            style={[styles.searchInput, { color: colors.text }]}
-            placeholder="운동 검색..."
-            placeholderTextColor={colors.textSecondary}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-        </View>
-
-        <ScrollView style={styles.exerciseLibrary}>
-          {filteredExercises.map((exercise) => (
-            <TouchableOpacity
-              key={exercise.id}
-              style={[styles.exerciseCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
-              onPress={() => addExercise(exercise)}
-            >
-              <View style={styles.exerciseInfo}>
-                <Text style={[styles.exerciseName, { color: colors.text }]}>{exercise.name}</Text>
-                <View style={styles.exerciseTags}>
-                  <View
-                    style={[
-                      styles.muscleTag,
-                      exercise.targetMuscle === "가슴" && styles.chestTag,
-                      exercise.targetMuscle === "등" && styles.backTag,
-                      exercise.targetMuscle === "하체" && styles.legTag,
-                      exercise.targetMuscle === "코어" && styles.coreTag,
-                      exercise.targetMuscle === "삼두" && styles.tricepsTag,
-                      exercise.targetMuscle === "가슴 상부" && styles.chestTag,
-                      exercise.targetMuscle === "이두" && styles.bicepsTag,
-                    ]}
-                  >
-                    <Text style={[styles.muscleTagText, { color: colors.text }]}>{exercise.targetMuscle}</Text>
-                  </View>
-                  <Text style={[styles.difficultyText, { color: colors.textSecondary }]}>{exercise.difficulty}</Text>
-                </View>
-                <Text style={[styles.defaultSets, { color: colors.textSecondary }]}>
-                  권장: {exercise.defaultSets}세트 × {formatReps(exercise.defaultReps)}
-                </Text>
-              </View>
-              <Ionicons name="add-circle" size={24} color={colors.primary} />
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.backButton} onPress={() => setShowExerciseLibrary(false)}>
+              <Ionicons name="arrow-back" size={24} color={colors.text} />
             </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </SafeAreaView>
+            <Text style={[styles.headerTitle, { color: colors.text }]}>운동 선택</Text>
+            <View style={styles.headerSpacer} />
+          </View>
+
+          <View style={[styles.searchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Ionicons name="search" size={20} color={colors.textSecondary} />
+            <TextInput
+              style={[styles.searchInput, { color: colors.text }]}
+              placeholder="운동 검색..."
+              placeholderTextColor={colors.textSecondary}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </View>
+
+          <ScrollView style={styles.exerciseLibrary}>
+            {filteredExercises.map((exercise) => (
+              <TouchableOpacity
+                key={exercise.id}
+                style={[styles.exerciseCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                onPress={() => addExercise(exercise)}
+              >
+                <View style={styles.exerciseInfo}>
+                  <Text style={[styles.exerciseName, { color: colors.text }]}>{exercise.name}</Text>
+                  <View style={styles.exerciseTags}>
+                    <View
+                      style={[
+                        styles.muscleTag,
+                        exercise.targetMuscle === "가슴" && styles.chestTag,
+                        exercise.targetMuscle === "등" && styles.backTag,
+                        exercise.targetMuscle === "하체" && styles.legTag,
+                        exercise.targetMuscle === "코어" && styles.coreTag,
+                        exercise.targetMuscle === "삼두" && styles.tricepsTag,
+                        exercise.targetMuscle === "가슴 상부" && styles.chestTag,
+                        exercise.targetMuscle === "이두" && styles.bicepsTag,
+                      ]}
+                    >
+                      <Text style={[styles.muscleTagText, { color: colors.text }]}>{exercise.targetMuscle}</Text>
+                    </View>
+                    <Text style={[styles.difficultyText, { color: colors.textSecondary }]}>{exercise.difficulty}</Text>
+                  </View>
+                  <Text style={[styles.defaultSets, { color: colors.textSecondary }]}>
+                    권장: {exercise.defaultSets}세트 × {formatReps(exercise.defaultReps)}
+                  </Text>
+                </View>
+                <Ionicons name="add-circle" size={24} color={colors.primary} />
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </SafeAreaView>
+      </GestureHandlerRootView>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>{isEditing ? "루틴 수정" : "새 루틴"}</Text>
-        <TouchableOpacity style={[styles.saveButton, { backgroundColor: colors.primary }]} onPress={saveRoutine}>
-          <Text style={[styles.saveButtonText, { color: colors.buttonText }]}>저장</Text>
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView style={styles.content}>
-        {/* 루틴 이름 입력 */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>루틴 이름</Text>
-          <TextInput
-            style={[styles.nameInput, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
-            placeholder="루틴 이름을 입력하세요"
-            placeholderTextColor={colors.textSecondary}
-            value={routineName}
-            onChangeText={setRoutineName}
-          />
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>{isEditing ? "루틴 수정" : "새 루틴"}</Text>
+          <TouchableOpacity style={[styles.saveButton, { backgroundColor: colors.primary }]} onPress={saveRoutine}>
+            <Text style={[styles.saveButtonText, { color: colors.buttonText }]}>저장</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* 운동 목록 */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>운동 목록 ({selectedExercises.length}개)</Text>
-            <TouchableOpacity style={[styles.addExerciseButton, { backgroundColor: colors.primary + "20" }]} onPress={() => setShowExerciseLibrary(true)}>
-              <Ionicons name="add" size={20} color={colors.primary} />
-              <Text style={[styles.addExerciseText, { color: colors.primary }]}>운동 추가</Text>
-            </TouchableOpacity>
+        <ScrollView style={styles.content}>
+          {/* 루틴 이름 입력 */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>루틴 이름</Text>
+            <TextInput
+              style={[styles.nameInput, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
+              placeholder="루틴 이름을 입력하세요"
+              placeholderTextColor={colors.textSecondary}
+              value={routineName}
+              onChangeText={setRoutineName}
+            />
           </View>
 
-          {selectedExercises.length === 0 ? (
-            <View style={[styles.emptyState, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <Ionicons name="fitness-outline" size={48} color={colors.textSecondary} />
-              <Text style={[styles.emptyTitle, { color: colors.text }]}>운동을 추가해보세요</Text>
-              <Text style={[styles.emptyDescription, { color: colors.textSecondary }]}>위 운동 추가 버튼을 눌러 루틴에 운동을 추가할 수 있습니다.</Text>
+          {/* 운동 목록 */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>운동 목록 ({selectedExercises.length}개)</Text>
+              <TouchableOpacity style={[styles.addExerciseButton, { backgroundColor: colors.primary + "20" }]} onPress={() => setShowExerciseLibrary(true)}>
+                <Ionicons name="add" size={20} color={colors.primary} />
+                <Text style={[styles.addExerciseText, { color: colors.primary }]}>운동 추가</Text>
+              </TouchableOpacity>
             </View>
-          ) : (
-            <View style={styles.exerciseList}>
-              {selectedExercises.map((exercise, index) => (
-                <View key={`${exercise.id}_${index}`} style={[styles.exerciseItem, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                  <View style={styles.exerciseHeader}>
-                    <View style={styles.exerciseHeaderLeft}>
-                      <Text style={[styles.exerciseItemName, { color: colors.text }]}>
-                        {index + 1}. {exercise.name}
-                      </Text>
-                    </View>
-                    <View style={styles.exerciseHeaderRight}>
-                      <View style={styles.orderButtons}>
-                        <TouchableOpacity
-                          style={[styles.orderButton, index === 0 && styles.orderButtonDisabled]}
-                          onPress={() => moveExercise(index, "up")}
-                          disabled={index === 0}
-                        >
-                          <Ionicons name="chevron-up" size={16} color={index === 0 ? colors.border : colors.textSecondary} />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.orderButton, index === selectedExercises.length - 1 && styles.orderButtonDisabled]}
-                          onPress={() => moveExercise(index, "down")}
-                          disabled={index === selectedExercises.length - 1}
-                        >
-                          <Ionicons name="chevron-down" size={16} color={index === selectedExercises.length - 1 ? colors.border : colors.textSecondary} />
-                        </TouchableOpacity>
-                      </View>
-                      <TouchableOpacity style={styles.removeButton} onPress={() => removeExercise(index)}>
-                        <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
 
-                  <View style={styles.exerciseControls}>
-                    <View style={styles.controlGroup}>
-                      <Text style={[styles.controlLabel, { color: colors.textSecondary }]}>세트</Text>
-                      <View style={[styles.numberInput, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                        <TouchableOpacity style={styles.numberButton} onPress={() => updateExercise(index, "sets", String(Math.max(1, exercise.sets - 1)))}>
-                          <Ionicons name="remove" size={16} color={colors.textSecondary} />
-                        </TouchableOpacity>
-                        <Text style={[styles.numberValue, { color: colors.text }]}>{exercise.sets}</Text>
-                        <TouchableOpacity style={styles.numberButton} onPress={() => updateExercise(index, "sets", String(exercise.sets + 1))}>
-                          <Ionicons name="add" size={16} color={colors.textSecondary} />
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-
-                    <View style={styles.controlGroup}>
-                      <Text style={[styles.controlLabel, { color: colors.textSecondary }]}>횟수/시간</Text>
-                      <TextInput
-                        style={[styles.repsInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-                        value={exercise.reps}
-                        onChangeText={(value) => updateExercise(index, "reps", value)}
-                        placeholder="10회"
-                        placeholderTextColor={colors.textSecondary}
-                      />
-                    </View>
-                  </View>
-                </View>
-              ))}
-            </View>
-          )}
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+            {selectedExercises.length === 0 ? (
+              <View style={[styles.emptyState, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <Ionicons name="fitness-outline" size={48} color={colors.textSecondary} />
+                <Text style={[styles.emptyTitle, { color: colors.text }]}>운동을 추가해보세요</Text>
+                <Text style={[styles.emptyDescription, { color: colors.textSecondary }]}>위 운동 추가 버튼을 눌러 루틴에 운동을 추가할 수 있습니다.</Text>
+                <Text style={[styles.emptyDescription, { color: colors.textSecondary, marginTop: 8 }]}>💡 운동을 길게 눌러서 순서를 변경할 수 있습니다.</Text>
+              </View>
+            ) : (
+              <DraggableFlatList
+                data={selectedExercises}
+                onDragEnd={({ data }) => setSelectedExercises(data)}
+                keyExtractor={(item, index) => `${item.id}_${index}`}
+                renderItem={renderExerciseItem}
+                containerStyle={styles.exerciseList}
+                scrollEnabled={false}
+              />
+            )}
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </GestureHandlerRootView>
   );
 }
 
@@ -478,6 +517,13 @@ const styles = StyleSheet.create({
   },
   exerciseHeaderLeft: {
     flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  dragHandle: {
+    padding: 4,
+    marginRight: 4,
   },
   exerciseHeaderRight: {
     flexDirection: "row",
@@ -487,16 +533,6 @@ const styles = StyleSheet.create({
   exerciseItemName: {
     fontSize: 16,
     fontWeight: "600",
-  },
-  orderButtons: {
-    flexDirection: "row",
-    gap: 4,
-  },
-  orderButton: {
-    padding: 4,
-  },
-  orderButtonDisabled: {
-    opacity: 0.3,
   },
   removeButton: {
     padding: 4,
