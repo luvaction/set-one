@@ -3,18 +3,23 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View, Alert } from "rea
 import { useState, useCallback } from "react";
 import { router, useFocusEffect } from "expo-router";
 import { useTheme } from "@/contexts/ThemeContext";
-import { routineService, workoutSessionService } from "@/services";
-import { Routine } from "@/models";
+import { routineService, workoutSessionService, workoutRecordService, profileService } from "@/services";
+import { Routine, WorkoutRecord } from "@/models";
 
 export default function HomeScreen() {
   const { colors } = useTheme();
   const [recommendedRoutines, setRecommendedRoutines] = useState<Routine[]>([]);
   const [lastUsedRoutine, setLastUsedRoutine] = useState<Routine | null>(null);
+  const [weeklyGoal, setWeeklyGoal] = useState<number>(0);
+  const [thisWeekWorkouts, setThisWeekWorkouts] = useState<number>(0);
+  const [recentRecords, setRecentRecords] = useState<WorkoutRecord[]>([]);
 
   useFocusEffect(
     useCallback(() => {
       loadRecommendedRoutines();
       loadLastUsedRoutine();
+      loadWeeklyProgress();
+      loadRecentRecords();
     }, [])
   );
 
@@ -40,6 +45,43 @@ export default function HomeScreen() {
       }
     } catch (error) {
       console.error("Failed to load last used routine:", error);
+    }
+  };
+
+  const loadWeeklyProgress = async () => {
+    try {
+      // 프로필에서 주간 목표 가져오기
+      const profile = await profileService.getProfile();
+      if (profile) {
+        setWeeklyGoal(profile.weeklyGoal);
+      }
+
+      // 이번 주 운동 기록 계산
+      const today = new Date();
+      const startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - today.getDay()); // 일요일
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6); // 토요일
+
+      const records = await workoutRecordService.getRecordsByDateRange(
+        startOfWeek.toISOString().split("T")[0],
+        endOfWeek.toISOString().split("T")[0]
+      );
+
+      setThisWeekWorkouts(records.length);
+    } catch (error) {
+      console.error("Failed to load weekly progress:", error);
+    }
+  };
+
+  const loadRecentRecords = async () => {
+    try {
+      const allRecords = await workoutRecordService.getAllRecords();
+      // 최근 3개만
+      const sorted = allRecords.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      setRecentRecords(sorted.slice(0, 3));
+    } catch (error) {
+      console.error("Failed to load recent records:", error);
     }
   };
 
@@ -70,29 +112,83 @@ export default function HomeScreen() {
         <Text style={[styles.subGreeting, { color: colors.textSecondary }]}>오늘도 Set1부터 시작해볼까요?</Text>
       </View>
 
+      {/* 주간 목표 진행률 */}
+      {weeklyGoal > 0 && (
+        <View style={[styles.progressCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={styles.progressHeader}>
+            <Text style={[styles.progressTitle, { color: colors.text }]}>이번 주 목표</Text>
+            <Text style={[styles.progressValue, { color: colors.primary }]}>
+              {thisWeekWorkouts}/{weeklyGoal}회
+            </Text>
+          </View>
+          <View style={[styles.progressBarBg, { backgroundColor: colors.border }]}>
+            <View
+              style={[
+                styles.progressBarFill,
+                {
+                  backgroundColor: colors.primary,
+                  width: `${Math.min(100, (thisWeekWorkouts / weeklyGoal) * 100)}%`,
+                },
+              ]}
+            />
+          </View>
+          <Text style={[styles.progressSubtitle, { color: colors.textSecondary }]}>
+            {thisWeekWorkouts >= weeklyGoal ? "🎉 목표 달성!" : `${weeklyGoal - thisWeekWorkouts}회 남았어요`}
+          </Text>
+        </View>
+      )}
+
       {/* 빠른 시작 버튼 */}
-      <TouchableOpacity style={[styles.quickStartButton, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={handleQuickStart}>
+      <TouchableOpacity style={[styles.quickStartButton, { backgroundColor: colors.primary }]} onPress={handleQuickStart}>
         <View style={styles.quickStartContent}>
-          <Ionicons name="play-circle" size={32} color={colors.primary} />
+          <Ionicons name="play-circle" size={32} color={colors.buttonText} />
           <View style={styles.quickStartText}>
-            <Text style={[styles.quickStartTitle, { color: colors.text }]}>빠른 시작</Text>
-            <Text style={[styles.quickStartSubtitle, { color: colors.textSecondary }]}>{lastUsedRoutine ? `${lastUsedRoutine.name} 계속하기` : "루틴 선택하기"}</Text>
+            <Text style={[styles.quickStartTitle, { color: colors.buttonText }]}>오늘의 운동 시작</Text>
+            <Text style={[styles.quickStartSubtitle, { color: colors.buttonText, opacity: 0.8 }]}>{lastUsedRoutine ? `${lastUsedRoutine.name}` : "루틴 선택하기"}</Text>
           </View>
         </View>
-        <Ionicons name="chevron-forward" size={24} color={colors.textSecondary} />
+        <Ionicons name="chevron-forward" size={24} color={colors.buttonText} />
       </TouchableOpacity>
 
-      {/* 오늘의 통계 */}
-      <View style={styles.statsContainer}>
-        <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Text style={[styles.statValue, { color: colors.primary }]}>0</Text>
-          <Text style={[styles.statLabel, { color: colors.textSecondary }]}>완료한 세트</Text>
+      {/* 최근 운동 기록 */}
+      {recentRecords.length > 0 && (
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>최근 운동</Text>
+            <TouchableOpacity onPress={() => router.push("/(tabs)/history")}>
+              <Text style={[styles.sectionLink, { color: colors.primary }]}>전체보기</Text>
+            </TouchableOpacity>
+          </View>
+          {recentRecords.map((record) => (
+            <TouchableOpacity
+              key={record.id}
+              style={[styles.recentCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              onPress={() => router.push("/(tabs)/history")}
+            >
+              <View style={styles.recentHeader}>
+                <Text style={[styles.recentTitle, { color: colors.text }]}>{record.routineName}</Text>
+                <Text style={[styles.recentDate, { color: colors.textSecondary }]}>{record.date}</Text>
+              </View>
+              <View style={styles.recentStats}>
+                <View style={styles.recentStatItem}>
+                  <Ionicons name="time-outline" size={14} color={colors.textSecondary} />
+                  <Text style={[styles.recentStatText, { color: colors.textSecondary }]}>{record.duration}분</Text>
+                </View>
+                <View style={styles.recentStatItem}>
+                  <Ionicons name="fitness-outline" size={14} color={colors.textSecondary} />
+                  <Text style={[styles.recentStatText, { color: colors.textSecondary }]}>{record.completionRate}%</Text>
+                </View>
+                {record.totalVolume !== undefined && record.totalVolume > 0 && (
+                  <View style={styles.recentStatItem}>
+                    <Ionicons name="barbell-outline" size={14} color={colors.textSecondary} />
+                    <Text style={[styles.recentStatText, { color: colors.textSecondary }]}>{record.totalVolume}kg</Text>
+                  </View>
+                )}
+              </View>
+            </TouchableOpacity>
+          ))}
         </View>
-        <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Text style={[styles.statValue, { color: colors.primary }]}>0분</Text>
-          <Text style={[styles.statLabel, { color: colors.textSecondary }]}>운동 시간</Text>
-        </View>
-      </View>
+      )}
 
       {/* 추천 루틴 */}
       <View style={styles.section}>
@@ -133,6 +229,40 @@ const styles = StyleSheet.create({
   subGreeting: {
     fontSize: 16,
   },
+  progressCard: {
+    borderRadius: 16,
+    padding: 24,
+    marginBottom: 20,
+    borderWidth: 1,
+  },
+  progressHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  progressTitle: {
+    fontSize: 17,
+    fontWeight: "600",
+  },
+  progressValue: {
+    fontSize: 20,
+    fontWeight: "700",
+  },
+  progressBarBg: {
+    height: 10,
+    borderRadius: 5,
+    marginBottom: 12,
+    overflow: "hidden",
+  },
+  progressBarFill: {
+    height: "100%",
+    borderRadius: 5,
+  },
+  progressSubtitle: {
+    fontSize: 14,
+    marginTop: 4,
+  },
   quickStartButton: {
     borderRadius: 16,
     padding: 20,
@@ -140,7 +270,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 24,
-    borderWidth: 1,
   },
   quickStartContent: {
     flexDirection: "row",
@@ -181,9 +310,51 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 20,
   },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
   sectionTitle: {
     fontSize: 20,
     fontWeight: "bold",
+  },
+  sectionLink: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  recentCard: {
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    marginBottom: 8,
+  },
+  recentHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  recentTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    flex: 1,
+  },
+  recentDate: {
+    fontSize: 12,
+  },
+  recentStats: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  recentStatItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  recentStatText: {
+    fontSize: 12,
   },
   routineCard: {
     borderRadius: 12,

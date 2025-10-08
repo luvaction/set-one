@@ -4,7 +4,7 @@ import { workoutRecordService } from "@/services";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Calendar, DateData } from "react-native-calendars";
 
 export default function HistoryScreen() {
@@ -72,6 +72,33 @@ export default function HistoryScreen() {
       }
     }
     setShowEditModal(false);
+  };
+
+  const handleDeleteRecord = () => {
+    if (!currentRecord) return;
+
+    Alert.alert(
+      "기록 삭제",
+      "이 운동 기록을 삭제하시겠습니까?",
+      [
+        { text: "취소", style: "cancel" },
+        {
+          text: "삭제",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await workoutRecordService.deleteRecord(currentRecord.id);
+              await loadRecords();
+              setShowEditModal(false);
+              setCurrentRecord(null);
+            } catch (error) {
+              console.error("Failed to delete record:", error);
+              Alert.alert("오류", "기록 삭제에 실패했습니다.");
+            }
+          },
+        },
+      ]
+    );
   };
 
   const selectedDateRecords = records.filter((r) => r.date === selectedDate);
@@ -272,6 +299,12 @@ export default function HistoryScreen() {
 
             <View style={styles.modalButtons}>
               <Pressable
+                style={[styles.modalButton, styles.deleteButton, { backgroundColor: "#FF5252" }]}
+                onPress={handleDeleteRecord}
+              >
+                <Ionicons name="trash-outline" size={18} color="#FFFFFF" />
+              </Pressable>
+              <Pressable
                 style={[styles.modalButton, styles.cancelButton, { backgroundColor: colors.background, borderColor: colors.border }]}
                 onPress={() => setShowEditModal(false)}
               >
@@ -464,6 +497,10 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     alignItems: "center",
+    justifyContent: "center",
+  },
+  deleteButton: {
+    maxWidth: 50,
   },
   cancelButton: {
     borderWidth: 1,
