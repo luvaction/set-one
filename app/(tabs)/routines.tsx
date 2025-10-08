@@ -694,14 +694,26 @@ export default function RoutinesScreen() {
 
           {/* 세그먼트 컨트롤 */}
           <View style={[styles.segmentContainer, { backgroundColor: colors.surface }]}>
-            <TouchableOpacity style={[styles.segmentButton, (selectedTab as string) === "library" && { backgroundColor: colors.primary }]} onPress={() => setSelectedTab("library")}>
-              <Text style={[styles.segmentText, { color: colors.textSecondary }, (selectedTab as string) === "library" && { color: colors.buttonText, fontWeight: "600" }]}>라이브러리</Text>
+            <TouchableOpacity
+              style={[styles.segmentButton, (selectedTab as string) === "library" && { backgroundColor: colors.primary }]}
+              onPress={() => setSelectedTab("library")}
+            >
+              <Text style={[styles.segmentText, { color: colors.textSecondary }, (selectedTab as string) === "library" && { color: colors.buttonText, fontWeight: "600" }]}>
+                라이브러리
+              </Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.segmentButton, (selectedTab as string) === "recommended" && { backgroundColor: colors.primary }]} onPress={() => setSelectedTab("recommended")}>
-              <Text style={[styles.segmentText, { color: colors.textSecondary }, (selectedTab as string) === "recommended" && { color: colors.buttonText, fontWeight: "600" }]}>추천 루틴</Text>
+            <TouchableOpacity
+              style={[styles.segmentButton, (selectedTab as string) === "recommended" && { backgroundColor: colors.primary }]}
+              onPress={() => setSelectedTab("recommended")}
+            >
+              <Text style={[styles.segmentText, { color: colors.textSecondary }, (selectedTab as string) === "recommended" && { color: colors.buttonText, fontWeight: "600" }]}>
+                추천 루틴
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.segmentButton, (selectedTab as string) === "my" && { backgroundColor: colors.primary }]} onPress={() => setSelectedTab("my")}>
-              <Text style={[styles.segmentText, { color: colors.textSecondary }, (selectedTab as string) === "my" && { color: colors.buttonText, fontWeight: "600" }]}>내 루틴</Text>
+              <Text style={[styles.segmentText, { color: colors.textSecondary }, (selectedTab as string) === "my" && { color: colors.buttonText, fontWeight: "600" }]}>
+                내 루틴
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -887,14 +899,26 @@ export default function RoutinesScreen() {
 
           {/* 세그먼트 컨트롤 */}
           <View style={[styles.segmentContainer, { backgroundColor: colors.surface }]}>
-            <TouchableOpacity style={[styles.segmentButton, (selectedTab as string) === "library" && { backgroundColor: colors.primary }]} onPress={() => setSelectedTab("library")}>
-              <Text style={[styles.segmentText, { color: colors.textSecondary }, (selectedTab as string) === "library" && { color: colors.buttonText, fontWeight: "600" }]}>라이브러리</Text>
+            <TouchableOpacity
+              style={[styles.segmentButton, (selectedTab as string) === "library" && { backgroundColor: colors.primary }]}
+              onPress={() => setSelectedTab("library")}
+            >
+              <Text style={[styles.segmentText, { color: colors.textSecondary }, (selectedTab as string) === "library" && { color: colors.buttonText, fontWeight: "600" }]}>
+                라이브러리
+              </Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.segmentButton, (selectedTab as string) === "recommended" && { backgroundColor: colors.primary }]} onPress={() => setSelectedTab("recommended")}>
-              <Text style={[styles.segmentText, { color: colors.textSecondary }, (selectedTab as string) === "recommended" && { color: colors.buttonText, fontWeight: "600" }]}>추천 루틴</Text>
+            <TouchableOpacity
+              style={[styles.segmentButton, (selectedTab as string) === "recommended" && { backgroundColor: colors.primary }]}
+              onPress={() => setSelectedTab("recommended")}
+            >
+              <Text style={[styles.segmentText, { color: colors.textSecondary }, (selectedTab as string) === "recommended" && { color: colors.buttonText, fontWeight: "600" }]}>
+                추천 루틴
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.segmentButton, (selectedTab as string) === "my" && { backgroundColor: colors.primary }]} onPress={() => setSelectedTab("my")}>
-              <Text style={[styles.segmentText, { color: colors.textSecondary }, (selectedTab as string) === "my" && { color: colors.buttonText, fontWeight: "600" }]}>내 루틴</Text>
+              <Text style={[styles.segmentText, { color: colors.textSecondary }, (selectedTab as string) === "my" && { color: colors.buttonText, fontWeight: "600" }]}>
+                내 루틴
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -2104,7 +2128,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalCategoryButton: {
-    // 💡 수정: 이름 변경 (이전 categoryButton)
     flex: 1,
     paddingVertical: 14,
     borderRadius: 12,
@@ -2112,7 +2135,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   modalCategoryButtonText: {
-    // 💡 수정: 이름 변경 (이전 categoryButtonText)
     fontSize: 15,
     fontWeight: "600",
   },

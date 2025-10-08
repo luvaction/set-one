@@ -222,7 +222,7 @@ export default function RoutineBuilderScreen() {
                 <Ionicons name="menu" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
               <Text style={[styles.exerciseItemName, { color: colors.text }]}>
-                {displayIndex}. {item.name} {/* 👈 수정: displayIndex 사용 */}
+                {displayIndex}. {item.name}
               </Text>
             </View>
             <TouchableOpacity style={styles.removeButton} onPress={() => removeExercise(safeIndex)}>

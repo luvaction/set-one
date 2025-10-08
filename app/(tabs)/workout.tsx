@@ -426,7 +426,14 @@ export default function WorkoutScreen() {
                         styles.setRow,
                         { borderBottomColor: colors.border },
                         set.isCompleted && { backgroundColor: colors.primary + "15", borderLeftWidth: 3, borderLeftColor: colors.primary },
-                        isActiveSet && !set.isCompleted && { backgroundColor: colors.surface, borderLeftWidth: 3, borderLeftColor: colors.primary, borderWidth: 1, borderColor: colors.primary + "30" },
+                        isActiveSet &&
+                          !set.isCompleted && {
+                            backgroundColor: colors.surface,
+                            borderLeftWidth: 3,
+                            borderLeftColor: colors.primary,
+                            borderWidth: 1,
+                            borderColor: colors.primary + "30",
+                          },
                       ]}
                     >
                       <View style={styles.setInfo}>
@@ -477,8 +484,6 @@ export default function WorkoutScreen() {
                                 <Ionicons name="play" size={18} color={colors.primary} />
                               </TouchableOpacity>
                             )}
-
-                            {/* ✅ 수정된 부분: handleCompleteSetClick 호출 */}
                             <TouchableOpacity
                               style={[styles.iconButton, styles.completeIconButton, { backgroundColor: colors.primary }]}
                               onPress={() => handleCompleteSetClick(exerciseIndex, setIndex)}
