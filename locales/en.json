@@ -180,7 +180,12 @@
     "periodWeek": "Weekly",
     "periodMonth": "Monthly",
     "periodYear": "Yearly",
-    "noTrendData": "Not enough data to show trend"
+    "noTrendData": "Not enough data to show trend",
+    "periodLabel": {
+      "week": "{{month}}W{{weekOfMonth}}",
+      "month": "{{year}}.{{month}}",
+      "year": "{{year}}"
+    }
   },
   "profile": {
     "title": "Profile",

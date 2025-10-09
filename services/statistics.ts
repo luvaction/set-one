@@ -318,15 +318,17 @@ export const statisticsService = {
 
     // 간단한 분류 (실제로는 루틴/운동 데이터에서 가져와야 함)
     const categoryDuration: Record<string, number> = {
-      맨몸: 0,
-      웨이트: 0,
-      유산소: 0,
+      bodyweight: 0,
+      weights: 0,
+      cardio: 0,
     };
 
     completedRecords.forEach((record) => {
       // 간단하게 운동 이름으로 분류 (추후 개선 필요)
       const category = this.guessCategory(record.routineName);
-      categoryDuration[category] += record.duration || 0;
+      if (categoryDuration[category] !== undefined) {
+        categoryDuration[category] += record.duration || 0;
+      }
     });
 
     const total = Object.values(categoryDuration).reduce((sum, duration) => sum + duration, 0);
@@ -601,28 +603,28 @@ export const statisticsService = {
       name.includes("로잉") ||
       name.includes("계단")
     ) {
-      return "유산소";
+      return "cardio";
     }
 
     // 웨이트 트레이닝 (바벨, 덤벨 사용)
     if (name.includes("바벨") || name.includes("덤벨") || name.includes("벤치프레스") || name.includes("데드리프트") || name.includes("머신") || name.includes("케이블")) {
-      return "웨이트";
+      return "weights";
     }
 
     // 맨몸/기타 (푸시업, 플랭크, 스쿼트 등 모두 포함)
-    return "맨몸/기타";
+    return "bodyweight";
   },
 
   // 헬퍼: 카테고리 추측
   guessCategory(routineName: string): string {
-    if (routineName.includes("맨몸") || routineName.includes("홈")) return "맨몸";
-    if (routineName.includes("웨이트") || routineName.includes("벤치") || routineName.includes("데드")) return "웨이트";
-    if (routineName.includes("유산소") || routineName.includes("HIIT")) return "유산소";
-    return "맨몸";
+    if (routineName.includes("맨몸") || routineName.includes("홈")) return "bodyweight";
+    if (routineName.includes("웨이트") || routineName.includes("벤치") || routineName.includes("데드")) return "weights";
+    if (routineName.includes("유산소") || routineName.includes("HIIT")) return "cardio";
+    return "bodyweight";
   },
 
   // 운동별 세트 수 추이 (선택한 운동들의 기간별 평균 세트 수)
-  async getSetsTrend(period: TrendPeriod, exerciseIds: string[]): Promise<Map<string, SetsTrendData[]>> {
+  async getSetsTrend(t: (key: string, params?: any) => string, period: TrendPeriod, exerciseIds: string[]): Promise<Map<string, SetsTrendData[]>> {
     const records = await storage.getArray<WorkoutRecord>(STORAGE_KEYS.WORKOUT_RECORDS);
     const completedRecords = records.filter((r) => r.status === "completed");
 
@@ -667,7 +669,7 @@ export const statisticsService = {
           const avgSets = data.totalSets / data.workoutCount;
           return {
             period: periodKey,
-            periodLabel: this.formatPeriodLabel(periodKey, period),
+            periodLabel: this.formatPeriodLabel(t, periodKey, period),
             averageSets: Math.round(avgSets * 10) / 10,
             workoutCount: data.workoutCount,
           };
@@ -699,7 +701,7 @@ export const statisticsService = {
   },
 
   // 기간 레이블 포맷팅
-  formatPeriodLabel(periodKey: string, period: TrendPeriod): string {
+  formatPeriodLabel(t: (key: string, params?: any) => string, periodKey: string, period: TrendPeriod): string {
     if (period === "week") {
       const [year, week] = periodKey.split("-W");
       const weekNum = parseInt(week);
@@ -707,13 +709,13 @@ export const statisticsService = {
       const date = this.getDateOfISOWeek(weekNum, parseInt(year));
       const month = date.getMonth() + 1;
       const weekOfMonth = Math.ceil(date.getDate() / 7);
-      return `${month}월 ${weekOfMonth}주`;
+      return t('statistics.periodLabel.week', { month, weekOfMonth });
     } else if (period === "month") {
       const [year, month] = periodKey.split("-");
-      return `${year}.${month}`;
+      return t('statistics.periodLabel.month', { year, month });
     } else {
       // year
-      return `${periodKey}년`;
+      return t('statistics.periodLabel.year', { year: periodKey });
     }
   },
 
