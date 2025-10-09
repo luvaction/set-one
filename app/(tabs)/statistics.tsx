@@ -93,9 +93,27 @@ const getExerciseTypeName = (t: any, type: string) => {
   return t(`category.${key}`);
 };
 
+const formatDate = (dateString: string, language: string) => {
+  const date = new Date(dateString);
+  if (language === 'ko') {
+    return date.toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  } else {
+    // English: MM/DD/YYYY format
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+  }
+};
+
 export default function StatisticsScreen() {
   const { colors } = useTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showMockButton, setShowMockButton] = useState(false); // 테스트 버튼 숨김
@@ -380,7 +398,7 @@ export default function StatisticsScreen() {
                   <View style={styles.prContent}>
                     <Text style={[styles.prExercise, { color: colors.text }]}>{getExerciseName(t, pr.exerciseId, pr.exerciseName)}</Text>
                     <Text style={[styles.prDate, { color: colors.textSecondary }]}>
-                      {new Date(pr.date).toLocaleDateString("ko-KR", { month: "short", day: "numeric" })}
+                      {formatDate(pr.date, i18n.language)}
                     </Text>
                   </View>
                   <View style={styles.prStats}>

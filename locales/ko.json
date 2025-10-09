@@ -274,7 +274,9 @@
     "routineUpdated": "루틴이 수정되었습니다.",
     "routineSaved": "루틴이 저장되었습니다.",
     "saveRoutineFailed": "루틴 저장에 실패했습니다.",
-    "loadRoutineFailed": "루틴 불러오기에 실패했습니다."
+    "loadRoutineFailed": "루틴 불러오기에 실패했습니다.",
+    "targetWeight": "목표 무게",
+    "targetWeightPlaceholder": "선택사항, 예: 20"
   },
   "workoutSession": {
     "workoutInProgress": "운동 진행 중",

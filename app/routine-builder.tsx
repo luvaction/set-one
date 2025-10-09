@@ -154,6 +154,7 @@ type Exercise = {
   name: string;
   sets: number;
   reps: string;
+  targetWeight?: number;
   targetMuscle: string;
   difficulty: string;
 };
@@ -195,6 +196,7 @@ export default function RoutineBuilderScreen() {
             name: ex.name,
             sets: ex.sets,
             reps: formatReps(ex.reps), // 객체를 문자열로 변환
+            targetWeight: ex.targetWeight,
             targetMuscle: ex.targetMuscle || "", // Ensure targetMuscle is string
             difficulty: ex.difficulty || "", // Ensure difficulty is string
           }))
@@ -228,10 +230,13 @@ export default function RoutineBuilderScreen() {
     setSelectedExercises(selectedExercises.filter((_, i) => i !== index));
   };
 
-  const updateExercise = (index: number, field: "sets" | "reps", value: string) => {
+  const updateExercise = (index: number, field: "sets" | "reps" | "targetWeight", value: string) => {
     const updated = [...selectedExercises];
     if (field === "sets") {
       updated[index].sets = parseInt(value) || 1;
+    } else if (field === "targetWeight") {
+      const weight = parseFloat(value);
+      updated[index].targetWeight = isNaN(weight) ? undefined : weight;
     } else {
       updated[index].reps = value;
     }
@@ -294,6 +299,18 @@ export default function RoutineBuilderScreen() {
               />
             </View>
           </View>
+
+          <View style={[styles.controlGroup, { marginTop: 12 }]}>
+            <Text style={[styles.controlLabel, { color: colors.textSecondary }]}>{t("routineBuilder.targetWeight")} (kg)</Text>
+            <TextInput
+              style={[styles.repsInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+              value={item.targetWeight !== undefined ? String(item.targetWeight) : ""}
+              onChangeText={(value) => updateExercise(safeIndex, "targetWeight", value)}
+              placeholder={t("routineBuilder.targetWeightPlaceholder")}
+              placeholderTextColor={colors.textSecondary}
+              keyboardType="numeric"
+            />
+          </View>
         </View>
       </ScaleDecorator>
     );
@@ -315,6 +332,7 @@ export default function RoutineBuilderScreen() {
         exercises: selectedExercises.map((ex) => ({
           ...ex,
           reps: parseReps(ex.reps), // 문자열을 객체로 변환
+          targetWeight: ex.targetWeight,
         })),
         isRecommended: false,
       };

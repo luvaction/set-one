@@ -12,6 +12,7 @@ export interface RoutineExercise {
   name: string; // 운동 이름
   sets: number; // 세트 수
   reps: { min: number; max: number } | string; // 횟수 범위 또는 시간 (예: { min: 10, max: 15 } 또는 "30초")
+  targetWeight?: number; // 목표 무게 (kg) - 운동 시 기본값으로 사용
   targetMuscle?: string; // 타겟 근육
   difficulty?: string; // 난이도
   restTime?: number; // 휴식 시간 (초)

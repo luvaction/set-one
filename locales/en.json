@@ -274,7 +274,9 @@
     "routineUpdated": "Routine updated successfully.",
     "routineSaved": "Routine saved successfully.",
     "saveRoutineFailed": "Failed to save routine.",
-    "loadRoutineFailed": "Failed to load routine."
+    "loadRoutineFailed": "Failed to load routine.",
+    "targetWeight": "Target Weight",
+    "targetWeightPlaceholder": "Optional, e.g. 20"
   },
   "workoutSession": {
     "workoutInProgress": "Workout In Progress",

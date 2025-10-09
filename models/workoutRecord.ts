@@ -15,6 +15,7 @@ export interface WorkoutExercise {
   exerciseId: string;
   exerciseName: string;
   targetSets: number; // 목표 세트 수
+  targetWeight?: number; // 목표 무게 (kg) - 세트 완료 시 기본값으로 사용
   sets: CompletedSet[];
   isCompleted: boolean; // 이 운동을 모두 완료했는지
 }

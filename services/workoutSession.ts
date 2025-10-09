@@ -16,6 +16,14 @@ const generateId = (): string => {
 
 const now = (): string => new Date().toISOString();
 
+// 로컬 시간대 기준으로 날짜를 YYYY-MM-DD 형식으로 변환
+const toLocalDateString = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 // reps를 문자열로 변환하는 헬퍼 함수
 const formatRepsToString = (reps: { min: number; max: number } | string): string => {
   if (typeof reps === "string") {
@@ -33,6 +41,7 @@ const convertRoutineToWorkoutExercises = (routine: Routine): WorkoutExercise[] =
     exerciseId: exercise.id,
     exerciseName: exercise.name,
     targetSets: exercise.sets,
+    targetWeight: exercise.targetWeight, // 목표 무게 복사
     sets: Array.from({ length: exercise.sets }, (_, i) => ({
       setNumber: i + 1,
       targetReps: formatRepsToString(exercise.reps), // 객체를 문자열로 변환
@@ -182,7 +191,7 @@ export const workoutSessionService = {
 
     const record: WorkoutRecord = {
       id: `record_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
-      date: startDate.toISOString().split("T")[0], // YYYY-MM-DD
+      date: toLocalDateString(startDate), // 로컬 시간대 기준 YYYY-MM-DD
       routineId: session.routineId,
       routineName: session.routineName,
       status: "completed",
@@ -218,7 +227,7 @@ export const workoutSessionService = {
 
     const record: WorkoutRecord = {
       id: `record_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
-      date: startDate.toISOString().split("T")[0],
+      date: toLocalDateString(startDate), // 로컬 시간대 기준 YYYY-MM-DD
       routineId: session.routineId,
       routineName: session.routineName,
       status: "stopped",
