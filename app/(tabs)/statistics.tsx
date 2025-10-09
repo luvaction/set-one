@@ -16,9 +16,11 @@ import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, Toucha
 import { generateMockWorkoutData } from "@/utils/generateMockData";
 import { PieChart } from "react-native-chart-kit";
 import Svg, { Rect, Line, Text as SvgText } from "react-native-svg";
+import { useTranslation } from "react-i18next";
 
 export default function StatisticsScreen() {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showMockButton, setShowMockButton] = useState(false); // 테스트 버튼 숨김
@@ -86,9 +88,9 @@ export default function StatisticsScreen() {
     } else {
       if (newSelected.size >= 5) {
         Alert.alert(
-          "최대 5개까지 선택 가능",
-          "다른 운동을 선택하려면 먼저 하나를 취소해주세요.",
-          [{ text: "확인" }]
+          t('statistics.maxSelection'),
+          t('statistics.deselectFirst'),
+          [{ text: t('common.confirm') }]
         );
         return;
       }
@@ -121,9 +123,9 @@ export default function StatisticsScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
-        {/* 타이틀 */}
+        {/* 리프레시 버튼 */}
         <View style={styles.titleContainer}>
-          <Text style={[styles.title, { color: colors.text }]}>통계</Text>
+          <View />
           <TouchableOpacity onPress={onRefresh}>
             <Ionicons name="refresh" size={22} color={colors.text} />
           </TouchableOpacity>
@@ -134,14 +136,14 @@ export default function StatisticsScreen() {
           <View style={styles.statsCardsContainer}>
             <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
               <Text style={styles.statIcon}>🔥</Text>
-              <Text style={[styles.statValue, { color: colors.text }]}>{coreStats.currentStreak}일</Text>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>연속 운동</Text>
+              <Text style={[styles.statValue, { color: colors.text }]}>{t('statistics.workoutDays', { count: coreStats.currentStreak })}</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('statistics.currentStreak')}</Text>
             </View>
 
             <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
               <Text style={styles.statIcon}>💪</Text>
               <Text style={[styles.statValue, { color: colors.text }]}>{coreStats.totalVolume.toLocaleString()}kg</Text>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>총 중량</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('statistics.totalVolume')}</Text>
             </View>
 
             <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
@@ -151,8 +153,8 @@ export default function StatisticsScreen() {
               </Text>
               <Text style={[styles.statLabel, { color: colors.textSecondary, fontSize: 11, textAlign: "center" }]}>
                 {isGoalSet
-                  ? `주간 목표 달성\n(${weekComparison?.thisWeek.workouts}회/${weeklyGoal}회)`
-                  : "목표 미설정"}
+                  ? `${t('statistics.weeklyGoalRate')}\n(${weekComparison?.thisWeek.workouts}/${weeklyGoal})`
+                  : t('statistics.goalNotSet')}
               </Text>
             </View>
           </View>
@@ -161,13 +163,13 @@ export default function StatisticsScreen() {
         {/* 주간 비교 */}
         {weekComparison && (
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>이번 주 성장</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('statistics.thisWeekGrowth')}</Text>
             <View style={[styles.comparisonCard, { backgroundColor: colors.surface }]}>
               <View style={styles.comparisonRow}>
                 <View style={styles.comparisonItem}>
-                  <Text style={[styles.comparisonLabel, { color: colors.textSecondary }]}>운동 횟수</Text>
+                  <Text style={[styles.comparisonLabel, { color: colors.textSecondary }]}>{t('statistics.workoutCount')}</Text>
                   <Text style={[styles.comparisonValue, { color: colors.text }]}>
-                    {weekComparison.thisWeek.workouts}회
+                    {weekComparison.thisWeek.workouts}
                   </Text>
                   {weekComparison.change.workouts !== 0 && (
                     <View style={styles.changeContainer}>
@@ -189,7 +191,7 @@ export default function StatisticsScreen() {
                 </View>
 
                 <View style={styles.comparisonItem}>
-                  <Text style={[styles.comparisonLabel, { color: colors.textSecondary }]}>총 중량</Text>
+                  <Text style={[styles.comparisonLabel, { color: colors.textSecondary }]}>{t('statistics.totalVolume')}</Text>
                   <Text style={[styles.comparisonValue, { color: colors.text }]}>
                     {Math.round(weekComparison.thisWeek.volume).toLocaleString()}kg
                   </Text>
@@ -213,7 +215,7 @@ export default function StatisticsScreen() {
                 </View>
 
                 <View style={styles.comparisonItem}>
-                  <Text style={[styles.comparisonLabel, { color: colors.textSecondary }]}>총 시간</Text>
+                  <Text style={[styles.comparisonLabel, { color: colors.textSecondary }]}>{t('statistics.totalTime')}</Text>
                   <Text style={[styles.comparisonValue, { color: colors.text }]}>
                     {Math.floor(weekComparison.thisWeek.duration / 60)}h
                   </Text>
@@ -236,7 +238,7 @@ export default function StatisticsScreen() {
                   )}
                 </View>
               </View>
-              <Text style={[styles.comparisonHint, { color: colors.textSecondary }]}>vs 지난주</Text>
+              <Text style={[styles.comparisonHint, { color: colors.textSecondary }]}>{t('statistics.vsLastWeek')}</Text>
             </View>
           </View>
         )}
@@ -244,21 +246,21 @@ export default function StatisticsScreen() {
         {/* 연간 통계 */}
         {coreStats && (
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>올해 활동</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('statistics.thisYearActivity')}</Text>
             <View style={[styles.yearStatsCard, { backgroundColor: colors.surface }]}>
               <View style={styles.yearStatRow}>
                 <View style={styles.yearStatItem}>
                   <Text style={[styles.yearStatValue, { color: colors.primary }]}>
-                    {coreStats.thisYearWorkouts}회
+                    {coreStats.thisYearWorkouts}{t('statistics.timesUnit')}
                   </Text>
-                  <Text style={[styles.yearStatLabel, { color: colors.textSecondary }]}>총 운동</Text>
+                  <Text style={[styles.yearStatLabel, { color: colors.textSecondary }]}>{t('statistics.totalWorkouts')}</Text>
                 </View>
                 <View style={styles.yearStatDivider} />
                 <View style={styles.yearStatItem}>
                   <Text style={[styles.yearStatValue, { color: colors.primary }]}>
                     {coreStats.thisYearVolume.toLocaleString()}kg
                   </Text>
-                  <Text style={[styles.yearStatLabel, { color: colors.textSecondary }]}>총 중량</Text>
+                  <Text style={[styles.yearStatLabel, { color: colors.textSecondary }]}>{t('statistics.totalVolume')}</Text>
                 </View>
               </View>
             </View>
@@ -268,7 +270,7 @@ export default function StatisticsScreen() {
         {/* 인사이트 카드 */}
         {insights.length > 0 && (
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>인사이트</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('statistics.insights')}</Text>
             {insights.map((insight, index) => (
               <View
                 key={index}
@@ -291,7 +293,7 @@ export default function StatisticsScreen() {
         {/* 개인 기록 */}
         {personalRecords.length > 0 && (
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>개인 기록 (PR)</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('statistics.personalRecords')}</Text>
             <View style={[styles.prContainer, { backgroundColor: colors.surface }]}>
               {personalRecords.slice(0, 5).map((pr, index) => (
                 <View key={index} style={styles.prItem}>
@@ -309,7 +311,7 @@ export default function StatisticsScreen() {
                       {pr.weight}kg × {pr.reps}
                     </Text>
                     <Text style={[styles.prTotal, { color: colors.textSecondary }]}>
-                      {pr.weight * pr.reps}kg 총량
+                      {pr.weight * pr.reps}kg {t('statistics.totalAmount')}
                     </Text>
                   </View>
                 </View>
@@ -334,11 +336,11 @@ export default function StatisticsScreen() {
         {/* 운동별 통계 - 바차트 */}
         {exerciseStats.length > 0 && (
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>운동별 상세 통계</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('statistics.detailedStats')}</Text>
 
             {/* 체크박스 필터 */}
             <View style={[styles.filterContainer, { backgroundColor: colors.surface }]}>
-              <Text style={[styles.filterTitle, { color: colors.text }]}>표시할 운동 선택 (최대 5개)</Text>
+              <Text style={[styles.filterTitle, { color: colors.text }]}>{t('statistics.selectExercises')}</Text>
               <View style={styles.checkboxContainer}>
                 {exerciseStats.slice(0, 10).map((ex) => {
                   const isSelected = selectedExercises.has(ex.exerciseName);
@@ -392,14 +394,14 @@ export default function StatisticsScreen() {
               if (maxValue === 0 || !isFinite(maxValue)) {
                 return (
                   <View style={[styles.chartContainer, { backgroundColor: colors.surface }]}>
-                    <Text style={[styles.chartTitle, { color: colors.text }]}>총 중량 비교</Text>
+                    <Text style={[styles.chartTitle, { color: colors.text }]}>{t('statistics.volumeComparison')}</Text>
                     <View style={styles.emptyChartContainer}>
                       <Ionicons name="bar-chart-outline" size={48} color={colors.textSecondary} />
                       <Text style={[styles.emptyChartText, { color: colors.textSecondary }]}>
-                        선택한 운동은 중량 기록이 없습니다
+                        {t('statistics.noWeightRecords')}
                       </Text>
                       <Text style={[styles.emptyChartSubtext, { color: colors.textSecondary }]}>
-                        (유산소, 맨몸 운동 등)
+                        {t('statistics.cardioBodyweightNote')}
                       </Text>
                     </View>
                   </View>
@@ -529,29 +531,29 @@ export default function StatisticsScreen() {
                       <View style={styles.exerciseStatHeader}>
                         <Text style={[styles.exerciseStatName, { color: colors.text }]}>{ex.exerciseName}</Text>
                         <Text style={[styles.exerciseStatWorkouts, { color: colors.textSecondary }]}>
-                          {ex.workoutCount}일 운동
+                          {t('statistics.workoutDays', { count: ex.workoutCount })}
                         </Text>
                       </View>
                       <View style={styles.exerciseStatGrid}>
                         <View style={styles.exerciseStatCell}>
-                          <Text style={[styles.exerciseStatValue, { color: colors.primary }]}>{ex.totalSets}세트</Text>
-                          <Text style={[styles.exerciseStatLabel, { color: colors.textSecondary }]}>총 세트</Text>
+                          <Text style={[styles.exerciseStatValue, { color: colors.primary }]}>{ex.totalSets} {t('routines.sets')}</Text>
+                          <Text style={[styles.exerciseStatLabel, { color: colors.textSecondary }]}>{t('statistics.totalSets')}</Text>
                         </View>
                         <View style={styles.exerciseStatCell}>
-                          <Text style={[styles.exerciseStatValue, { color: colors.primary }]}>{ex.totalReps}회</Text>
-                          <Text style={[styles.exerciseStatLabel, { color: colors.textSecondary }]}>총 반복</Text>
+                          <Text style={[styles.exerciseStatValue, { color: colors.primary }]}>{ex.totalReps}{t('statistics.timesUnit')}</Text>
+                          <Text style={[styles.exerciseStatLabel, { color: colors.textSecondary }]}>{t('statistics.totalReps')}</Text>
                         </View>
                         <View style={styles.exerciseStatCell}>
                           <Text style={[styles.exerciseStatValue, { color: colors.primary }]}>
                             {ex.totalVolume.toLocaleString()}kg
                           </Text>
-                          <Text style={[styles.exerciseStatLabel, { color: colors.textSecondary }]}>총 중량</Text>
+                          <Text style={[styles.exerciseStatLabel, { color: colors.textSecondary }]}>{t('statistics.totalVolume')}</Text>
                         </View>
                       </View>
                       {ex.avgWeight > 0 && (
                         <View style={styles.exerciseStatFooter}>
                           <Text style={[styles.exerciseStatDetail, { color: colors.textSecondary }]}>
-                            평균 {ex.avgWeight}kg · 최대 {ex.maxWeight}kg
+                            {t('statistics.average')} {ex.avgWeight}kg · {t('statistics.maximum')} {ex.maxWeight}kg
                           </Text>
                         </View>
                       )}
@@ -563,7 +565,7 @@ export default function StatisticsScreen() {
             {selectedExercises.size === 0 && (
               <View style={[styles.emptyContainer, { backgroundColor: colors.surface }]}>
                 <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                  운동을 선택해주세요
+                  {t('statistics.selectExercisePlease')}
                 </Text>
               </View>
             )}
@@ -573,7 +575,7 @@ export default function StatisticsScreen() {
         {/* 운동 유형 분포 - 파이차트 */}
         {exerciseTypeDistribution.length > 0 && (
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>운동 유형 분포</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('statistics.exerciseTypeDistribution')}</Text>
             <View style={[styles.chartContainer, { backgroundColor: colors.surface }]}>
               <PieChart
                 data={exerciseTypeDistribution.map((item, index) => {

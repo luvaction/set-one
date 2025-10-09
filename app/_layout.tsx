@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
 import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
+import '../i18n/config'; // i18n 초기화
 
 export const unstable_settings = {
   anchor: '(tabs)',

@@ -6,6 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { useTranslation } from "react-i18next";
 
 // 타이머 상태 타입
 type SetTimerState = {
@@ -47,6 +48,7 @@ const getMinReps = (reps: { min: number; max: number } | string): number => {
 
 export default function WorkoutScreen() {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const [activeSession, setActiveSession] = useState<WorkoutSession | null>(null);
   const [myRoutines, setMyRoutines] = useState<Routine[]>([]);
   const [recommendedRoutines, setRecommendedRoutines] = useState<Routine[]>([]);
@@ -251,15 +253,15 @@ export default function WorkoutScreen() {
       startTotalTimer();
     } catch (error) {
       console.error("Failed to start workout:", error);
-      Alert.alert("오류", "운동 시작에 실패했습니다.");
+      Alert.alert(t('workoutSession.error'), t('routines.startWorkoutFailed'));
     }
   };
 
   const handleStopWorkout = () => {
-    Alert.alert("운동 중단", "운동을 중단하시겠습니까? 진행 상황은 저장됩니다.", [
-      { text: "계속하기", style: "cancel" },
+    Alert.alert(t('workoutSession.stopWorkoutTitle'), t('workoutSession.stopWorkoutMessage'), [
+      { text: t('workoutSession.continue'), style: "cancel" },
       {
-        text: "중단",
+        text: t('workoutSession.stop'),
         style: "destructive",
         onPress: async () => {
           if (activeSession) {
@@ -274,10 +276,10 @@ export default function WorkoutScreen() {
               workoutStartTimeRef.current = 0;
               setTotalElapsedTime(0);
 
-              Alert.alert("완료", "운동 기록이 저장되었습니다.");
+              Alert.alert(t('workout.completed'), t('workoutSession.workoutSaved'));
             } catch (error) {
               console.error("Failed to stop workout:", error);
-              Alert.alert("오류", "운동 중단에 실패했습니다.");
+              Alert.alert(t('workoutSession.error'), t('workoutSession.stopWorkoutFailed'));
             }
           }
         },
@@ -299,10 +301,10 @@ export default function WorkoutScreen() {
       workoutStartTimeRef.current = 0;
       setTotalElapsedTime(0);
 
-      Alert.alert("축하합니다!", "운동을 완료했습니다. 수고하셨습니다! 💪");
+      Alert.alert(t('workoutSession.congratulations'), t('workoutSession.workoutCompletedMessage'));
     } catch (error) {
       console.error("Failed to complete workout:", error);
-      Alert.alert("오류", "운동 완료 처리에 실패했습니다.");
+      Alert.alert(t('workoutSession.error'), t('workoutSession.completeWorkoutFailed'));
     }
   };
 
@@ -339,7 +341,7 @@ export default function WorkoutScreen() {
     const weightValue = parseFloat(weight) || 0;
 
     if (reps <= 0) {
-      Alert.alert("오류", "횟수는 1 이상이어야 합니다.");
+      Alert.alert(t('workoutSession.error'), t('workoutSession.repsMinimum'));
       return;
     }
 
@@ -370,7 +372,7 @@ export default function WorkoutScreen() {
       setWeight("");
     } catch (error) {
       console.error("Failed to complete set:", error);
-      Alert.alert("오류", "세트 완료 처리에 실패했습니다.");
+      Alert.alert(t('workoutSession.error'), t('workoutSession.completeSetFailed'));
     }
   };
 
@@ -381,7 +383,7 @@ export default function WorkoutScreen() {
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
           <View style={styles.headerLeft}>
             <Text style={[styles.headerTitle, { color: colors.text }]}>{activeSession.routineName}</Text>
-            <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>운동 진행 중</Text>
+            <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>{t('workoutSession.workoutInProgress')}</Text>
             <View style={styles.timerContainer}>
               <Ionicons name="time-outline" size={16} color={colors.primary} />
               <Text style={[styles.totalTimerText, { color: colors.primary }]}>{formatTime(totalElapsedTime)}</Text>
@@ -389,7 +391,7 @@ export default function WorkoutScreen() {
           </View>
           <TouchableOpacity style={[styles.stopButton, { backgroundColor: colors.textSecondary + "20" }]} onPress={handleStopWorkout}>
             <Ionicons name="stop-circle" size={20} color={colors.textSecondary} />
-            <Text style={[styles.stopButtonText, { color: colors.textSecondary }]}>중단</Text>
+            <Text style={[styles.stopButtonText, { color: colors.textSecondary }]}>{t('workoutSession.stop')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -398,7 +400,7 @@ export default function WorkoutScreen() {
           <View style={[styles.restTimerBanner, { backgroundColor: colors.primary }]}>
             <Ionicons name="cafe-outline" size={24} color={colors.buttonText} />
             <View style={styles.restTimerContent}>
-              <Text style={[styles.restTimerTitle, { color: colors.buttonText }]}>휴식 시간</Text>
+              <Text style={[styles.restTimerTitle, { color: colors.buttonText }]}>{t('workoutSession.restTime')}</Text>
               <Text style={[styles.restTimerValue, { color: colors.buttonText }]}>{formatTime(restTimer.elapsedTime)}</Text>
             </View>
             <TouchableOpacity onPress={stopRestTimer}>
@@ -440,9 +442,9 @@ export default function WorkoutScreen() {
                         <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                           {set.isCompleted && <Ionicons name="checkmark-circle" size={16} color={colors.primary} />}
                           {isActiveSet && !set.isCompleted && <Ionicons name="play-circle" size={16} color={colors.primary} />}
-                          <Text style={[styles.setNumber, { color: set.isCompleted || isActiveSet ? colors.primary : colors.textSecondary }]}>세트 {set.setNumber}</Text>
+                          <Text style={[styles.setNumber, { color: set.isCompleted || isActiveSet ? colors.primary : colors.textSecondary }]}>{t('workoutSession.setNumber', { number: set.setNumber })}</Text>
                         </View>
-                        <Text style={[styles.targetReps, { color: colors.textSecondary }]}>목표: {formatReps(set.targetReps)}회</Text>
+                        <Text style={[styles.targetReps, { color: colors.textSecondary }]}>{t('workoutSession.target', { reps: formatReps(set.targetReps) })}</Text>
                       </View>
 
                       {set.isCompleted ? (
@@ -504,7 +506,7 @@ export default function WorkoutScreen() {
         <View style={[styles.footer, { borderTopColor: colors.border, backgroundColor: colors.surface }]}>
           <TouchableOpacity style={[styles.completeButton, { backgroundColor: colors.primary }]} onPress={handleCompleteWorkout}>
             <Ionicons name="checkmark-circle" size={24} color={colors.buttonText} />
-            <Text style={[styles.completeButtonText, { color: colors.buttonText }]}>운동 완료</Text>
+            <Text style={[styles.completeButtonText, { color: colors.buttonText }]}>{t('workoutSession.finishWorkout')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -512,7 +514,7 @@ export default function WorkoutScreen() {
         <Modal visible={showSetCompleteModal} animationType="fade" transparent={true} onRequestClose={() => setShowSetCompleteModal(false)}>
           <View style={styles.modalOverlay}>
             <View style={[styles.setCompleteModal, { backgroundColor: colors.surface }]}>
-              <Text style={[styles.modalTitleSmall, { color: colors.text }]}>세트 완료 기록</Text>
+              <Text style={[styles.modalTitleSmall, { color: colors.text }]}>{t('workoutSession.setCompleteRecord')}</Text>
 
               {completingSet && activeSession && (
                 <View style={styles.modalContent}>
@@ -520,29 +522,29 @@ export default function WorkoutScreen() {
 
                   {/* 오류 발생 위치 수정 완료 */}
                   <Text style={[styles.modalLabel, { color: colors.textSecondary, marginBottom: 15 }]}>
-                    세트 {completingSet.setIndex + 1} (목표: {completingSet.targetReps}회)
+                    {t('workoutSession.setInfo', { number: completingSet.setIndex + 1, target: completingSet.targetReps })}
                   </Text>
 
                   {/* 횟수 입력 */}
-                  <Text style={[styles.inputLabel, { color: colors.text }]}>실제 횟수</Text>
+                  <Text style={[styles.inputLabel, { color: colors.text }]}>{t('workoutSession.actualReps')}</Text>
                   <TextInput
                     style={[styles.modalInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
                     value={actualReps}
                     onChangeText={setActualReps}
                     keyboardType="numeric"
-                    placeholder="횟수 입력 (필수)"
+                    placeholder={t('workoutSession.repsRequired')}
                     placeholderTextColor={colors.textSecondary}
                     maxLength={3}
                   />
 
                   {/* 무게 입력 */}
-                  <Text style={[styles.inputLabel, { color: colors.text, marginTop: 15 }]}>무게 (kg)</Text>
+                  <Text style={[styles.inputLabel, { color: colors.text, marginTop: 15 }]}>{t('workoutSession.weightKg')}</Text>
                   <TextInput
                     style={[styles.modalInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
                     value={weight}
                     onChangeText={setWeight}
                     keyboardType="numeric"
-                    placeholder="무게 입력 (선택)"
+                    placeholder={t('workoutSession.weightOptional')}
                     placeholderTextColor={colors.textSecondary}
                     maxLength={6}
                   />
@@ -551,10 +553,10 @@ export default function WorkoutScreen() {
 
               <View style={styles.modalActions}>
                 <Pressable style={[styles.modalCancelButton, { borderColor: colors.border }]} onPress={() => setShowSetCompleteModal(false)}>
-                  <Text style={[styles.modalCancelButtonText, { color: colors.text }]}>취소</Text>
+                  <Text style={[styles.modalCancelButtonText, { color: colors.text }]}>{t('common.cancel')}</Text>
                 </Pressable>
                 <Pressable style={[styles.modalSaveButton, { backgroundColor: colors.primary }]} onPress={handleSaveSetComplete}>
-                  <Text style={[styles.modalSaveButtonText, { color: colors.buttonText }]}>저장</Text>
+                  <Text style={[styles.modalSaveButtonText, { color: colors.buttonText }]}>{t('common.save')}</Text>
                 </Pressable>
               </View>
             </View>
@@ -569,12 +571,12 @@ export default function WorkoutScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.contentCenter}>
         <Ionicons name="fitness-outline" size={80} color={colors.primary} />
-        <Text style={[styles.title, { color: colors.text }]}>운동 시작하기</Text>
-        <Text style={[styles.description, { color: colors.textSecondary }]}>루틴을 선택하여{"\n"}운동을 시작하세요</Text>
+        <Text style={[styles.title, { color: colors.text }]}>{t('workoutSession.startWorkoutTitle')}</Text>
+        <Text style={[styles.description, { color: colors.textSecondary }]}>{t('workoutSession.selectRoutinePrompt')}</Text>
 
         <TouchableOpacity style={[styles.startButton, { backgroundColor: colors.primary }]} onPress={() => setShowRoutineSelector(true)}>
           <Ionicons name="play-circle" size={24} color={colors.buttonText} />
-          <Text style={[styles.buttonText, { color: colors.buttonText }]}>루틴 선택</Text>
+          <Text style={[styles.buttonText, { color: colors.buttonText }]}>{t('workoutSession.selectRoutine')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -582,7 +584,7 @@ export default function WorkoutScreen() {
       <Modal visible={showRoutineSelector} animationType="slide" onRequestClose={() => setShowRoutineSelector(false)}>
         <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
           <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>루틴 선택</Text>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{t('workoutSession.selectRoutine')}</Text>
             <TouchableOpacity onPress={() => setShowRoutineSelector(false)}>
               <Ionicons name="close" size={28} color={colors.textSecondary} />
             </TouchableOpacity>
@@ -591,7 +593,7 @@ export default function WorkoutScreen() {
           <ScrollView style={styles.routinesList}>
             {myRoutines.length > 0 && (
               <>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>내 루틴</Text>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('routines.myRoutines')}</Text>
                 {myRoutines.map((routine) => (
                   <TouchableOpacity
                     key={routine.id}
@@ -600,7 +602,7 @@ export default function WorkoutScreen() {
                   >
                     <View style={styles.routineInfo}>
                       <Text style={[styles.routineName, { color: colors.text }]}>{routine.name}</Text>
-                      <Text style={[styles.exerciseCount, { color: colors.textSecondary }]}>{routine.exercises.length}개 운동</Text>
+                      <Text style={[styles.exerciseCount, { color: colors.textSecondary }]}>{t('workoutSession.exercisesCount', { count: routine.exercises.length })}</Text>
                     </View>
                     <Ionicons name="chevron-forward" size={24} color={colors.textSecondary} />
                   </TouchableOpacity>
@@ -610,7 +612,7 @@ export default function WorkoutScreen() {
 
             {recommendedRoutines.length > 0 && (
               <>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>추천 루틴</Text>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('routines.recommended')}</Text>
                 {recommendedRoutines.map((routine) => (
                   <TouchableOpacity
                     key={routine.id}
@@ -619,7 +621,7 @@ export default function WorkoutScreen() {
                   >
                     <View style={styles.routineInfo}>
                       <Text style={[styles.routineName, { color: colors.text }]}>{routine.name}</Text>
-                      <Text style={[styles.exerciseCount, { color: colors.textSecondary }]}>{routine.exercises.length}개 운동</Text>
+                      <Text style={[styles.exerciseCount, { color: colors.textSecondary }]}>{t('workoutSession.exercisesCount', { count: routine.exercises.length })}</Text>
                     </View>
                     <Ionicons name="chevron-forward" size={24} color={colors.textSecondary} />
                   </TouchableOpacity>
@@ -629,7 +631,7 @@ export default function WorkoutScreen() {
 
             {myRoutines.length === 0 && recommendedRoutines.length === 0 && (
               <View style={styles.emptyState}>
-                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>루틴이 없습니다.{"\n"}루틴 탭에서 루틴을 만들어보세요.</Text>
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('workoutSession.noRoutinesMessage')}</Text>
               </View>
             )}
           </ScrollView>

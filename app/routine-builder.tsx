@@ -8,6 +8,7 @@ import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View 
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from "react-native-draggable-flatlist";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 
 // reps를 표시용 문자열로 변환하는 헬퍼 함수
 const formatReps = (reps: { min: number; max: number } | string): string => {
@@ -18,6 +19,38 @@ const formatReps = (reps: { min: number; max: number } | string): string => {
     return `${reps.min}`;
   }
   return `${reps.min}-${reps.max}`;
+};
+
+// 번역 헬퍼 함수들
+const getExerciseName = (t: any, exerciseId: string) => {
+  return t(`exercises.${exerciseId}`);
+};
+
+const getMuscleGroupKey = (targetMuscle: string) => {
+  const map: Record<string, string> = {
+    "가슴": "chest",
+    "삼두": "triceps",
+    "등": "back",
+    "이두": "biceps",
+    "하체": "legs",
+    "코어": "core",
+    "가슴 상부": "chestUpper",
+    "가슴 하부": "chestLower",
+    "등/하체": "backLegs",
+    "햄스트링": "hamstring",
+    "전신": "fullBody",
+    "어깨": "shoulder",
+  };
+  return map[targetMuscle] || targetMuscle;
+};
+
+const getDifficultyKey = (difficulty: string) => {
+  const map: Record<string, string> = {
+    "초급": "beginner",
+    "중급": "intermediate",
+    "고급": "advanced",
+  };
+  return map[difficulty] || difficulty;
 };
 
 // 문자열을 reps 객체로 파싱하는 헬퍼 함수
@@ -122,6 +155,7 @@ type Exercise = {
 
 export default function RoutineBuilderScreen() {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const params = useLocalSearchParams();
   const isEditing = !!params.routineId;
 
@@ -163,7 +197,7 @@ export default function RoutineBuilderScreen() {
       }
     } catch (error) {
       console.error("Failed to load routine:", error);
-      Alert.alert("오류", "루틴 불러오기에 실패했습니다.");
+      Alert.alert(t('workoutSession.error'), t('routineBuilder.loadRoutineFailed'));
     }
   };
 
@@ -232,7 +266,7 @@ export default function RoutineBuilderScreen() {
 
           <View style={styles.exerciseControls}>
             <View style={styles.controlGroup}>
-              <Text style={[styles.controlLabel, { color: colors.textSecondary }]}>세트</Text>
+              <Text style={[styles.controlLabel, { color: colors.textSecondary }]}>{t('routines.sets')}</Text>
               <View style={[styles.numberInput, { backgroundColor: colors.background, borderColor: colors.border }]}>
                 <TouchableOpacity style={styles.numberButton} onPress={() => updateExercise(safeIndex, "sets", String(Math.max(1, item.sets - 1)))}>
                   <Ionicons name="remove" size={16} color={colors.textSecondary} />
@@ -245,12 +279,12 @@ export default function RoutineBuilderScreen() {
             </View>
 
             <View style={styles.controlGroup}>
-              <Text style={[styles.controlLabel, { color: colors.textSecondary }]}>횟수/시간</Text>
+              <Text style={[styles.controlLabel, { color: colors.textSecondary }]}>{t('routineBuilder.repsOrTime')}</Text>
               <TextInput
                 style={[styles.repsInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
                 value={item.reps}
                 onChangeText={(value) => updateExercise(safeIndex, "reps", value)}
-                placeholder="10회"
+                placeholder={t('routineBuilder.repsPlaceholder')}
                 placeholderTextColor={colors.textSecondary}
               />
             </View>
@@ -262,11 +296,11 @@ export default function RoutineBuilderScreen() {
 
   const saveRoutine = async () => {
     if (!routineName.trim()) {
-      Alert.alert("오류", "루틴 이름을 입력해주세요.");
+      Alert.alert(t('workoutSession.error'), t('routineBuilder.enterRoutineName'));
       return;
     }
     if (selectedExercises.length === 0) {
-      Alert.alert("오류", "최소 하나의 운동을 추가해주세요.");
+      Alert.alert(t('workoutSession.error'), t('routineBuilder.addAtLeastOneExercise'));
       return;
     }
 
@@ -283,15 +317,15 @@ export default function RoutineBuilderScreen() {
       if (isEditing && params.routineId) {
         // 수정 모드
         await routineService.updateRoutine(params.routineId as string, routineData);
-        Alert.alert("저장 완료", "루틴이 수정되었습니다.", [{ text: "확인", onPress: () => router.back() }]);
+        Alert.alert(t('routineBuilder.saveComplete'), t('routineBuilder.routineUpdated'), [{ text: t('common.confirm'), onPress: () => router.back() }]);
       } else {
         // 새로 생성
         await routineService.createRoutine(routineData);
-        Alert.alert("저장 완료", "루틴이 저장되었습니다.", [{ text: "확인", onPress: () => router.back() }]);
+        Alert.alert(t('routineBuilder.saveComplete'), t('routineBuilder.routineSaved'), [{ text: t('common.confirm'), onPress: () => router.back() }]);
       }
     } catch (error) {
       console.error("Failed to save routine:", error);
-      Alert.alert("오류", "루틴 저장에 실패했습니다.");
+      Alert.alert(t('workoutSession.error'), t('routineBuilder.saveRoutineFailed'));
     }
   };
 
@@ -303,7 +337,7 @@ export default function RoutineBuilderScreen() {
             <TouchableOpacity style={styles.backButton} onPress={() => setShowExerciseLibrary(false)}>
               <Ionicons name="arrow-back" size={24} color={colors.text} />
             </TouchableOpacity>
-            <Text style={[styles.headerTitle, { color: colors.text }]}>운동 선택</Text>
+            <Text style={[styles.headerTitle, { color: colors.text }]}>{t('routineBuilder.selectExercise')}</Text>
             <View style={styles.headerSpacer} />
           </View>
 
@@ -311,7 +345,7 @@ export default function RoutineBuilderScreen() {
             <Ionicons name="search" size={20} color={colors.textSecondary} />
             <TextInput
               style={[styles.searchInput, { color: colors.text }]}
-              placeholder="운동 검색..."
+              placeholder={t('routineBuilder.searchExercise')}
               placeholderTextColor={colors.textSecondary}
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -326,7 +360,7 @@ export default function RoutineBuilderScreen() {
                 onPress={() => addExercise(exercise)}
               >
                 <View style={styles.exerciseInfo}>
-                  <Text style={[styles.exerciseName, { color: colors.text }]}>{exercise.name}</Text>
+                  <Text style={[styles.exerciseName, { color: colors.text }]}>{getExerciseName(t, exercise.id)}</Text>
                   <View style={styles.exerciseTags}>
                     <View
                       style={[
@@ -340,12 +374,12 @@ export default function RoutineBuilderScreen() {
                         exercise.targetMuscle === "이두" && styles.bicepsTag,
                       ]}
                     >
-                      <Text style={[styles.muscleTagText, { color: colors.text }]}>{exercise.targetMuscle}</Text>
+                      <Text style={[styles.muscleTagText, { color: colors.text }]}>{t(`muscleGroups.${getMuscleGroupKey(exercise.targetMuscle)}`)}</Text>
                     </View>
-                    <Text style={[styles.difficultyText, { color: colors.textSecondary }]}>{exercise.difficulty}</Text>
+                    <Text style={[styles.difficultyText, { color: colors.textSecondary }]}>{t(`difficulty.${getDifficultyKey(exercise.difficulty)}`)}</Text>
                   </View>
                   <Text style={[styles.defaultSets, { color: colors.textSecondary }]}>
-                    권장: {exercise.defaultSets}세트 × {formatReps(exercise.defaultReps)}
+                    {t('routineBuilder.recommendedFormat', { sets: exercise.defaultSets, reps: formatReps(exercise.defaultReps) })}
                   </Text>
                 </View>
                 <Ionicons name="add-circle" size={24} color={colors.primary} />
@@ -364,19 +398,19 @@ export default function RoutineBuilderScreen() {
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>{isEditing ? "루틴 수정" : "새 루틴"}</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>{isEditing ? t('routineBuilder.editRoutine') : t('routineBuilder.newRoutine')}</Text>
           <TouchableOpacity style={[styles.saveButton, { backgroundColor: colors.primary }]} onPress={saveRoutine}>
-            <Text style={[styles.saveButtonText, { color: colors.buttonText }]}>저장</Text>
+            <Text style={[styles.saveButtonText, { color: colors.buttonText }]}>{t('common.save')}</Text>
           </TouchableOpacity>
         </View>
 
         <ScrollView style={styles.content}>
           {/* 루틴 이름 입력 */}
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>루틴 이름</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('routines.routineName')}</Text>
             <TextInput
               style={[styles.nameInput, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
-              placeholder="루틴 이름을 입력하세요"
+              placeholder={t('routines.routineNamePlaceholder')}
               placeholderTextColor={colors.textSecondary}
               value={routineName}
               onChangeText={setRoutineName}
@@ -386,19 +420,19 @@ export default function RoutineBuilderScreen() {
           {/* 운동 목록 */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>운동 목록 ({selectedExercises.length}개)</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('routineBuilder.exerciseList', { count: selectedExercises.length })}</Text>
               <TouchableOpacity style={[styles.addExerciseButton, { backgroundColor: colors.primary + "20" }]} onPress={() => setShowExerciseLibrary(true)}>
                 <Ionicons name="add" size={20} color={colors.primary} />
-                <Text style={[styles.addExerciseText, { color: colors.primary }]}>운동 추가</Text>
+                <Text style={[styles.addExerciseText, { color: colors.primary }]}>{t('routines.addExercise')}</Text>
               </TouchableOpacity>
             </View>
 
             {selectedExercises.length === 0 ? (
               <View style={[styles.emptyState, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <Ionicons name="fitness-outline" size={48} color={colors.textSecondary} />
-                <Text style={[styles.emptyTitle, { color: colors.text }]}>운동을 추가해보세요</Text>
-                <Text style={[styles.emptyDescription, { color: colors.textSecondary }]}>위 운동 추가 버튼을 눌러 루틴에 운동을 추가할 수 있습니다.</Text>
-                <Text style={[styles.emptyDescription, { color: colors.textSecondary, marginTop: 8 }]}>💡 운동을 길게 눌러서 순서를 변경할 수 있습니다.</Text>
+                <Text style={[styles.emptyTitle, { color: colors.text }]}>{t('routineBuilder.addExercisePrompt')}</Text>
+                <Text style={[styles.emptyDescription, { color: colors.textSecondary }]}>{t('routineBuilder.addExerciseDescription')}</Text>
+                <Text style={[styles.emptyDescription, { color: colors.textSecondary, marginTop: 8 }]}>{t('routineBuilder.dragExerciseTip')}</Text>
               </View>
             ) : (
               <DraggableFlatList

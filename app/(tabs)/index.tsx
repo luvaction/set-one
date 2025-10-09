@@ -5,9 +5,11 @@ import { router, useFocusEffect } from "expo-router";
 import { useTheme } from "@/contexts/ThemeContext";
 import { routineService, workoutSessionService, workoutRecordService, profileService } from "@/services";
 import { Routine, WorkoutRecord } from "@/models";
+import { useTranslation } from "react-i18next";
 
 export default function HomeScreen() {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const [recommendedRoutines, setRecommendedRoutines] = useState<Routine[]>([]);
   const [lastUsedRoutine, setLastUsedRoutine] = useState<Routine | null>(null);
   const [weeklyGoal, setWeeklyGoal] = useState<number>(0);
@@ -100,7 +102,7 @@ export default function HomeScreen() {
       router.push("/(tabs)/workout");
     } catch (error) {
       console.error("Failed to start workout:", error);
-      Alert.alert("오류", "운동 시작에 실패했습니다.");
+      Alert.alert(t('errors.generic'), t('errors.saveFailed'));
     }
   };
 
@@ -108,17 +110,17 @@ export default function HomeScreen() {
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* 인사말 */}
       <View style={styles.header}>
-        <Text style={[styles.greeting, { color: colors.text }]}>안녕하세요!</Text>
-        <Text style={[styles.subGreeting, { color: colors.textSecondary }]}>오늘도 Set1부터 시작해볼까요?</Text>
+        <Text style={[styles.greeting, { color: colors.text }]}>{t('home.greeting')}</Text>
+        <Text style={[styles.subGreeting, { color: colors.textSecondary }]}>{t('home.subGreeting')}</Text>
       </View>
 
       {/* 주간 목표 진행률 */}
       {weeklyGoal > 0 && (
         <View style={[styles.progressCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.progressHeader}>
-            <Text style={[styles.progressTitle, { color: colors.text }]}>이번 주 목표</Text>
+            <Text style={[styles.progressTitle, { color: colors.text }]}>{t('home.weeklyGoal')}</Text>
             <Text style={[styles.progressValue, { color: colors.primary }]}>
-              {thisWeekWorkouts}/{weeklyGoal}회
+              {thisWeekWorkouts}/{weeklyGoal}
             </Text>
           </View>
           <View style={[styles.progressBarBg, { backgroundColor: colors.border }]}>
@@ -133,7 +135,7 @@ export default function HomeScreen() {
             />
           </View>
           <Text style={[styles.progressSubtitle, { color: colors.textSecondary }]}>
-            {thisWeekWorkouts >= weeklyGoal ? "🎉 목표 달성!" : `${weeklyGoal - thisWeekWorkouts}회 남았어요`}
+            {thisWeekWorkouts >= weeklyGoal ? t('home.goalAchieved') : t('home.workoutsRemaining', { count: weeklyGoal - thisWeekWorkouts })}
           </Text>
         </View>
       )}
@@ -143,8 +145,8 @@ export default function HomeScreen() {
         <View style={styles.quickStartContent}>
           <Ionicons name="play-circle" size={32} color={colors.buttonText} />
           <View style={styles.quickStartText}>
-            <Text style={[styles.quickStartTitle, { color: colors.buttonText }]}>오늘의 운동 시작</Text>
-            <Text style={[styles.quickStartSubtitle, { color: colors.buttonText, opacity: 0.8 }]}>{lastUsedRoutine ? `${lastUsedRoutine.name}` : "루틴 선택하기"}</Text>
+            <Text style={[styles.quickStartTitle, { color: colors.buttonText }]}>{t('home.startWorkout')}</Text>
+            <Text style={[styles.quickStartSubtitle, { color: colors.buttonText, opacity: 0.8 }]}>{lastUsedRoutine ? `${lastUsedRoutine.name}` : t('home.selectRoutine')}</Text>
           </View>
         </View>
         <Ionicons name="chevron-forward" size={24} color={colors.buttonText} />
@@ -154,9 +156,9 @@ export default function HomeScreen() {
       {recentRecords.length > 0 && (
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>최근 운동</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('home.recentWorkouts')}</Text>
             <TouchableOpacity onPress={() => router.push("/(tabs)/history")}>
-              <Text style={[styles.sectionLink, { color: colors.primary }]}>전체보기</Text>
+              <Text style={[styles.sectionLink, { color: colors.primary }]}>{t('common.viewAll')}</Text>
             </TouchableOpacity>
           </View>
           {recentRecords.map((record) => (
@@ -172,16 +174,16 @@ export default function HomeScreen() {
               <View style={styles.recentStats}>
                 <View style={styles.recentStatItem}>
                   <Ionicons name="time-outline" size={14} color={colors.textSecondary} />
-                  <Text style={[styles.recentStatText, { color: colors.textSecondary }]}>{record.duration}분</Text>
+                  <Text style={[styles.recentStatText, { color: colors.textSecondary }]}>{t('history.duration', { minutes: record.duration })}</Text>
                 </View>
                 <View style={styles.recentStatItem}>
                   <Ionicons name="fitness-outline" size={14} color={colors.textSecondary} />
-                  <Text style={[styles.recentStatText, { color: colors.textSecondary }]}>{record.completionRate}%</Text>
+                  <Text style={[styles.recentStatText, { color: colors.textSecondary }]}>{t('history.completionRate', { rate: record.completionRate })}</Text>
                 </View>
                 {record.totalVolume !== undefined && record.totalVolume > 0 && (
                   <View style={styles.recentStatItem}>
                     <Ionicons name="barbell-outline" size={14} color={colors.textSecondary} />
-                    <Text style={[styles.recentStatText, { color: colors.textSecondary }]}>{record.totalVolume}kg</Text>
+                    <Text style={[styles.recentStatText, { color: colors.textSecondary }]}>{t('history.volume', { volume: record.totalVolume })}</Text>
                   </View>
                 )}
               </View>
@@ -192,7 +194,7 @@ export default function HomeScreen() {
 
       {/* 추천 루틴 */}
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>추천 루틴</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('home.recommendedRoutines')}</Text>
         {recommendedRoutines.map((routine) => (
           <TouchableOpacity key={routine.id} style={[styles.routineCard, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={() => handlePlayRoutine(routine)}>
             <View style={styles.routineHeader}>

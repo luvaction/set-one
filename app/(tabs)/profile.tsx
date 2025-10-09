@@ -1,9 +1,11 @@
 import { useTheme } from "@/contexts/ThemeContext";
+import { saveLanguage } from "@/i18n/config";
 import { CreateProfileData } from "@/models";
 import { profileService } from "@/services/profile";
 import { storage } from "@/services/storage/asyncStorage";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 
 const emptyProfile: CreateProfileData = {
@@ -16,14 +18,17 @@ const emptyProfile: CreateProfileData = {
   goal: "",
   activityLevel: "",
   weeklyGoal: 0,
+  unitSystem: "metric",
 };
 
 export default function ProfileScreen() {
   const { theme, colors, toggleTheme } = useTheme();
+  const { t, i18n } = useTranslation();
   const [profile, setProfile] = useState<CreateProfileData>(emptyProfile);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingProfile, setEditingProfile] = useState<CreateProfileData>(profile);
   const [loading, setLoading] = useState(true);
+  const [showLanguageModal, setShowLanguageModal] = useState(false);
 
   // 프로필 로드
   useEffect(() => {
@@ -56,32 +61,38 @@ export default function ProfileScreen() {
       setShowEditModal(false);
     } catch (error) {
       console.error("Failed to save profile:", error);
-      Alert.alert("오류", "프로필 저장에 실패했습니다.");
+      Alert.alert(t("errors.generic"), t("profile.saveProfileFailed"));
     }
   };
 
   const handleClearAllData = () => {
-    Alert.alert(
-      "모든 데이터 삭제",
-      "모든 운동 기록, 루틴, 프로필 데이터가 삭제됩니다. 계속하시겠습니까?",
-      [
-        { text: "취소", style: "cancel" },
-        {
-          text: "삭제",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await storage.clear();
-              setProfile(emptyProfile);
-              Alert.alert("완료", "모든 데이터가 삭제되었습니다.");
-            } catch (error) {
-              console.error("Failed to clear data:", error);
-              Alert.alert("오류", "데이터 삭제에 실패했습니다.");
-            }
-          },
+    Alert.alert(t("profile.deleteAllData"), t("profile.deleteAllDataConfirm"), [
+      { text: t("common.cancel"), style: "cancel" },
+      {
+        text: t("common.delete"),
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await storage.clear();
+            setProfile(emptyProfile);
+            Alert.alert(t("common.confirm"), t("profile.allDataDeleted"));
+          } catch (error) {
+            console.error("Failed to clear data:", error);
+            Alert.alert(t("errors.generic"), t("errors.deleteFailed"));
+          }
         },
-      ]
-    );
+      },
+    ]);
+  };
+
+  const changeLanguage = async (lang: string) => {
+    await i18n.changeLanguage(lang);
+    await saveLanguage(lang);
+    setShowLanguageModal(false);
+  };
+
+  const getCurrentLanguageName = () => {
+    return i18n.language === "ko" ? "한국어" : "English";
   };
 
   const handleShowStorageData = async () => {
@@ -106,18 +117,18 @@ export default function ProfileScreen() {
 
       console.log("\n=======================================\n");
 
-      Alert.alert("완료", "저장소 데이터를 콘솔에 출력했습니다.\n개발자 도구를 확인하세요.");
+      Alert.alert(t("common.confirm"), t("profile.storageDataViewed"));
     } catch (error) {
       console.error("Failed to show storage data:", error);
-      Alert.alert("오류", "저장소 데이터 조회에 실패했습니다.");
+      Alert.alert(t("errors.generic"), t("profile.viewStorageDataFailed"));
     }
   };
 
   const handleClearCustomExercises = async () => {
-    Alert.alert("커스텀 운동 초기화", "커스텀 운동을 모두 삭제하고 '사이타마 푸시업'만 추가하시겠습니까?", [
-      { text: "취소", style: "cancel" },
+    Alert.alert(t("profile.resetCustomExercises"), t("profile.resetCustomExercisesConfirm"), [
+      { text: t("common.cancel"), style: "cancel" },
       {
-        text: "초기화",
+        text: t("profile.reset"),
         style: "destructive",
         onPress: async () => {
           try {
@@ -136,10 +147,10 @@ export default function ProfileScreen() {
             };
 
             await storage.setArray("@set1/custom_exercises", [saitamaPushup]);
-            Alert.alert("완료", "커스텀 운동이 초기화되었습니다.\n💪 사이타마 푸시업 100개!\n\n루틴 탭에서 확인하세요.");
+            Alert.alert(t("common.confirm"), t("profile.resetCustomExercisesSuccess"));
           } catch (error) {
             console.error("Failed to clear custom exercises:", error);
-            Alert.alert("오류", "커스텀 운동 초기화에 실패했습니다.");
+            Alert.alert(t("errors.generic"), t("profile.resetCustomExercisesFailed"));
           }
         },
       },
@@ -147,15 +158,15 @@ export default function ProfileScreen() {
   };
 
   const goalText = {
-    lose: "체중 감량",
-    gain: "근육 증가",
-    maintain: "체중 유지",
+    lose: t("profile.goalLose"),
+    gain: t("profile.goalGain"),
+    maintain: t("profile.goalMaintain"),
   };
 
   const activityText = {
-    low: "낮음 (주 1-2회)",
-    medium: "보통 (주 3-4회)",
-    high: "높음 (주 5회 이상)",
+    low: t("profile.activityLow"),
+    medium: t("profile.activityMedium"),
+    high: t("profile.activityHigh"),
   };
 
   const bmi = profile.height > 0 && profile.weight > 0 ? (profile.weight / Math.pow(profile.height / 100, 2)).toFixed(1) : "0";
@@ -175,10 +186,10 @@ export default function ProfileScreen() {
       <ScrollView>
         {/* 헤더 */}
         <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.text }]}>MY</Text>
+          {/* <Text style={[styles.title, { color: colors.text }]}>{t('profile.title')}</Text> */}
           <Pressable style={styles.editButton} onPress={handleEdit}>
             <Ionicons name="create-outline" size={20} color={colors.primary} />
-            <Text style={[styles.editButtonText, { color: colors.primary }]}>편집</Text>
+            <Text style={[styles.editButtonText, { color: colors.primary }]}>{t("profile.edit")}</Text>
           </Pressable>
         </View>
 
@@ -187,23 +198,25 @@ export default function ProfileScreen() {
           <>
             {/* 기본 정보 */}
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>기본 정보</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("profile.basicInfo")}</Text>
 
               <View style={[styles.infoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <View style={styles.infoRow}>
-                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>이름</Text>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>{t("profile.name")}</Text>
                   <Text style={[styles.infoValue, { color: colors.text }]}>{profile.name}</Text>
                 </View>
                 <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
                 <View style={styles.infoRow}>
-                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>성별</Text>
-                  <Text style={[styles.infoValue, { color: colors.text }]}>{profile.gender === "male" ? "남성" : profile.gender === "female" ? "여성" : "-"}</Text>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>{t("profile.gender")}</Text>
+                  <Text style={[styles.infoValue, { color: colors.text }]}>
+                    {profile.gender === "male" ? t("profile.male") : profile.gender === "female" ? t("profile.female") : "-"}
+                  </Text>
                 </View>
                 <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
                 <View style={styles.infoRow}>
-                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>생년월일</Text>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>{t("profile.birthDate")}</Text>
                   <Text style={[styles.infoValue, { color: colors.text }]}>{profile.birthDate || "-"}</Text>
                 </View>
               </View>
@@ -211,29 +224,35 @@ export default function ProfileScreen() {
 
             {/* 신체 정보 */}
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>신체 정보</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("profile.bodyInfo")}</Text>
 
               <View style={[styles.infoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <View style={styles.infoRow}>
-                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>키</Text>
-                  <Text style={[styles.infoValue, { color: colors.text }]}>{profile.height} cm</Text>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>{t("profile.height")}</Text>
+                  <Text style={[styles.infoValue, { color: colors.text }]}>
+                    {profile.height} {t("profile.heightUnit")}
+                  </Text>
                 </View>
                 <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
                 <View style={styles.infoRow}>
-                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>현재 체중</Text>
-                  <Text style={[styles.infoValue, { color: colors.text }]}>{profile.weight} kg</Text>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>{t("profile.weight")}</Text>
+                  <Text style={[styles.infoValue, { color: colors.text }]}>
+                    {profile.weight} {t("profile.weightUnit")}
+                  </Text>
                 </View>
                 <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
                 <View style={styles.infoRow}>
-                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>목표 체중</Text>
-                  <Text style={[styles.infoValue, { color: colors.text }]}>{profile.targetWeight} kg</Text>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>{t("profile.targetWeight")}</Text>
+                  <Text style={[styles.infoValue, { color: colors.text }]}>
+                    {profile.targetWeight} {t("profile.weightUnit")}
+                  </Text>
                 </View>
                 <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
                 <View style={styles.infoRow}>
-                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>BMI</Text>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>{t("profile.bmi")}</Text>
                   <Text style={[styles.infoValue, { color: colors.text }]}>{bmi}</Text>
                 </View>
               </View>
@@ -241,24 +260,24 @@ export default function ProfileScreen() {
 
             {/* 운동 목표 */}
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>운동 목표</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("profile.exerciseGoal")}</Text>
 
               <View style={[styles.infoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <View style={styles.infoRow}>
-                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>목표</Text>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>{t("profile.goal")}</Text>
                   <Text style={[styles.infoValue, { color: colors.text }]}>{profile.goal ? goalText[profile.goal] : "-"}</Text>
                 </View>
                 <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
                 <View style={styles.infoRow}>
-                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>활동 레벨</Text>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>{t("profile.activityLevel")}</Text>
                   <Text style={[styles.infoValue, { color: colors.text }]}>{profile.activityLevel ? activityText[profile.activityLevel] : "-"}</Text>
                 </View>
                 <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
                 <View style={styles.infoRow}>
-                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>주간 목표</Text>
-                  <Text style={[styles.infoValue, { color: colors.text }]}>주 {profile.weeklyGoal}회</Text>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>{t("profile.weeklyGoal")}</Text>
+                  <Text style={[styles.infoValue, { color: colors.text }]}>{t("profile.weeklyGoalTimes", { count: profile.weeklyGoal })}</Text>
                 </View>
               </View>
             </View>
@@ -266,35 +285,47 @@ export default function ProfileScreen() {
         ) : (
           <View style={styles.emptyState}>
             <Ionicons name="person-outline" size={64} color={colors.icon} />
-            <Text style={[styles.emptyText, { color: colors.text }]}>프로필을 설정해주세요</Text>
+            <Text style={[styles.emptyText, { color: colors.text }]}>{t("profile.setupPrompt")}</Text>
             <Pressable style={[styles.setupButton, { backgroundColor: colors.primary }]} onPress={handleEdit}>
-              <Text style={[styles.setupButtonText, { color: colors.buttonText }]}>프로필 설정</Text>
+              <Text style={[styles.setupButtonText, { color: colors.buttonText }]}>{t("profile.setupProfile")}</Text>
             </Pressable>
           </View>
         )}
 
         {/* 설정 섹션 */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>설정</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("profile.settings")}</Text>
 
           <View style={[styles.infoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <View style={styles.infoRow}>
               <View style={styles.settingLabelContainer}>
                 <Ionicons name="moon" size={20} color={colors.text} />
-                <Text style={[styles.infoLabel, { color: colors.text }]}>다크 모드</Text>
+                <Text style={[styles.infoLabel, { color: colors.text }]}>{t("profile.darkMode")}</Text>
               </View>
               <Switch value={theme === "dark"} onValueChange={toggleTheme} trackColor={{ false: colors.border, true: colors.primary }} thumbColor="#FFFFFF" />
             </View>
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+            <Pressable style={styles.infoRow} onPress={() => setShowLanguageModal(true)}>
+              <View style={styles.settingLabelContainer}>
+                <Ionicons name="language" size={20} color={colors.text} />
+                <Text style={[styles.infoLabel, { color: colors.text }]}>Language / 언어</Text>
+              </View>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <Text style={[styles.infoValue, { color: colors.textSecondary }]}>{getCurrentLanguageName()}</Text>
+                <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+              </View>
+            </Pressable>
           </View>
         </View>
 
         {/* 기타 섹션 */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>기타</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("profile.other")}</Text>
 
           <View style={[styles.infoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <View style={styles.infoRow}>
-              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>앱 버전</Text>
+              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>{t("profile.appVersion")}</Text>
               <Text style={[styles.infoValue, { color: colors.text }]}>1.0.0</Text>
             </View>
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
@@ -302,7 +333,7 @@ export default function ProfileScreen() {
             <Pressable style={styles.infoRow} onPress={handleShowStorageData}>
               <View style={styles.settingLabelContainer}>
                 <Ionicons name="code-outline" size={20} color={colors.primary} />
-                <Text style={[styles.infoLabel, { color: colors.text }]}>저장소 데이터 보기</Text>
+                <Text style={[styles.infoLabel, { color: colors.text }]}>{t("profile.viewStorageData")}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
             </Pressable>
@@ -311,7 +342,7 @@ export default function ProfileScreen() {
             <Pressable style={styles.infoRow} onPress={handleClearCustomExercises}>
               <View style={styles.settingLabelContainer}>
                 <Ionicons name="refresh-outline" size={20} color="#FF9800" />
-                <Text style={[styles.infoLabel, { color: "#FF9800" }]}>커스텀 운동 초기화</Text>
+                <Text style={[styles.infoLabel, { color: "#FF9800" }]}>{t("profile.resetCustomExercises")}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
             </Pressable>
@@ -320,7 +351,7 @@ export default function ProfileScreen() {
             <Pressable style={styles.infoRow} onPress={handleClearAllData}>
               <View style={styles.settingLabelContainer}>
                 <Ionicons name="trash-outline" size={20} color="#F44336" />
-                <Text style={[styles.infoLabel, { color: "#F44336" }]}>모든 데이터 삭제</Text>
+                <Text style={[styles.infoLabel, { color: "#F44336" }]}>{t("profile.deleteAllData")}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
             </Pressable>
@@ -334,202 +365,249 @@ export default function ProfileScreen() {
           <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.keyboardAvoidingView}>
             <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
               <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-                <Text style={[styles.modalTitle, { color: colors.text }]}>프로필 편집</Text>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>{t("profile.editProfile")}</Text>
 
-              {/* 이름 */}
-              <Text style={[styles.inputLabel, { color: colors.text }]}>이름</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-                value={editingProfile.name}
-                onChangeText={(text) => setEditingProfile({ ...editingProfile, name: text })}
-                placeholder="이름을 입력하세요"
-                placeholderTextColor={colors.textSecondary}
-              />
+                {/* 이름 */}
+                <Text style={[styles.inputLabel, { color: colors.text }]}>{t("profile.name")}</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                  value={editingProfile.name}
+                  onChangeText={(text) => setEditingProfile({ ...editingProfile, name: text })}
+                  placeholder={t("profile.namePlaceholder")}
+                  placeholderTextColor={colors.textSecondary}
+                />
 
-              {/* 성별 */}
-              <Text style={[styles.inputLabel, { color: colors.text }]}>성별</Text>
-              <View style={styles.buttonGroup}>
-                <Pressable
-                  style={[
-                    styles.optionButton,
-                    { backgroundColor: colors.background, borderColor: colors.border },
-                    editingProfile.gender === "male" && { backgroundColor: colors.primary, borderColor: colors.primary },
-                  ]}
-                  onPress={() => setEditingProfile({ ...editingProfile, gender: "male" })}
-                >
-                  <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.gender === "male" && { color: colors.buttonText }]}>남성</Text>
-                </Pressable>
-                <Pressable
-                  style={[
-                    styles.optionButton,
-                    { backgroundColor: colors.background, borderColor: colors.border },
-                    editingProfile.gender === "female" && { backgroundColor: colors.primary, borderColor: colors.primary },
-                  ]}
-                  onPress={() => setEditingProfile({ ...editingProfile, gender: "female" })}
-                >
-                  <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.gender === "female" && { color: colors.buttonText }]}>여성</Text>
-                </Pressable>
-              </View>
+                {/* 성별 */}
+                <Text style={[styles.inputLabel, { color: colors.text }]}>{t("profile.gender")}</Text>
+                <View style={styles.buttonGroup}>
+                  <Pressable
+                    style={[
+                      styles.optionButton,
+                      { backgroundColor: colors.background, borderColor: colors.border },
+                      editingProfile.gender === "male" && { backgroundColor: colors.primary, borderColor: colors.primary },
+                    ]}
+                    onPress={() => setEditingProfile({ ...editingProfile, gender: "male" })}
+                  >
+                    <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.gender === "male" && { color: colors.buttonText }]}>
+                      {t("profile.male")}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    style={[
+                      styles.optionButton,
+                      { backgroundColor: colors.background, borderColor: colors.border },
+                      editingProfile.gender === "female" && { backgroundColor: colors.primary, borderColor: colors.primary },
+                    ]}
+                    onPress={() => setEditingProfile({ ...editingProfile, gender: "female" })}
+                  >
+                    <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.gender === "female" && { color: colors.buttonText }]}>
+                      {t("profile.female")}
+                    </Text>
+                  </Pressable>
+                </View>
 
-              {/* 생년월일 */}
-              <Text style={[styles.inputLabel, { color: colors.text }]}>생년월일</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-                value={editingProfile.birthDate}
-                onChangeText={(text) => {
-                  // 숫자만 추출
-                  const numbers = text.replace(/[^0-9]/g, "");
-                  let formatted = "";
+                {/* 생년월일 */}
+                <Text style={[styles.inputLabel, { color: colors.text }]}>{t("profile.birthDate")}</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                  value={editingProfile.birthDate}
+                  onChangeText={(text) => {
+                    // 숫자만 추출
+                    const numbers = text.replace(/[^0-9]/g, "");
+                    let formatted = "";
 
-                  // 최대 8자리 숫자만 허용
-                  if (numbers.length <= 8) {
-                    // YYYY-MM-DD 형식으로 포맷
-                    if (numbers.length <= 4) {
-                      formatted = numbers;
-                    } else if (numbers.length <= 6) {
-                      formatted = numbers.slice(0, 4) + "-" + numbers.slice(4);
-                    } else {
-                      formatted = numbers.slice(0, 4) + "-" + numbers.slice(4, 6) + "-" + numbers.slice(6, 8);
+                    // 최대 8자리 숫자만 허용
+                    if (numbers.length <= 8) {
+                      // YYYY-MM-DD 형식으로 포맷
+                      if (numbers.length <= 4) {
+                        formatted = numbers;
+                      } else if (numbers.length <= 6) {
+                        formatted = numbers.slice(0, 4) + "-" + numbers.slice(4);
+                      } else {
+                        formatted = numbers.slice(0, 4) + "-" + numbers.slice(4, 6) + "-" + numbers.slice(6, 8);
+                      }
+                      setEditingProfile({ ...editingProfile, birthDate: formatted });
                     }
-                    setEditingProfile({ ...editingProfile, birthDate: formatted });
-                  }
-                }}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={colors.textSecondary}
-                keyboardType="numeric"
-                maxLength={10}
-              />
+                  }}
+                  placeholder={t("profile.birthDateFormat")}
+                  placeholderTextColor={colors.textSecondary}
+                  keyboardType="numeric"
+                  maxLength={10}
+                />
 
-              {/* 키 */}
-              <Text style={[styles.inputLabel, { color: colors.text }]}>키 (cm)</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-                value={editingProfile.height > 0 ? String(editingProfile.height) : ""}
-                onChangeText={(text) => setEditingProfile({ ...editingProfile, height: Number(text) || 0 })}
-                placeholder="170"
-                placeholderTextColor={colors.textSecondary}
-                keyboardType="numeric"
-              />
+                {/* 키 */}
+                <Text style={[styles.inputLabel, { color: colors.text }]}>
+                  {t("profile.height")} ({t("profile.heightUnit")})
+                </Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                  value={editingProfile.height > 0 ? String(editingProfile.height) : ""}
+                  onChangeText={(text) => setEditingProfile({ ...editingProfile, height: Number(text) || 0 })}
+                  placeholder={t("profile.heightPlaceholder")}
+                  placeholderTextColor={colors.textSecondary}
+                  keyboardType="numeric"
+                />
 
-              {/* 체중 */}
-              <Text style={[styles.inputLabel, { color: colors.text }]}>현재 체중 (kg)</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-                value={editingProfile.weight > 0 ? String(editingProfile.weight) : ""}
-                onChangeText={(text) => setEditingProfile({ ...editingProfile, weight: Number(text) || 0 })}
-                placeholder="70"
-                placeholderTextColor={colors.textSecondary}
-                keyboardType="numeric"
-              />
+                {/* 체중 */}
+                <Text style={[styles.inputLabel, { color: colors.text }]}>
+                  {t("profile.weight")} ({t("profile.weightUnit")})
+                </Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                  value={editingProfile.weight > 0 ? String(editingProfile.weight) : ""}
+                  onChangeText={(text) => setEditingProfile({ ...editingProfile, weight: Number(text) || 0 })}
+                  placeholder={t("profile.weightPlaceholder")}
+                  placeholderTextColor={colors.textSecondary}
+                  keyboardType="numeric"
+                />
 
-              {/* 목표 체중 */}
-              <Text style={[styles.inputLabel, { color: colors.text }]}>목표 체중 (kg)</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-                value={editingProfile.targetWeight > 0 ? String(editingProfile.targetWeight) : ""}
-                onChangeText={(text) => setEditingProfile({ ...editingProfile, targetWeight: Number(text) || 0 })}
-                placeholder="65"
-                placeholderTextColor={colors.textSecondary}
-                keyboardType="numeric"
-              />
+                {/* 목표 체중 */}
+                <Text style={[styles.inputLabel, { color: colors.text }]}>
+                  {t("profile.targetWeight")} ({t("profile.weightUnit")})
+                </Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                  value={editingProfile.targetWeight > 0 ? String(editingProfile.targetWeight) : ""}
+                  onChangeText={(text) => setEditingProfile({ ...editingProfile, targetWeight: Number(text) || 0 })}
+                  placeholder={t("profile.targetWeightPlaceholder")}
+                  placeholderTextColor={colors.textSecondary}
+                  keyboardType="numeric"
+                />
 
-              {/* 목표 */}
-              <Text style={[styles.inputLabel, { color: colors.text }]}>운동 목표</Text>
-              <View style={styles.buttonGroup}>
-                <Pressable
-                  style={[
-                    styles.optionButton,
-                    { backgroundColor: colors.background, borderColor: colors.border },
-                    editingProfile.goal === "lose" && { backgroundColor: colors.primary, borderColor: colors.primary },
-                  ]}
-                  onPress={() => setEditingProfile({ ...editingProfile, goal: "lose" })}
-                >
-                  <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.goal === "lose" && { color: colors.buttonText }]}>감량</Text>
-                </Pressable>
-                <Pressable
-                  style={[
-                    styles.optionButton,
-                    { backgroundColor: colors.background, borderColor: colors.border },
-                    editingProfile.goal === "gain" && { backgroundColor: colors.primary, borderColor: colors.primary },
-                  ]}
-                  onPress={() => setEditingProfile({ ...editingProfile, goal: "gain" })}
-                >
-                  <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.goal === "gain" && { color: colors.buttonText }]}>증량</Text>
-                </Pressable>
-                <Pressable
-                  style={[
-                    styles.optionButton,
-                    { backgroundColor: colors.background, borderColor: colors.border },
-                    editingProfile.goal === "maintain" && { backgroundColor: colors.primary, borderColor: colors.primary },
-                  ]}
-                  onPress={() => setEditingProfile({ ...editingProfile, goal: "maintain" })}
-                >
-                  <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.goal === "maintain" && { color: colors.buttonText }]}>유지</Text>
-                </Pressable>
-              </View>
+                {/* 목표 */}
+                <Text style={[styles.inputLabel, { color: colors.text }]}>{t("profile.goal")}</Text>
+                <View style={styles.buttonGroup}>
+                  <Pressable
+                    style={[
+                      styles.optionButton,
+                      { backgroundColor: colors.background, borderColor: colors.border },
+                      editingProfile.goal === "lose" && { backgroundColor: colors.primary, borderColor: colors.primary },
+                    ]}
+                    onPress={() => setEditingProfile({ ...editingProfile, goal: "lose" })}
+                  >
+                    <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.goal === "lose" && { color: colors.buttonText }]}>
+                      {t("profile.goalLoseShort")}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    style={[
+                      styles.optionButton,
+                      { backgroundColor: colors.background, borderColor: colors.border },
+                      editingProfile.goal === "gain" && { backgroundColor: colors.primary, borderColor: colors.primary },
+                    ]}
+                    onPress={() => setEditingProfile({ ...editingProfile, goal: "gain" })}
+                  >
+                    <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.goal === "gain" && { color: colors.buttonText }]}>
+                      {t("profile.goalGainShort")}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    style={[
+                      styles.optionButton,
+                      { backgroundColor: colors.background, borderColor: colors.border },
+                      editingProfile.goal === "maintain" && { backgroundColor: colors.primary, borderColor: colors.primary },
+                    ]}
+                    onPress={() => setEditingProfile({ ...editingProfile, goal: "maintain" })}
+                  >
+                    <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.goal === "maintain" && { color: colors.buttonText }]}>
+                      {t("profile.goalMaintainShort")}
+                    </Text>
+                  </Pressable>
+                </View>
 
-              {/* 활동 레벨 */}
-              <Text style={[styles.inputLabel, { color: colors.text }]}>활동 레벨</Text>
-              <View style={styles.buttonGroup}>
-                <Pressable
-                  style={[
-                    styles.optionButton,
-                    { backgroundColor: colors.background, borderColor: colors.border },
-                    editingProfile.activityLevel === "low" && { backgroundColor: colors.primary, borderColor: colors.primary },
-                  ]}
-                  onPress={() => setEditingProfile({ ...editingProfile, activityLevel: "low" })}
-                >
-                  <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.activityLevel === "low" && { color: colors.buttonText }]}>낮음</Text>
-                </Pressable>
-                <Pressable
-                  style={[
-                    styles.optionButton,
-                    { backgroundColor: colors.background, borderColor: colors.border },
-                    editingProfile.activityLevel === "medium" && { backgroundColor: colors.primary, borderColor: colors.primary },
-                  ]}
-                  onPress={() => setEditingProfile({ ...editingProfile, activityLevel: "medium" })}
-                >
-                  <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.activityLevel === "medium" && { color: colors.buttonText }]}>보통</Text>
-                </Pressable>
-                <Pressable
-                  style={[
-                    styles.optionButton,
-                    { backgroundColor: colors.background, borderColor: colors.border },
-                    editingProfile.activityLevel === "high" && { backgroundColor: colors.primary, borderColor: colors.primary },
-                  ]}
-                  onPress={() => setEditingProfile({ ...editingProfile, activityLevel: "high" })}
-                >
-                  <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.activityLevel === "high" && { color: colors.buttonText }]}>높음</Text>
-                </Pressable>
-              </View>
+                {/* 활동 레벨 */}
+                <Text style={[styles.inputLabel, { color: colors.text }]}>{t("profile.activityLevel")}</Text>
+                <View style={styles.buttonGroup}>
+                  <Pressable
+                    style={[
+                      styles.optionButton,
+                      { backgroundColor: colors.background, borderColor: colors.border },
+                      editingProfile.activityLevel === "low" && { backgroundColor: colors.primary, borderColor: colors.primary },
+                    ]}
+                    onPress={() => setEditingProfile({ ...editingProfile, activityLevel: "low" })}
+                  >
+                    <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.activityLevel === "low" && { color: colors.buttonText }]}>
+                      {t("profile.activityLowShort")}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    style={[
+                      styles.optionButton,
+                      { backgroundColor: colors.background, borderColor: colors.border },
+                      editingProfile.activityLevel === "medium" && { backgroundColor: colors.primary, borderColor: colors.primary },
+                    ]}
+                    onPress={() => setEditingProfile({ ...editingProfile, activityLevel: "medium" })}
+                  >
+                    <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.activityLevel === "medium" && { color: colors.buttonText }]}>
+                      {t("profile.activityMediumShort")}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    style={[
+                      styles.optionButton,
+                      { backgroundColor: colors.background, borderColor: colors.border },
+                      editingProfile.activityLevel === "high" && { backgroundColor: colors.primary, borderColor: colors.primary },
+                    ]}
+                    onPress={() => setEditingProfile({ ...editingProfile, activityLevel: "high" })}
+                  >
+                    <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.activityLevel === "high" && { color: colors.buttonText }]}>
+                      {t("profile.activityHighShort")}
+                    </Text>
+                  </Pressable>
+                </View>
 
-              {/* 주간 목표 */}
-              <Text style={[styles.inputLabel, { color: colors.text }]}>주간 운동 목표 (회)</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-                value={editingProfile.weeklyGoal > 0 ? String(editingProfile.weeklyGoal) : ""}
-                onChangeText={(text) => setEditingProfile({ ...editingProfile, weeklyGoal: Number(text) || 0 })}
-                placeholder="3"
-                placeholderTextColor={colors.textSecondary}
-                keyboardType="numeric"
-              />
+                {/* 주간 목표 */}
+                <Text style={[styles.inputLabel, { color: colors.text }]}>{t("profile.weeklyGoalLabel")}</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                  value={editingProfile.weeklyGoal > 0 ? String(editingProfile.weeklyGoal) : ""}
+                  onChangeText={(text) => setEditingProfile({ ...editingProfile, weeklyGoal: Number(text) || 0 })}
+                  placeholder={t("profile.weeklyGoalPlaceholder")}
+                  placeholderTextColor={colors.textSecondary}
+                  keyboardType="numeric"
+                />
 
-              {/* 버튼 */}
-              <View style={styles.modalButtons}>
-                <Pressable
-                  style={[styles.modalButton, styles.cancelButton, { backgroundColor: colors.background, borderColor: colors.border }]}
-                  onPress={() => setShowEditModal(false)}
-                >
-                  <Text style={[styles.cancelButtonText, { color: colors.text }]}>취소</Text>
-                </Pressable>
-                <Pressable style={[styles.modalButton, styles.saveButton, { backgroundColor: colors.primary }]} onPress={handleSave}>
-                  <Text style={[styles.saveButtonText, { color: colors.buttonText }]}>저장</Text>
-                </Pressable>
-              </View>
+                {/* 버튼 */}
+                <View style={styles.modalButtons}>
+                  <Pressable
+                    style={[styles.modalButton, styles.cancelButton, { backgroundColor: colors.background, borderColor: colors.border }]}
+                    onPress={() => setShowEditModal(false)}
+                  >
+                    <Text style={[styles.cancelButtonText, { color: colors.text }]}>{t("common.cancel")}</Text>
+                  </Pressable>
+                  <Pressable style={[styles.modalButton, styles.saveButton, { backgroundColor: colors.primary }]} onPress={handleSave}>
+                    <Text style={[styles.saveButtonText, { color: colors.buttonText }]}>{t("common.save")}</Text>
+                  </Pressable>
+                </View>
               </ScrollView>
             </View>
           </KeyboardAvoidingView>
         </View>
+      </Modal>
+
+      {/* 언어 선택 모달 */}
+      <Modal visible={showLanguageModal} transparent animationType="fade" onRequestClose={() => setShowLanguageModal(false)}>
+        <Pressable style={styles.modalOverlay} onPress={() => setShowLanguageModal(false)}>
+          <View style={[styles.languageModalContent, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Language / 언어</Text>
+
+            <Pressable
+              style={[styles.languageOption, { borderColor: colors.border }, i18n.language === "ko" && { backgroundColor: colors.primary + "20", borderColor: colors.primary }]}
+              onPress={() => changeLanguage("ko")}
+            >
+              <Text style={[styles.languageText, { color: colors.text }, i18n.language === "ko" && { color: colors.primary, fontWeight: "600" }]}>한국어</Text>
+              {i18n.language === "ko" && <Ionicons name="checkmark" size={24} color={colors.primary} />}
+            </Pressable>
+
+            <Pressable
+              style={[styles.languageOption, { borderColor: colors.border }, i18n.language === "en" && { backgroundColor: colors.primary + "20", borderColor: colors.primary }]}
+              onPress={() => changeLanguage("en")}
+            >
+              <Text style={[styles.languageText, { color: colors.text }, i18n.language === "en" && { color: colors.primary, fontWeight: "600" }]}>English</Text>
+              {i18n.language === "en" && <Ionicons name="checkmark" size={24} color={colors.primary} />}
+            </Pressable>
+          </View>
+        </Pressable>
       </Modal>
     </View>
   );
@@ -688,5 +766,23 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: 16,
     fontWeight: "600",
+  },
+  languageModalContent: {
+    borderRadius: 16,
+    padding: 24,
+    width: "80%",
+    maxWidth: 350,
+  },
+  languageOption: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    marginBottom: 12,
+  },
+  languageText: {
+    fontSize: 16,
   },
 });

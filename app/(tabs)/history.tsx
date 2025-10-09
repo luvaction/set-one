@@ -4,11 +4,13 @@ import { workoutRecordService } from "@/services";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Calendar, DateData } from "react-native-calendars";
 
 export default function HistoryScreen() {
   const { theme, colors } = useTheme();
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<"record" | "stats">("record");
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [currentMonth, setCurrentMonth] = useState<string>("");
@@ -77,28 +79,24 @@ export default function HistoryScreen() {
   const handleDeleteRecord = () => {
     if (!currentRecord) return;
 
-    Alert.alert(
-      "기록 삭제",
-      "이 운동 기록을 삭제하시겠습니까?",
-      [
-        { text: "취소", style: "cancel" },
-        {
-          text: "삭제",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await workoutRecordService.deleteRecord(currentRecord.id);
-              await loadRecords();
-              setShowEditModal(false);
-              setCurrentRecord(null);
-            } catch (error) {
-              console.error("Failed to delete record:", error);
-              Alert.alert("오류", "기록 삭제에 실패했습니다.");
-            }
-          },
+    Alert.alert(t("history.deleteRecord"), t("history.deleteConfirm"), [
+      { text: t("common.cancel"), style: "cancel" },
+      {
+        text: t("common.delete"),
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await workoutRecordService.deleteRecord(currentRecord.id);
+            await loadRecords();
+            setShowEditModal(false);
+            setCurrentRecord(null);
+          } catch (error) {
+            console.error("Failed to delete record:", error);
+            Alert.alert(t("errors.generic"), t("history.deleteFailed"));
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const selectedDateRecords = records.filter((r) => r.date === selectedDate);
@@ -108,17 +106,15 @@ export default function HistoryScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* 헤더 */}
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>운동 기록</Text>
-      </View>
+      <View style={styles.header}>{/* <Text style={[styles.title, { color: colors.text }]}>{t('history.title')}</Text> */}</View>
 
       {/* 탭 버튼 */}
       <View style={[styles.tabContainer, { backgroundColor: colors.surface }]}>
         <Pressable style={[styles.tab, activeTab === "record" && { backgroundColor: colors.primary }]} onPress={() => setActiveTab("record")}>
-          <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === "record" && { color: colors.buttonText }]}>기록</Text>
+          <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === "record" && { color: colors.buttonText }]}>{t("history.record")}</Text>
         </Pressable>
         <Pressable style={[styles.tab, activeTab === "stats" && { backgroundColor: colors.primary }]} onPress={() => setActiveTab("stats")}>
-          <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === "stats" && { color: colors.buttonText }]}>통계</Text>
+          <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === "stats" && { color: colors.buttonText }]}>{t("history.stats")}</Text>
         </Pressable>
       </View>
 
@@ -128,11 +124,11 @@ export default function HistoryScreen() {
           <View style={styles.statsContainer}>
             <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <Text style={[styles.statValue, { color: colors.primary }]}>{totalWorkouts}</Text>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>총 운동 횟수</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t("history.totalWorkouts")}</Text>
             </View>
             <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <Text style={[styles.statValue, { color: colors.primary }]}>{totalDuration}분</Text>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>총 운동 시간</Text>
+              <Text style={[styles.statValue, { color: colors.primary }]}>{t("history.duration", { minutes: totalDuration })}</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t("history.totalDuration")}</Text>
             </View>
           </View>
 
@@ -174,7 +170,7 @@ export default function HistoryScreen() {
           {/* 선택한 날짜 기록 */}
           {selectedDate && (
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>{selectedDate} 기록</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("history.dateRecord", { date: selectedDate })}</Text>
 
               {selectedDateRecords.length > 0 ? (
                 selectedDateRecords.map((record, idx) => (
@@ -191,7 +187,7 @@ export default function HistoryScreen() {
                       <Text style={[styles.recordTitle, { color: colors.text }]}>{record.routineName}</Text>
                       <View style={[styles.statusBadge, { backgroundColor: record.status === "completed" ? colors.primary + "20" : colors.textSecondary + "20" }]}>
                         <Text style={[styles.statusText, { color: record.status === "completed" ? colors.primary : colors.textSecondary }]}>
-                          {record.status === "completed" ? "완료" : "중단"}
+                          {record.status === "completed" ? t("history.completed") : t("history.stopped")}
                         </Text>
                       </View>
                     </View>
@@ -199,16 +195,16 @@ export default function HistoryScreen() {
                     <View style={styles.recordStats}>
                       <View style={styles.statItem}>
                         <Ionicons name="time-outline" size={16} color={colors.textSecondary} />
-                        <Text style={[styles.statText, { color: colors.textSecondary }]}>{record.duration}분</Text>
+                        <Text style={[styles.statText, { color: colors.textSecondary }]}>{t("history.duration", { minutes: record.duration })}</Text>
                       </View>
                       <View style={styles.statItem}>
                         <Ionicons name="fitness-outline" size={16} color={colors.textSecondary} />
-                        <Text style={[styles.statText, { color: colors.textSecondary }]}>{record.completionRate}%</Text>
+                        <Text style={[styles.statText, { color: colors.textSecondary }]}>{t("history.completionRate", { rate: record.completionRate })}</Text>
                       </View>
                       {record.totalVolume !== undefined && record.totalVolume > 0 && (
                         <View style={styles.statItem}>
                           <Ionicons name="barbell-outline" size={16} color={colors.textSecondary} />
-                          <Text style={[styles.statText, { color: colors.textSecondary }]}>{record.totalVolume}kg</Text>
+                          <Text style={[styles.statText, { color: colors.textSecondary }]}>{t("history.volume", { volume: record.totalVolume })}</Text>
                         </View>
                       )}
                     </View>
@@ -218,12 +214,16 @@ export default function HistoryScreen() {
                         <View style={{ flex: 1 }}>
                           <Text style={[styles.exerciseName, { color: colors.text }]}>{ex.exerciseName}</Text>
                           <Text style={[styles.exerciseSets, { color: colors.textSecondary }]}>
-                            {ex.sets.filter((s) => s.isCompleted).length}/{ex.sets.length} 세트
+                            {t("history.sets", { completed: ex.sets.filter((s) => s.isCompleted).length, total: ex.sets.length })}
                           </Text>
                           <View style={styles.setsDetailContainer}>
                             {ex.sets.map((set, setIdx) => (
                               <Text key={setIdx} style={[styles.setDetail, { color: colors.textSecondary }]}>
-                                {set.isCompleted ? `${set.actualReps}회${set.weight > 0 ? ` × ${set.weight}kg` : ""}` : "-"}
+                                {set.isCompleted
+                                  ? set.weight > 0
+                                    ? t("history.repsWithWeight", { reps: set.actualReps, weight: set.weight })
+                                    : t("history.reps", { reps: set.actualReps })
+                                  : "-"}
                               </Text>
                             ))}
                           </View>
@@ -236,7 +236,7 @@ export default function HistoryScreen() {
                 ))
               ) : (
                 <View style={styles.emptyState}>
-                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>이 날의 운동 기록이 없어요</Text>
+                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t("history.noRecords")}</Text>
                 </View>
               )}
             </View>
@@ -244,19 +244,14 @@ export default function HistoryScreen() {
         </ScrollView>
       ) : (
         <View style={styles.statisticsTabContainer}>
-          <Pressable
-            style={[styles.statisticsCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
-            onPress={() => router.push("/statistics")}
-          >
+          <Pressable style={[styles.statisticsCard, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={() => router.push("/statistics")}>
             <View style={styles.statisticsIconContainer}>
               <Ionicons name="bar-chart" size={48} color={colors.primary} />
             </View>
-            <Text style={[styles.statisticsTitle, { color: colors.text }]}>운동 통계 보기</Text>
-            <Text style={[styles.statisticsDescription, { color: colors.textSecondary }]}>
-              볼륨 추이, 운동 부위 분포, 인사이트 확인
-            </Text>
+            <Text style={[styles.statisticsTitle, { color: colors.text }]}>{t("history.viewStatistics")}</Text>
+            <Text style={[styles.statisticsDescription, { color: colors.textSecondary }]}>{t("history.statisticsDescription")}</Text>
             <View style={[styles.statisticsButton, { backgroundColor: colors.primary }]}>
-              <Text style={[styles.statisticsButtonText, { color: colors.buttonText }]}>통계 보러가기</Text>
+              <Text style={[styles.statisticsButtonText, { color: colors.buttonText }]}>{t("history.goToStatistics")}</Text>
               <Ionicons name="chevron-forward" size={20} color={colors.buttonText} />
             </View>
           </Pressable>
@@ -267,30 +262,36 @@ export default function HistoryScreen() {
       <Modal visible={showEditModal} transparent animationType="slide" onRequestClose={() => setShowEditModal(false)}>
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>기록 편집</Text>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{t("history.editRecord")}</Text>
 
             {currentRecord && (
               <>
                 <View style={styles.modalInfoRow}>
-                  <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>루틴: {currentRecord.routineName}</Text>
+                  <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>
+                    {t("history.routine")}: {currentRecord.routineName}
+                  </Text>
                   <View style={[styles.statusBadge, { backgroundColor: currentRecord.status === "completed" ? colors.primary + "20" : colors.textSecondary + "20" }]}>
                     <Text style={[styles.statusText, { color: currentRecord.status === "completed" ? colors.primary : colors.textSecondary }]}>
-                      {currentRecord.status === "completed" ? "완료" : "중단"}
+                      {currentRecord.status === "completed" ? t("history.completed") : t("history.stopped")}
                     </Text>
                   </View>
                 </View>
-                <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>시간: {currentRecord.duration}분</Text>
-                <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>완료율: {currentRecord.completionRate}%</Text>
+                <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>
+                  {t("history.time")}: {t("history.duration", { minutes: currentRecord.duration })}
+                </Text>
+                <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>{t("history.completionRate", { rate: currentRecord.completionRate })}</Text>
                 {currentRecord.totalVolume !== undefined && currentRecord.totalVolume > 0 && (
-                  <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>총 볼륨: {currentRecord.totalVolume}kg</Text>
+                  <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>
+                    {t("history.totalVolume")}: {t("history.volume", { volume: currentRecord.totalVolume })}
+                  </Text>
                 )}
 
-                <Text style={[styles.modalLabel, { color: colors.textSecondary, marginTop: 12 }]}>메모</Text>
+                <Text style={[styles.modalLabel, { color: colors.textSecondary, marginTop: 12 }]}>{t("history.memo")}</Text>
                 <TextInput
                   style={[styles.memoInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
                   value={memo}
                   onChangeText={setMemo}
-                  placeholder="오늘 운동 메모..."
+                  placeholder={t("history.memoPlaceholder")}
                   placeholderTextColor={colors.textSecondary}
                   multiline
                 />
@@ -298,20 +299,17 @@ export default function HistoryScreen() {
             )}
 
             <View style={styles.modalButtons}>
-              <Pressable
-                style={[styles.modalButton, styles.deleteButton, { backgroundColor: "#FF5252" }]}
-                onPress={handleDeleteRecord}
-              >
+              <Pressable style={[styles.modalButton, styles.deleteButton, { backgroundColor: "#FF5252" }]} onPress={handleDeleteRecord}>
                 <Ionicons name="trash-outline" size={18} color="#FFFFFF" />
               </Pressable>
               <Pressable
                 style={[styles.modalButton, styles.cancelButton, { backgroundColor: colors.background, borderColor: colors.border }]}
                 onPress={() => setShowEditModal(false)}
               >
-                <Text style={[styles.cancelButtonText, { color: colors.text }]}>취소</Text>
+                <Text style={[styles.cancelButtonText, { color: colors.text }]}>{t("common.cancel")}</Text>
               </Pressable>
               <Pressable style={[styles.modalButton, styles.saveButton, { backgroundColor: colors.primary }]} onPress={handleSaveRecord}>
-                <Text style={[styles.saveButtonText, { color: colors.buttonText }]}>저장</Text>
+                <Text style={[styles.saveButtonText, { color: colors.buttonText }]}>{t("common.save")}</Text>
               </Pressable>
             </View>
           </View>
