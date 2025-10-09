@@ -21,7 +21,7 @@ export default function StatisticsScreen() {
   const { colors } = useTheme();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [showMockButton, setShowMockButton] = useState(__DEV__); // 개발 모드에서만 표시
+  const [showMockButton, setShowMockButton] = useState(false); // 테스트 버튼 숨김
 
   const [coreStats, setCoreStats] = useState<CoreStats | null>(null);
   const [weekComparison, setWeekComparison] = useState<WeekComparison | null>(null);
