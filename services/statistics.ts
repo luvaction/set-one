@@ -50,7 +50,8 @@ export interface PersonalRecord {
 export interface Insight {
   type: "success" | "warning" | "info";
   icon: string;
-  message: string;
+  messageKey: string;
+  messageParams?: Record<string, string | number>;
 }
 
 export interface WeekComparison {
@@ -383,18 +384,19 @@ export const statisticsService = {
       insights.push({
         type: "success",
         icon: "🔥",
-        message: `와우! ${coreStats.currentStreak}일 연속 운동 중이에요. 계속 이어가세요!`,
+        messageKey: "insights.streak.high",
+        messageParams: { count: coreStats.currentStreak },
       });
     } else if (coreStats.currentStreak === 0 && coreStats.totalWorkouts > 0) {
       insights.push({
         type: "info",
         icon: "💪",
-        message: "오늘 운동을 시작해보세요! 새로운 스트릭을 만들어봐요.",
+        messageKey: "insights.streak.start",
       });
     }
 
     // 균형 인사이트
-    if (exerciseDistribution.length > 0) {
+    if (exerciseDistribution.length > 1) {
       const top = exerciseDistribution[0];
       const bottom = exerciseDistribution[exerciseDistribution.length - 1];
 
@@ -402,7 +404,8 @@ export const statisticsService = {
         insights.push({
           type: "warning",
           icon: "⚖️",
-          message: `${top.type} 운동이 ${top.percentage}%예요. ${bottom.type} 운동도 균형있게 해보세요!`,
+          messageKey: "insights.balance.warning",
+          messageParams: { topType: top.type, topPercentage: top.percentage, bottomType: bottom.type },
         });
       }
     }
@@ -413,13 +416,14 @@ export const statisticsService = {
         insights.push({
           type: "info",
           icon: "🎯",
-          message: "다양한 종류의 운동을 시도해보세요. 균형잡힌 운동이 중요해요!",
+          messageKey: "insights.variety.low",
         });
       } else if (exerciseDistribution.length >= 3) {
         insights.push({
           type: "success",
           icon: "🌟",
-          message: `${exerciseDistribution.length}가지 유형의 운동을 하고 계시네요. 균형잡힌 루틴이에요!`,
+          messageKey: "insights.variety.high",
+          messageParams: { count: exerciseDistribution.length },
         });
       }
     }
@@ -427,15 +431,22 @@ export const statisticsService = {
     // 볼륨 증가 인사이트
     const weeklyData = await this.getWeeklyVolumeData();
     if (weeklyData.length >= 7) {
-      const thisWeekTotal = weeklyData.slice(0, 7).reduce((sum, d) => sum + d.volume, 0);
-      const lastWeekTotal = weeklyData.slice(-7).reduce((sum, d) => sum + d.volume, 0);
+      const thisWeekTotal = weeklyData.slice(-7).reduce((sum, d) => sum + d.volume, 0);
+      const lastDate = new Date(weeklyData[weeklyData.length - 1].date);
+      lastDate.setDate(lastDate.getDate() - 7);
+      const lastWeekStartDate = lastDate.toISOString().split("T")[0];
+
+      const records = await storage.getArray<WorkoutRecord>(STORAGE_KEYS.WORKOUT_RECORDS);
+      const lastWeekRecords = records.filter(r => r.date >= lastWeekStartDate && r.date < weeklyData[0].date);
+      const lastWeekTotal = lastWeekRecords.reduce((sum, r) => sum + (r.totalVolume || 0), 0);
 
       if (thisWeekTotal > lastWeekTotal && lastWeekTotal > 0) {
         const increase = Math.round(((thisWeekTotal - lastWeekTotal) / lastWeekTotal) * 100);
         insights.push({
           type: "success",
           icon: "📈",
-          message: `이번 주 총 볼륨이 지난주보다 ${increase}% 증가했어요!`,
+          messageKey: "insights.volume.increase",
+          messageParams: { percentage: increase },
         });
       }
     }

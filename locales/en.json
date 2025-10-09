@@ -418,5 +418,21 @@
   "copyRoutine": {
     "copied": "\"{{name}}\" added to My Routines.",
     "copyFailed": "Failed to copy routine."
+  },
+  "insights": {
+    "streak": {
+      "high": "Wow! You're on a {{count}}-day streak. Keep it up!",
+      "start": "Start your workout today! Let's build a new streak."
+    },
+    "balance": {
+      "warning": "{{topType}} exercises account for {{topPercentage}}%. Try to balance with {{bottomType}} exercises!"
+    },
+    "variety": {
+      "low": "Try different types of exercises. A balanced routine is important!",
+      "high": "You're doing {{count}} types of exercises. That's a balanced routine!"
+    },
+    "volume": {
+      "increase": "Your total volume this week increased by {{percentage}}% compared to last week!"
+    }
   }
 }

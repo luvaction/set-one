@@ -114,7 +114,7 @@ const formatDate = (dateString: string, language: string) => {
 
 export default function StatisticsScreen() {
   const { colors } = useTheme();
-  const { t, i18n } = useTranslation();
+  const { t, i18n, ready } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showMockButton, setShowMockButton] = useState(false); // 테스트 버튼 숨김
@@ -221,7 +221,7 @@ export default function StatisticsScreen() {
     setSelectedExercises(newSelected);
   };
 
-  if (loading) {
+  if (loading || !ready) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.loadingContainer}>
@@ -406,7 +406,7 @@ export default function StatisticsScreen() {
                 ]}
               >
                 <Text style={styles.insightIcon}>{insight.icon}</Text>
-                <Text style={[styles.insightText, { color: colors.text }]}>{insight.message}</Text>
+                <Text style={[styles.insightText, { color: colors.text }]}>{t(insight.messageKey, insight.messageParams)}</Text>
               </View>
             ))}
           </View>

@@ -418,5 +418,21 @@
   "copyRoutine": {
     "copied": "\"{{name}}\"이(가) 내 루틴에 추가되었습니다.",
     "copyFailed": "루틴 복사에 실패했습니다."
+  },
+  "insights": {
+    "streak": {
+      "high": "와우! {{count}}일 연속 운동 중이에요. 계속 이어가세요!",
+      "start": "오늘 운동을 시작해보세요! 새로운 스트릭을 만들어봐요."
+    },
+    "balance": {
+      "warning": "{{topType}} 운동이 {{topPercentage}}%예요. {{bottomType}} 운동도 균형있게 해보세요!"
+    },
+    "variety": {
+      "low": "다양한 종류의 운동을 시도해보세요. 균형잡힌 운동이 중요해요!",
+      "high": "{{count}}가지 유형의 운동을 하고 계시네요. 균형잡힌 루틴이에요!"
+    },
+    "volume": {
+      "increase": "이번 주 총 볼륨이 지난주보다 {{percentage}}% 증가했어요!"
+    }
   }
 }
