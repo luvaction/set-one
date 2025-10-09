@@ -88,6 +88,15 @@ export interface ExerciseStats {
   workoutCount: number;
 }
 
+export interface SetsTrendData {
+  period: string; // "2025-W40" (주차) or "2025-10" (월) or "2025" (년)
+  periodLabel: string; // "10월 1주" or "10월" or "2025년"
+  averageSets: number; // 평균 세트 수
+  workoutCount: number;
+}
+
+export type TrendPeriod = 'week' | 'month' | 'year';
+
 const getDayOfWeek = (dateString: string): string => {
   const days = ["일", "월", "화", "수", "목", "금", "토"];
   const date = new Date(dateString);
@@ -609,5 +618,112 @@ export const statisticsService = {
       return "웨이트";
     if (routineName.includes("유산소") || routineName.includes("HIIT")) return "유산소";
     return "맨몸";
+  },
+
+  // 운동별 세트 수 추이 (선택한 운동들의 기간별 평균 세트 수)
+  async getSetsTrend(period: TrendPeriod, exerciseIds: string[]): Promise<Map<string, SetsTrendData[]>> {
+    const records = await storage.getArray<WorkoutRecord>(STORAGE_KEYS.WORKOUT_RECORDS);
+    const completedRecords = records.filter((r) => r.status === "completed");
+
+    const trendMap = new Map<string, SetsTrendData[]>();
+
+    // 각 운동별로 추이 데이터 계산
+    exerciseIds.forEach((exerciseId) => {
+      const periodData: Record<string, { totalSets: number; workoutCount: number }> = {};
+
+      completedRecords.forEach((record) => {
+        const exercise = record.exercises.find((ex) => ex.exerciseId === exerciseId);
+        if (!exercise) return;
+
+        const completedSets = exercise.sets.filter((s) => s.isCompleted);
+        if (completedSets.length === 0) return;
+
+        const date = new Date(record.date);
+        let periodKey = '';
+
+        if (period === 'week') {
+          // ISO week number
+          const weekNumber = this.getWeekNumber(date);
+          periodKey = `${date.getFullYear()}-W${weekNumber}`;
+        } else if (period === 'month') {
+          periodKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        } else { // year
+          periodKey = `${date.getFullYear()}`;
+        }
+
+        if (!periodData[periodKey]) {
+          periodData[periodKey] = { totalSets: 0, workoutCount: 0 };
+        }
+
+        periodData[periodKey].totalSets += completedSets.length;
+        periodData[periodKey].workoutCount++;
+      });
+
+      // 기간별 평균 계산 및 정렬
+      const trendArray: SetsTrendData[] = Object.entries(periodData)
+        .map(([periodKey, data]) => {
+          const avgSets = data.totalSets / data.workoutCount;
+          return {
+            period: periodKey,
+            periodLabel: this.formatPeriodLabel(periodKey, period),
+            averageSets: Math.round(avgSets * 10) / 10,
+            workoutCount: data.workoutCount,
+          };
+        })
+        .sort((a, b) => a.period.localeCompare(b.period));
+
+      // 기간별로 최근 N개만 표시
+      let recentTrends = trendArray;
+      if (period === 'week') {
+        recentTrends = trendArray.slice(-8); // 최근 8주
+      } else if (period === 'month') {
+        recentTrends = trendArray.slice(-6); // 최근 6개월
+      }
+
+      trendMap.set(exerciseId, recentTrends);
+    });
+
+    return trendMap;
+  },
+
+  // ISO week number 계산
+  getWeekNumber(date: Date): number {
+    const target = new Date(date.valueOf());
+    const dayNr = (date.getDay() + 6) % 7;
+    target.setDate(target.getDate() - dayNr + 3);
+    const firstThursday = new Date(target.getFullYear(), 0, 4);
+    const diff = target.getTime() - firstThursday.getTime();
+    return 1 + Math.round(diff / 604800000); // 604800000 = 7 * 24 * 3600 * 1000
+  },
+
+  // 기간 레이블 포맷팅
+  formatPeriodLabel(periodKey: string, period: TrendPeriod): string {
+    if (period === 'week') {
+      const [year, week] = periodKey.split('-W');
+      const weekNum = parseInt(week);
+      // 해당 주의 첫날 구하기
+      const date = this.getDateOfISOWeek(weekNum, parseInt(year));
+      const month = date.getMonth() + 1;
+      const weekOfMonth = Math.ceil(date.getDate() / 7);
+      return `${month}월 ${weekOfMonth}주`;
+    } else if (period === 'month') {
+      const [year, month] = periodKey.split('-');
+      return `${year}.${month}`;
+    } else { // year
+      return `${periodKey}년`;
+    }
+  },
+
+  // ISO week의 첫날 날짜 구하기
+  getDateOfISOWeek(week: number, year: number): Date {
+    const simple = new Date(year, 0, 1 + (week - 1) * 7);
+    const dow = simple.getDay();
+    const ISOweekStart = simple;
+    if (dow <= 4) {
+      ISOweekStart.setDate(simple.getDate() - simple.getDay() + 1);
+    } else {
+      ISOweekStart.setDate(simple.getDate() + 8 - simple.getDay());
+    }
+    return ISOweekStart;
   },
 };

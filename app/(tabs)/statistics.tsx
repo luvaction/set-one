@@ -7,15 +7,16 @@ import {
   ExerciseStats,
   ExerciseTypeDistribution,
   Insight,
+  SetsTrendData,
+  TrendPeriod,
 } from "@/services/statistics";
 import { profileService } from "@/services/profile";
 import { Ionicons } from "@expo/vector-icons";
-import { router, useFocusEffect } from "expo-router";
+import { useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View, Dimensions, Alert } from "react-native";
 import { generateMockWorkoutData } from "@/utils/generateMockData";
-import { PieChart } from "react-native-chart-kit";
-import Svg, { Rect, Line, Text as SvgText } from "react-native-svg";
+import { PieChart, LineChart } from "react-native-chart-kit";
 import { useTranslation } from "react-i18next";
 
 // 한글 이름 -> exerciseId 역매핑
@@ -126,6 +127,8 @@ export default function StatisticsScreen() {
   const [exerciseTypeDistribution, setExerciseTypeDistribution] = useState<ExerciseTypeDistribution[]>([]);
   const [insights, setInsights] = useState<Insight[]>([]);
   const [weeklyGoal, setWeeklyGoal] = useState<number | null>(null);
+  const [trendPeriod, setTrendPeriod] = useState<TrendPeriod>('month');
+  const [setsTrends, setSetsTrends] = useState<Map<string, SetsTrendData[]>>(new Map());
 
   const loadStatistics = useCallback(async () => {
     try {
@@ -158,6 +161,30 @@ export default function StatisticsScreen() {
       setRefreshing(false);
     }
   }, []);
+
+  // 세트 수 추이 데이터 로드
+  useEffect(() => {
+    const loadSetsTrends = async () => {
+      if (selectedExercises.size === 0 || exerciseStats.length === 0) {
+        return;
+      }
+
+      // exerciseName으로 선택되어 있으므로, exerciseId를 찾아야 함
+      const selectedExerciseIds = exerciseStats
+        .filter(ex => selectedExercises.has(ex.exerciseName))
+        .map(ex => ex.exerciseId)
+        .filter(id => id); // exerciseId가 없는 경우 제외
+
+      if (selectedExerciseIds.length === 0) {
+        return;
+      }
+
+      const trends = await statisticsService.getSetsTrend(trendPeriod, selectedExerciseIds);
+      setSetsTrends(trends);
+    };
+
+    loadSetsTrends();
+  }, [trendPeriod, selectedExercises, exerciseStats]);
 
   useFocusEffect(
     useCallback(() => {
@@ -474,7 +501,7 @@ export default function StatisticsScreen() {
               </View>
             </View>
 
-            {/* 바차트 - 총 중량 */}
+            {/* 세트 수 추이 차트 */}
             {selectedExercises.size > 0 && (() => {
               const selectedData = exerciseStats.filter((ex) => selectedExercises.has(ex.exerciseName));
 
@@ -483,178 +510,160 @@ export default function StatisticsScreen() {
                 return null;
               }
 
-              const maxValue = Math.max(...selectedData.map(ex => ex.totalVolume), 0);
+              // 추이 데이터 수집
+              const periodSet = new Set<string>();
 
-              // 모든 운동의 중량이 0인 경우 (유산소, 맨몸 운동 등)
-              if (maxValue === 0 || !isFinite(maxValue)) {
+              selectedData.forEach(ex => {
+                const trends = setsTrends.get(ex.exerciseId);
+                if (trends) {
+                  trends.forEach(trend => {
+                    periodSet.add(trend.period);
+                  });
+                }
+              });
+
+              const sortedPeriods = Array.from(periodSet).sort();
+
+              // 데이터가 부족한 경우
+              if (sortedPeriods.length < 2) {
                 return (
-                  <View style={[styles.chartContainer, { backgroundColor: colors.surface }]}>
-                    <Text style={[styles.chartTitle, { color: colors.text }]}>{t('statistics.volumeComparison')}</Text>
-                    <View style={styles.emptyChartContainer}>
-                      <Ionicons name="bar-chart-outline" size={48} color={colors.textSecondary} />
-                      <Text style={[styles.emptyChartText, { color: colors.textSecondary }]}>
-                        {t('statistics.noWeightRecords')}
-                      </Text>
-                      <Text style={[styles.emptyChartSubtext, { color: colors.textSecondary }]}>
-                        {t('statistics.cardioBodyweightNote')}
-                      </Text>
+                  <>
+                    <View style={[styles.sectionHeader, { marginTop: 24, marginBottom: 0 }]}>
+                      <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0 }]}>{t('statistics.setsTrend')}</Text>
+                      <View style={styles.filterButtons}>
+                        {(['week', 'month', 'year'] as TrendPeriod[]).map((period) => (
+                          <TouchableOpacity
+                            key={period}
+                            style={[
+                              styles.filterButton,
+                              { borderColor: colors.border },
+                              trendPeriod === period && { backgroundColor: colors.primary, borderColor: colors.primary },
+                            ]}
+                            onPress={() => setTrendPeriod(period)}
+                          >
+                            <Text
+                              style={[
+                                styles.filterButtonText,
+                                { color: trendPeriod === period ? '#fff' : colors.text },
+                              ]}
+                            >
+                              {t(`statistics.period${period.charAt(0).toUpperCase() + period.slice(1)}`)}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
                     </View>
-                  </View>
+                    <View style={[styles.chartContainer, { backgroundColor: colors.surface }]}>
+                      <View style={styles.emptyChartContainer}>
+                        <Ionicons name="bar-chart-outline" size={48} color={colors.textSecondary} />
+                        <Text style={[styles.emptyChartText, { color: colors.textSecondary }]}>
+                          {t('statistics.noTrendData')}
+                        </Text>
+                      </View>
+                    </View>
+                  </>
                 );
               }
 
-              const chartWidth = Dimensions.get("window").width - 80;
-              const chartHeight = 300;
-              const padding = { top: 40, bottom: 60, left: 50, right: 20 };
-              const barWidth = Math.max(20, (chartWidth - padding.left - padding.right) / selectedData.length - 16);
-              const graphHeight = chartHeight - padding.top - padding.bottom;
+              // 라인 차트용 데이터 준비
+              const chartColors = ["#4F46E5", "#059669", "#D97706", "#DC2626", "#7C3AED"];
+              const datasets = selectedData
+                .filter(ex => setsTrends.get(ex.exerciseId) && setsTrends.get(ex.exerciseId)!.length > 0)
+                .map((ex, idx) => {
+                  const trends = setsTrends.get(ex.exerciseId) || [];
+                  return {
+                    data: trends.map(t => t.averageSets),
+                    color: (_opacity = 1) => chartColors[idx % chartColors.length],
+                    strokeWidth: 2,
+                  };
+                });
+
+              // 첫 번째 운동의 레이블 사용
+              const labels = setsTrends.get(selectedData[0].exerciseId)?.map(t => t.periodLabel) || [];
 
               return (
-                <View style={[styles.chartContainer, { backgroundColor: colors.surface }]}>
-                  <Text style={[styles.chartTitle, { color: colors.text }]}>{t('statistics.volumeComparison')}</Text>
-                  <Svg width={chartWidth} height={chartHeight}>
-                    {/* 가로 그리드 라인 */}
-                    {[0, 0.25, 0.5, 0.75, 1].map((ratio, idx) => {
-                      const y = padding.top + graphHeight * (1 - ratio);
-                      return (
-                        <Line
-                          key={idx}
-                          x1={padding.left}
-                          y1={y}
-                          x2={chartWidth - padding.right}
-                          y2={y}
-                          stroke={colors.border}
-                          strokeWidth="1"
-                          strokeDasharray={ratio === 0 ? "0" : "3,3"}
-                        />
-                      );
-                    })}
-
-                    {/* Y축 레이블 */}
-                    {[0, 0.25, 0.5, 0.75, 1].map((ratio, idx) => {
-                      const y = padding.top + graphHeight * (1 - ratio);
-                      const value = Math.round(maxValue * ratio);
-                      return (
-                        <SvgText
-                          key={idx}
-                          x={padding.left - 10}
-                          y={y + 4}
-                          fontSize="10"
-                          fill={colors.textSecondary}
-                          textAnchor="end"
+                <>
+                  <View style={[styles.sectionHeader, { marginTop: 24, marginBottom: 0 }]}>
+                    <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0 }]}>{t('statistics.setsTrend')}</Text>
+                    <View style={styles.filterButtons}>
+                      {(['week', 'month', 'year'] as TrendPeriod[]).map((period) => (
+                        <TouchableOpacity
+                          key={period}
+                          style={[
+                            styles.filterButton,
+                            { borderColor: colors.border },
+                            trendPeriod === period && { backgroundColor: colors.primary, borderColor: colors.primary },
+                          ]}
+                          onPress={() => setTrendPeriod(period)}
                         >
-                          {value}
-                        </SvgText>
-                      );
-                    })}
-
-                    {/* 막대와 레이블 */}
-                    {selectedData.map((ex, idx) => {
-                      const barHeight = Math.max(0, Math.min(graphHeight, (ex.totalVolume / maxValue) * graphHeight));
-                      const x = padding.left + idx * (barWidth + 16) + 8;
-                      const y = padding.top + graphHeight - barHeight;
-
-                      // 안전성 검증
-                      if (!isFinite(x) || !isFinite(y) || !isFinite(barWidth) || !isFinite(barHeight)) {
-                        return null;
-                      }
-
-                      return (
-                        <React.Fragment key={idx}>
-                          {/* 막대 */}
-                          {barHeight > 0 && (
-                            <Rect
-                              x={x}
-                              y={y}
-                              width={barWidth}
-                              height={barHeight}
-                              fill={colors.primary}
-                              rx="6"
-                              ry="6"
-                            />
-                          )}
-
-                          {/* 막대 위 숫자 */}
-                          <SvgText
-                            x={x + barWidth / 2}
-                            y={y - 8}
-                            fontSize="11"
-                            fill={colors.text}
-                            textAnchor="middle"
-                            fontWeight="600"
+                          <Text
+                            style={[
+                              styles.filterButtonText,
+                              { color: trendPeriod === period ? '#fff' : colors.text },
+                            ]}
                           >
-                            {ex.totalVolume.toLocaleString()}
-                          </SvgText>
+                            {t(`statistics.period${period.charAt(0).toUpperCase() + period.slice(1)}`)}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
 
-                          {/* X축 레이블 - 줄바꿈 처리 */}
-                          {(() => {
-                            const name = getExerciseName(t, ex.exerciseId, ex.exerciseName);
-                            const maxLineLength = 8;
+                  <View style={[styles.chartContainer, { backgroundColor: colors.surface }]}>
+                    {/* 범례 */}
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 16, paddingHorizontal: 8, width: '100%' }}>
+                      {selectedData
+                        .filter(ex => setsTrends.get(ex.exerciseId) && setsTrends.get(ex.exerciseId)!.length > 0)
+                        .map((ex, idx) => (
+                          <View key={ex.exerciseName} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: chartColors[idx % chartColors.length] }} />
+                            <Text style={{ fontSize: 12, color: colors.text }}>
+                              {getExerciseName(t, ex.exerciseId, ex.exerciseName)}
+                            </Text>
+                          </View>
+                        ))}
+                    </View>
 
-                            if (name.length <= maxLineLength) {
-                              return (
-                                <SvgText
-                                  x={x + barWidth / 2}
-                                  y={chartHeight - padding.bottom + 20}
-                                  fontSize="10"
-                                  fill={colors.text}
-                                  textAnchor="middle"
-                                  fontWeight="600"
-                                >
-                                  {name}
-                                </SvgText>
-                              );
-                            }
-
-                            // 긴 이름은 두 줄로 나눔
-                            const midPoint = Math.floor(name.length / 2);
-                            const spaceIndex = name.indexOf(' ', midPoint - 3);
-                            const splitIndex = spaceIndex > 0 && spaceIndex < name.length - 3 ? spaceIndex : midPoint;
-
-                            const line1 = name.substring(0, splitIndex).trim();
-                            const line2 = name.substring(splitIndex).trim();
-
-                            return (
-                              <>
-                                <SvgText
-                                  x={x + barWidth / 2}
-                                  y={chartHeight - padding.bottom + 15}
-                                  fontSize="9"
-                                  fill={colors.text}
-                                  textAnchor="middle"
-                                  fontWeight="600"
-                                >
-                                  {line1.length > 10 ? line1.substring(0, 10) + '...' : line1}
-                                </SvgText>
-                                <SvgText
-                                  x={x + barWidth / 2}
-                                  y={chartHeight - padding.bottom + 27}
-                                  fontSize="9"
-                                  fill={colors.text}
-                                  textAnchor="middle"
-                                  fontWeight="600"
-                                >
-                                  {line2.length > 10 ? line2.substring(0, 10) + '...' : line2}
-                                </SvgText>
-                              </>
-                            );
-                          })()}
-                        </React.Fragment>
-                      );
-                    })}
-
-                    {/* Y축 단위 */}
-                    <SvgText
-                      x={padding.left - 10}
-                      y={padding.top - 10}
-                      fontSize="10"
-                      fill={colors.textSecondary}
-                      textAnchor="end"
-                    >
-                      kg
-                    </SvgText>
-                  </Svg>
-                </View>
+                    <LineChart
+                    data={{
+                      labels,
+                      datasets,
+                      legend: [], // 커스텀 범례 사용
+                    }}
+                    width={Dimensions.get("window").width - 80}
+                    height={220}
+                    chartConfig={{
+                      backgroundColor: colors.surface,
+                      backgroundGradientFrom: colors.surface,
+                      backgroundGradientTo: colors.surface,
+                      decimalPlaces: 1,
+                      color: (_opacity = 1) => colors.primary,
+                      labelColor: (_opacity = 1) => colors.text,
+                      style: {
+                        borderRadius: 16,
+                      },
+                      propsForDots: {
+                        r: "4",
+                        strokeWidth: "2",
+                        stroke: colors.surface,
+                      },
+                    }}
+                    bezier
+                    style={{
+                      marginVertical: 8,
+                      borderRadius: 16,
+                    }}
+                    withVerticalLabels={true}
+                    withHorizontalLabels={true}
+                    withDots={true}
+                    withInnerLines={true}
+                    withOuterLines={true}
+                    withVerticalLines={false}
+                    withHorizontalLines={true}
+                    fromZero={false}
+                  />
+                  </View>
+                </>
               );
             })()}
 
@@ -728,8 +737,8 @@ export default function StatisticsScreen() {
                 width={Dimensions.get("window").width - 80}
                 height={220}
                 chartConfig={{
-                  color: (opacity = 1) => colors.primary,
-                  labelColor: (opacity = 1) => colors.text,
+                  color: (_opacity = 1) => colors.primary,
+                  labelColor: (_opacity = 1) => colors.text,
                 }}
                 accessor="population"
                 backgroundColor="transparent"

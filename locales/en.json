@@ -175,7 +175,12 @@
     "noWeightRecords": "Selected exercises have no weight records",
     "cardioBodyweightNote": "(cardio, bodyweight, etc.)",
     "selectExercisePlease": "Please select exercises",
-    "exerciseTypeDistribution": "Exercise Type Distribution"
+    "exerciseTypeDistribution": "Exercise Type Distribution",
+    "setsTrend": "Sets Trend",
+    "periodWeek": "Weekly",
+    "periodMonth": "Monthly",
+    "periodYear": "Yearly",
+    "noTrendData": "Not enough data to show trend"
   },
   "profile": {
     "title": "Profile",

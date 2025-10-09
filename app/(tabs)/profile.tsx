@@ -330,13 +330,13 @@ export default function ProfileScreen() {
             </View>
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-            <Pressable style={styles.infoRow} onPress={handleShowStorageData}>
+            {/*             <Pressable style={styles.infoRow} onPress={handleShowStorageData}>
               <View style={styles.settingLabelContainer}>
                 <Ionicons name="code-outline" size={20} color={colors.primary} />
                 <Text style={[styles.infoLabel, { color: colors.text }]}>{t("profile.viewStorageData")}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-            </Pressable>
+            </Pressable> */}
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
             <Pressable style={styles.infoRow} onPress={handleClearCustomExercises}>
