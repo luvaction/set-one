@@ -1,6 +1,7 @@
 import { useTheme } from "@/contexts/ThemeContext";
 import { Routine, WorkoutRecord } from "@/models";
 import { profileService, routineService, workoutRecordService, workoutSessionService } from "@/services";
+import { Insight, statisticsService } from "@/services/statistics";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
@@ -101,6 +102,7 @@ export default function HomeScreen() {
   const [weeklyGoal, setWeeklyGoal] = useState<number>(0);
   const [thisWeekWorkouts, setThisWeekWorkouts] = useState<number>(0);
   const [recentRecords, setRecentRecords] = useState<WorkoutRecord[]>([]);
+  const [insights, setInsights] = useState<Insight[]>([]);
 
   useFocusEffect(
     useCallback(() => {
@@ -108,8 +110,18 @@ export default function HomeScreen() {
       loadLastUsedRoutine();
       loadWeeklyProgress();
       loadRecentRecords();
+      loadInsights();
     }, [])
   );
+
+  const loadInsights = async () => {
+    try {
+      const insightsData = await statisticsService.getInsights();
+      setInsights(insightsData);
+    } catch (error) {
+      console.error("Failed to load insights:", error);
+    }
+  };
 
   const loadRecommendedRoutines = async () => {
     try {
@@ -224,6 +236,26 @@ export default function HomeScreen() {
         </View>
         <Ionicons name="chevron-forward" size={24} color={colors.buttonText} />
       </TouchableOpacity>
+
+      {insights.length > 0 && (
+        <View style={styles.insightsContainer}>
+          {insights.map((insight, index) => (
+            <View
+              key={index}
+              style={[
+                styles.insightCard,
+                {
+                  backgroundColor: colors.surface,
+                  borderLeftColor: insight.type === "success" ? "#4CAF50" : insight.type === "warning" ? "#FF9800" : colors.primary,
+                },
+              ]}
+            >
+              <Text style={styles.insightIcon}>{insight.icon}</Text>
+              <Text style={[styles.insightText, { color: colors.text }]}>{t(insight.messageKey, insight.messageParams)}</Text>
+            </View>
+          ))}
+        </View>
+      )}
 
       {recentRecords.length > 0 && (
         <View style={styles.section}>
@@ -465,5 +497,25 @@ const styles = StyleSheet.create({
   },
   routineDuration: {
     fontSize: 12,
+  },
+  insightsContainer: {
+    gap: 12,
+    marginBottom: 20,
+  },
+  insightCard: {
+    flexDirection: "row",
+    padding: 16,
+    borderRadius: 12,
+    borderLeftWidth: 4,
+    alignItems: "center",
+    gap: 12,
+  },
+  insightIcon: {
+    fontSize: 24,
+  },
+  insightText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
   },
 });

@@ -427,7 +427,8 @@
   "insights": {
     "streak": {
       "high": "Wow! You're on a {{count}}-day streak. Keep it up!",
-      "start": "Start your workout today! Let's build a new streak."
+      "start": "Start your workout today! Let's build a new streak.",
+      "todayWorkout": "Today's workout complete! Keep up the streak."
     },
     "balance": {
       "warning": "{{topType}} exercises account for {{topPercentage}}%. Try to balance with {{bottomType}} exercises!"

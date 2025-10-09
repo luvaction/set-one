@@ -427,7 +427,8 @@
   "insights": {
     "streak": {
       "high": "와우! {{count}}일 연속 운동 중이에요. 계속 이어가세요!",
-      "start": "오늘 운동을 시작해보세요! 새로운 스트릭을 만들어봐요."
+      "start": "오늘 운동을 시작해보세요! 새로운 연속 기록을 만들어봐요.",
+      "todayWorkout": "오늘 운동 완료! 내일도 함께해요!"
     },
     "balance": {
       "warning": "{{topType}} 운동이 {{topPercentage}}%예요. {{bottomType}} 운동도 균형있게 해보세요!"

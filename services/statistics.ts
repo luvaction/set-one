@@ -10,6 +10,7 @@ export interface CoreStats {
   thisMonthWorkouts: number; // 이번 달 운동 횟수
   thisYearWorkouts: number; // 이번 년도 운동 횟수
   thisYearVolume: number; // 이번 년도 총 중량
+  hasWorkoutToday: boolean; // 오늘 운동 기록이 있는지 여부
 }
 
 export interface VolumeData {
@@ -122,6 +123,13 @@ const getMonthStart = (): string => {
   return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
 };
 
+const getLocalDateString = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export const statisticsService = {
   // 핵심 지표 계산
   async getCoreStats(): Promise<CoreStats> {
@@ -138,28 +146,31 @@ export const statisticsService = {
 
     // 연속 운동 일수 계산
     let currentStreak = 0;
-    const today = new Date().toISOString().split("T")[0];
-    const uniqueDates = [...new Set(sortedRecords.map((r) => r.date))].sort().reverse();
+    const today = getLocalDateString(new Date()); // FIX: Use local date string
+    const uniqueDates = [...new Set(completedRecords.map((r) => r.date))].sort().reverse();
+
+    const hasWorkoutToday = uniqueDates.includes(today);
 
     if (uniqueDates.length > 0) {
       let checkDate = today;
-      for (const date of uniqueDates) {
-        if (date === checkDate) {
-          currentStreak++;
-          const prevDate = new Date(checkDate);
-          prevDate.setDate(prevDate.getDate() - 1);
-          checkDate = prevDate.toISOString().split("T")[0];
-        } else {
-          break;
+      // 오늘 운동이 있다면 오늘부터 스트릭 계산 시작
+      if (hasWorkoutToday) {
+        for (const date of uniqueDates) {
+          if (date === checkDate) {
+            currentStreak++;
+            const prevDate = new Date(checkDate);
+            prevDate.setDate(prevDate.getDate() - 1);
+            checkDate = prevDate.toISOString().split("T")[0];
+          } else {
+            break;
+          }
         }
-      }
-
-      // 오늘 운동 안했으면 어제부터 시작
-      if (!uniqueDates.includes(today)) {
-        currentStreak = 0;
+      } else {
+        // 오늘 운동이 없다면 어제부터 스트릭 계산 시작
+        currentStreak = 0; // 오늘 운동이 없으므로 스트릭은 0부터 시작
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
-        checkDate = yesterday.toISOString().split("T")[0];
+        checkDate = getLocalDateString(yesterday); // FIX: Use local date string
 
         for (const date of uniqueDates) {
           if (date === checkDate) {
@@ -193,6 +204,7 @@ export const statisticsService = {
       thisMonthWorkouts,
       thisYearWorkouts,
       thisYearVolume: Math.round(thisYearVolume),
+      hasWorkoutToday,
     };
   },
 
@@ -389,7 +401,13 @@ export const statisticsService = {
         messageKey: "insights.streak.high",
         messageParams: { count: coreStats.currentStreak },
       });
-    } else if (coreStats.currentStreak === 0 && coreStats.totalWorkouts > 0) {
+    } else if (coreStats.hasWorkoutToday && coreStats.currentStreak > 0) {
+      insights.push({
+        type: "success",
+        icon: "💪",
+        messageKey: "insights.streak.todayWorkout",
+      });
+    } else if (!coreStats.hasWorkoutToday && coreStats.totalWorkouts > 0) {
       insights.push({
         type: "info",
         icon: "💪",
