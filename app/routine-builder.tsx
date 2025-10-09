@@ -4,11 +4,11 @@ import { routineService } from "@/services/routine";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from "react-native-draggable-flatlist";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useTranslation } from "react-i18next";
 
 // reps를 표시용 문자열로 변환하는 헬퍼 함수
 const formatReps = (reps: { min: number; max: number } | string): string => {
@@ -28,27 +28,27 @@ const getExerciseName = (t: any, exerciseId: string) => {
 
 const getMuscleGroupKey = (targetMuscle: string) => {
   const map: Record<string, string> = {
-    "가슴": "chest",
-    "삼두": "triceps",
-    "등": "back",
-    "이두": "biceps",
-    "하체": "legs",
-    "코어": "core",
+    가슴: "chest",
+    삼두: "triceps",
+    등: "back",
+    이두: "biceps",
+    하체: "legs",
+    코어: "core",
     "가슴 상부": "chestUpper",
     "가슴 하부": "chestLower",
     "등/하체": "backLegs",
-    "햄스트링": "hamstring",
-    "전신": "fullBody",
-    "어깨": "shoulder",
+    햄스트링: "hamstring",
+    전신: "fullBody",
+    어깨: "shoulder",
   };
   return map[targetMuscle] || targetMuscle;
 };
 
 const getDifficultyKey = (difficulty: string) => {
   const map: Record<string, string> = {
-    "초급": "beginner",
-    "중급": "intermediate",
-    "고급": "advanced",
+    초급: "beginner",
+    중급: "intermediate",
+    고급: "advanced",
   };
   return map[difficulty] || difficulty;
 };
@@ -197,7 +197,7 @@ export default function RoutineBuilderScreen() {
       }
     } catch (error) {
       console.error("Failed to load routine:", error);
-      Alert.alert(t('workoutSession.error'), t('routineBuilder.loadRoutineFailed'));
+      Alert.alert(t("workoutSession.error"), t("routineBuilder.loadRoutineFailed"));
     }
   };
 
@@ -266,7 +266,7 @@ export default function RoutineBuilderScreen() {
 
           <View style={styles.exerciseControls}>
             <View style={styles.controlGroup}>
-              <Text style={[styles.controlLabel, { color: colors.textSecondary }]}>{t('routines.sets')}</Text>
+              <Text style={[styles.controlLabel, { color: colors.textSecondary }]}>{t("routines.sets")}</Text>
               <View style={[styles.numberInput, { backgroundColor: colors.background, borderColor: colors.border }]}>
                 <TouchableOpacity style={styles.numberButton} onPress={() => updateExercise(safeIndex, "sets", String(Math.max(1, item.sets - 1)))}>
                   <Ionicons name="remove" size={16} color={colors.textSecondary} />
@@ -279,12 +279,12 @@ export default function RoutineBuilderScreen() {
             </View>
 
             <View style={styles.controlGroup}>
-              <Text style={[styles.controlLabel, { color: colors.textSecondary }]}>{t('routineBuilder.repsOrTime')}</Text>
+              <Text style={[styles.controlLabel, { color: colors.textSecondary }]}>{t("routineBuilder.repsOrTime")}</Text>
               <TextInput
                 style={[styles.repsInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
                 value={item.reps}
                 onChangeText={(value) => updateExercise(safeIndex, "reps", value)}
-                placeholder={t('routineBuilder.repsPlaceholder')}
+                placeholder={t("routineBuilder.repsPlaceholder")}
                 placeholderTextColor={colors.textSecondary}
               />
             </View>
@@ -296,11 +296,11 @@ export default function RoutineBuilderScreen() {
 
   const saveRoutine = async () => {
     if (!routineName.trim()) {
-      Alert.alert(t('workoutSession.error'), t('routineBuilder.enterRoutineName'));
+      Alert.alert(t("workoutSession.error"), t("routineBuilder.enterRoutineName"));
       return;
     }
     if (selectedExercises.length === 0) {
-      Alert.alert(t('workoutSession.error'), t('routineBuilder.addAtLeastOneExercise'));
+      Alert.alert(t("workoutSession.error"), t("routineBuilder.addAtLeastOneExercise"));
       return;
     }
 
@@ -317,15 +317,15 @@ export default function RoutineBuilderScreen() {
       if (isEditing && params.routineId) {
         // 수정 모드
         await routineService.updateRoutine(params.routineId as string, routineData);
-        Alert.alert(t('routineBuilder.saveComplete'), t('routineBuilder.routineUpdated'), [{ text: t('common.confirm'), onPress: () => router.back() }]);
+        Alert.alert(t("routineBuilder.saveComplete"), t("routineBuilder.routineUpdated"), [{ text: t("common.confirm"), onPress: () => router.back() }]);
       } else {
         // 새로 생성
         await routineService.createRoutine(routineData);
-        Alert.alert(t('routineBuilder.saveComplete'), t('routineBuilder.routineSaved'), [{ text: t('common.confirm'), onPress: () => router.back() }]);
+        Alert.alert(t("routineBuilder.saveComplete"), t("routineBuilder.routineSaved"), [{ text: t("common.confirm"), onPress: () => router.back() }]);
       }
     } catch (error) {
       console.error("Failed to save routine:", error);
-      Alert.alert(t('workoutSession.error'), t('routineBuilder.saveRoutineFailed'));
+      Alert.alert(t("workoutSession.error"), t("routineBuilder.saveRoutineFailed"));
     }
   };
 
@@ -337,7 +337,7 @@ export default function RoutineBuilderScreen() {
             <TouchableOpacity style={styles.backButton} onPress={() => setShowExerciseLibrary(false)}>
               <Ionicons name="arrow-back" size={24} color={colors.text} />
             </TouchableOpacity>
-            <Text style={[styles.headerTitle, { color: colors.text }]}>{t('routineBuilder.selectExercise')}</Text>
+            <Text style={[styles.headerTitle, { color: colors.text }]}>{t("routineBuilder.selectExercise")}</Text>
             <View style={styles.headerSpacer} />
           </View>
 
@@ -345,7 +345,7 @@ export default function RoutineBuilderScreen() {
             <Ionicons name="search" size={20} color={colors.textSecondary} />
             <TextInput
               style={[styles.searchInput, { color: colors.text }]}
-              placeholder={t('routineBuilder.searchExercise')}
+              placeholder={t("routineBuilder.searchExercise")}
               placeholderTextColor={colors.textSecondary}
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -379,7 +379,7 @@ export default function RoutineBuilderScreen() {
                     <Text style={[styles.difficultyText, { color: colors.textSecondary }]}>{t(`difficulty.${getDifficultyKey(exercise.difficulty)}`)}</Text>
                   </View>
                   <Text style={[styles.defaultSets, { color: colors.textSecondary }]}>
-                    {t('routineBuilder.recommendedFormat', { sets: exercise.defaultSets, reps: formatReps(exercise.defaultReps) })}
+                    {t("routineBuilder.recommendedFormat", { sets: exercise.defaultSets, reps: formatReps(exercise.defaultReps) })}
                   </Text>
                 </View>
                 <Ionicons name="add-circle" size={24} color={colors.primary} />
@@ -398,19 +398,19 @@ export default function RoutineBuilderScreen() {
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>{isEditing ? t('routineBuilder.editRoutine') : t('routineBuilder.newRoutine')}</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>{isEditing ? t("routineBuilder.editRoutine") : t("routineBuilder.newRoutine")}</Text>
           <TouchableOpacity style={[styles.saveButton, { backgroundColor: colors.primary }]} onPress={saveRoutine}>
-            <Text style={[styles.saveButtonText, { color: colors.buttonText }]}>{t('common.save')}</Text>
+            <Text style={[styles.saveButtonText, { color: colors.buttonText }]}>{t("common.save")}</Text>
           </TouchableOpacity>
         </View>
 
         <ScrollView style={styles.content}>
           {/* 루틴 이름 입력 */}
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('routines.routineName')}</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("routines.routineName")}</Text>
             <TextInput
               style={[styles.nameInput, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
-              placeholder={t('routines.routineNamePlaceholder')}
+              placeholder={t("routines.routineNamePlaceholder")}
               placeholderTextColor={colors.textSecondary}
               value={routineName}
               onChangeText={setRoutineName}
@@ -420,19 +420,19 @@ export default function RoutineBuilderScreen() {
           {/* 운동 목록 */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('routineBuilder.exerciseList', { count: selectedExercises.length })}</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("routineBuilder.exerciseList", { count: selectedExercises.length })}</Text>
               <TouchableOpacity style={[styles.addExerciseButton, { backgroundColor: colors.primary + "20" }]} onPress={() => setShowExerciseLibrary(true)}>
                 <Ionicons name="add" size={20} color={colors.primary} />
-                <Text style={[styles.addExerciseText, { color: colors.primary }]}>{t('routines.addExercise')}</Text>
+                <Text style={[styles.addExerciseText, { color: colors.primary }]}>{t("routines.addExercise")}</Text>
               </TouchableOpacity>
             </View>
 
             {selectedExercises.length === 0 ? (
               <View style={[styles.emptyState, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <Ionicons name="fitness-outline" size={48} color={colors.textSecondary} />
-                <Text style={[styles.emptyTitle, { color: colors.text }]}>{t('routineBuilder.addExercisePrompt')}</Text>
-                <Text style={[styles.emptyDescription, { color: colors.textSecondary }]}>{t('routineBuilder.addExerciseDescription')}</Text>
-                <Text style={[styles.emptyDescription, { color: colors.textSecondary, marginTop: 8 }]}>{t('routineBuilder.dragExerciseTip')}</Text>
+                <Text style={[styles.emptyTitle, { color: colors.text }]}>{t("routineBuilder.addExercisePrompt")}</Text>
+                <Text style={[styles.emptyDescription, { color: colors.textSecondary }]}>{t("routineBuilder.addExerciseDescription")}</Text>
+                <Text style={[styles.emptyDescription, { color: colors.textSecondary, marginTop: 8 }]}>{t("routineBuilder.dragExerciseTip")}</Text>
               </View>
             ) : (
               <DraggableFlatList
@@ -542,6 +542,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
+    marginBottom: 16,
   },
   exerciseHeader: {
     flexDirection: "row",
