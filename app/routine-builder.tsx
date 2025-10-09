@@ -22,7 +22,12 @@ const formatReps = (reps: { min: number; max: number } | string): string => {
 };
 
 // 번역 헬퍼 함수들
-const getExerciseName = (t: any, exerciseId: string) => {
+const getExerciseName = (t: any, exerciseId: string, exerciseName?: string) => {
+  // 커스텀 운동이면 실제 이름 반환 (번역 불필요)
+  if (exerciseId.startsWith('ex_custom_')) {
+    return exerciseName || exerciseId;
+  }
+  // 기본 운동은 번역 키 사용
   return t(`exercises.${exerciseId}`);
 };
 
@@ -360,7 +365,7 @@ export default function RoutineBuilderScreen() {
                 onPress={() => addExercise(exercise)}
               >
                 <View style={styles.exerciseInfo}>
-                  <Text style={[styles.exerciseName, { color: colors.text }]}>{getExerciseName(t, exercise.id)}</Text>
+                  <Text style={[styles.exerciseName, { color: colors.text }]}>{getExerciseName(t, exercise.id, exercise.name)}</Text>
                   <View style={styles.exerciseTags}>
                     <View
                       style={[

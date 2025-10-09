@@ -269,7 +269,12 @@ const routines = [
 // NOTE: 이 배열은 실제 상태 관리 대신 임시 데이터로 사용되었으므로, loadRoutines에서 설정되는 myRoutines 상태를 사용하도록 합니다.
 
 // 번역 헬퍼 함수들
-const getExerciseName = (t: any, exerciseId: string) => {
+const getExerciseName = (t: any, exerciseId: string, exerciseName?: string) => {
+  // 커스텀 운동이면 실제 이름 반환 (번역 불필요)
+  if (exerciseId.startsWith('ex_custom_')) {
+    return exerciseName || exerciseId;
+  }
+  // 기본 운동은 번역 키 사용
   return t(`exercises.${exerciseId}`);
 };
 
@@ -664,7 +669,7 @@ export default function RoutinesScreen() {
             {routine.exercises.map((exercise, index) => (
               <View key={index} style={styles.exerciseItem}>
                 <View style={styles.exerciseMainInfo}>
-                  <Text style={[styles.exerciseName, { color: colors.text }]}>• {exercise.id ? getExerciseName(t, exercise.id) : exercise.name}</Text>
+                  <Text style={[styles.exerciseName, { color: colors.text }]}>• {exercise.id ? getExerciseName(t, exercise.id, exercise.name) : exercise.name}</Text>
                   <View style={styles.exerciseTags}>
                     {exercise.targetMuscle && (
                       <View
@@ -1163,7 +1168,7 @@ export default function RoutinesScreen() {
                                     return (
                                       <View key={exercise.id} style={[styles.exerciseLibraryCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                                         <View style={styles.exerciseLibraryInfo}>
-                                          <Text style={[styles.exerciseLibraryName, { color: colors.text }]}>{getExerciseName(t, exercise.id)}</Text>
+                                          <Text style={[styles.exerciseLibraryName, { color: colors.text }]}>{getExerciseName(t, exercise.id, exercise.name)}</Text>
                                           <View style={styles.exerciseTags}>
                                             <View
                                               style={[
@@ -1351,7 +1356,7 @@ export default function RoutinesScreen() {
                             {routine.exercises.map((exercise, index) => (
                               <View key={index} style={styles.exerciseItem}>
                                 <View style={styles.exerciseMainInfo}>
-                                  <Text style={[styles.exerciseName, { color: colors.text }]}>• {exercise.id ? getExerciseName(t, exercise.id) : exercise.name}</Text>
+                                  <Text style={[styles.exerciseName, { color: colors.text }]}>• {exercise.id ? getExerciseName(t, exercise.id, exercise.name) : exercise.name}</Text>
                                   <View style={styles.exerciseTags}>
                                     <View
                                       style={[
@@ -1446,7 +1451,7 @@ export default function RoutinesScreen() {
                                     {routine.exercises.map((exercise, index) => (
                                       <View key={index} style={styles.exerciseItem}>
                                         <View style={styles.exerciseMainInfo}>
-                                          <Text style={[styles.exerciseName, { color: colors.text }]}>• {exercise.id ? getExerciseName(t, exercise.id) : exercise.name}</Text>
+                                          <Text style={[styles.exerciseName, { color: colors.text }]}>• {exercise.id ? getExerciseName(t, exercise.id, exercise.name) : exercise.name}</Text>
                                           <View style={styles.exerciseTags}>
                                             <View
                                               style={[
