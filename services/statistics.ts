@@ -1,4 +1,4 @@
-import { WorkoutRecord, STORAGE_KEYS } from "@/models";
+import { STORAGE_KEYS, WorkoutRecord } from "@/models";
 import { storage } from "./storage/asyncStorage";
 
 export interface CoreStats {
@@ -95,7 +95,7 @@ export interface SetsTrendData {
   workoutCount: number;
 }
 
-export type TrendPeriod = 'week' | 'month' | 'year';
+export type TrendPeriod = "week" | "month" | "year";
 
 const getDayOfWeek = (dateString: string): string => {
   const days = ["일", "월", "화", "수", "목", "금", "토"];
@@ -133,9 +133,7 @@ export const statisticsService = {
     const totalWorkouts = completedRecords.length;
 
     // 날짜별로 정렬
-    const sortedRecords = [...completedRecords].sort(
-      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
+    const sortedRecords = [...completedRecords].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     // 연속 운동 일수 계산
     let currentStreak = 0;
@@ -183,9 +181,7 @@ export const statisticsService = {
     const thisWeekWorkouts = completedRecords.filter((r) => r.date >= weekStart).length;
     const thisMonthWorkouts = completedRecords.filter((r) => r.date >= monthStart).length;
     const thisYearWorkouts = completedRecords.filter((r) => r.date >= yearStart).length;
-    const thisYearVolume = completedRecords
-      .filter((r) => r.date >= yearStart)
-      .reduce((sum, r) => sum + (r.totalVolume || 0), 0);
+    const thisYearVolume = completedRecords.filter((r) => r.date >= yearStart).reduce((sum, r) => sum + (r.totalVolume || 0), 0);
 
     return {
       currentStreak,
@@ -210,9 +206,7 @@ export const statisticsService = {
       date.setDate(date.getDate() - i);
       const dateString = date.toISOString().split("T")[0];
 
-      const dayVolume = completedRecords
-        .filter((r) => r.date === dateString)
-        .reduce((sum, r) => sum + (r.totalVolume || 0), 0);
+      const dayVolume = completedRecords.filter((r) => r.date === dateString).reduce((sum, r) => sum + (r.totalVolume || 0), 0);
 
       last7Days.push({
         date: dateString,
@@ -234,9 +228,7 @@ export const statisticsService = {
       date.setDate(date.getDate() - i);
       const dateString = date.toISOString().split("T")[0];
 
-      const dayVolume = completedRecords
-        .filter((r) => r.date === dateString)
-        .reduce((sum, r) => sum + (r.totalVolume || 0), 0);
+      const dayVolume = completedRecords.filter((r) => r.date === dateString).reduce((sum, r) => sum + (r.totalVolume || 0), 0);
 
       last30Days.push({
         date: dateString,
@@ -258,10 +250,7 @@ export const statisticsService = {
       const dateString = date.toISOString().split("T")[0];
 
       const dayRecords = records.filter((r) => r.date === dateString);
-      const avgRate =
-        dayRecords.length > 0
-          ? dayRecords.reduce((sum, r) => sum + (r.completionRate || 0), 0) / dayRecords.length
-          : 0;
+      const avgRate = dayRecords.length > 0 ? dayRecords.reduce((sum, r) => sum + (r.completionRate || 0), 0) / dayRecords.length : 0;
 
       last7Days.push({
         date: dateString,
@@ -471,9 +460,7 @@ export const statisticsService = {
     lastWeekEnd.setMilliseconds(-1);
 
     const thisWeekRecords = completedRecords.filter((r) => new Date(r.date) >= thisWeekStart);
-    const lastWeekRecords = completedRecords.filter(
-      (r) => new Date(r.date) >= lastWeekStart && new Date(r.date) <= lastWeekEnd
-    );
+    const lastWeekRecords = completedRecords.filter((r) => new Date(r.date) >= lastWeekStart && new Date(r.date) <= lastWeekEnd);
 
     const thisWeekStats = {
       workouts: thisWeekRecords.length,
@@ -535,14 +522,17 @@ export const statisticsService = {
     const records = await storage.getArray<WorkoutRecord>(STORAGE_KEYS.WORKOUT_RECORDS);
     const completedRecords = records.filter((r) => r.status === "completed");
 
-    const exerciseMap: Record<string, {
-      exerciseId: string;
-      sets: number;
-      reps: number;
-      volume: number;
-      weights: number[];
-      dates: Set<string>;
-    }> = {};
+    const exerciseMap: Record<
+      string,
+      {
+        exerciseId: string;
+        sets: number;
+        reps: number;
+        volume: number;
+        weights: number[];
+        dates: Set<string>;
+      }
+    > = {};
 
     completedRecords.forEach((record) => {
       record.exercises.forEach((exercise) => {
@@ -560,10 +550,7 @@ export const statisticsService = {
         const completedSets = exercise.sets.filter((s) => s.isCompleted);
         exerciseMap[exercise.exerciseName].sets += completedSets.length;
         exerciseMap[exercise.exerciseName].reps += completedSets.reduce((sum, s) => sum + s.actualReps, 0);
-        exerciseMap[exercise.exerciseName].volume += completedSets.reduce(
-          (sum, s) => sum + s.weight * s.actualReps,
-          0
-        );
+        exerciseMap[exercise.exerciseName].volume += completedSets.reduce((sum, s) => sum + s.weight * s.actualReps, 0);
         completedSets.forEach((s) => {
           if (s.weight > 0) {
             exerciseMap[exercise.exerciseName].weights.push(s.weight);
@@ -580,9 +567,7 @@ export const statisticsService = {
         totalSets: data.sets,
         totalReps: data.reps,
         totalVolume: Math.round(data.volume),
-        avgWeight: data.weights.length > 0
-          ? Math.round(data.weights.reduce((sum, w) => sum + w, 0) / data.weights.length)
-          : 0,
+        avgWeight: data.weights.length > 0 ? Math.round(data.weights.reduce((sum, w) => sum + w, 0) / data.weights.length) : 0,
         maxWeight: data.weights.length > 0 ? Math.max(...data.weights) : 0,
         workoutCount: data.dates.size,
       }))
@@ -594,16 +579,22 @@ export const statisticsService = {
     const name = exerciseName.toLowerCase();
 
     // 유산소 운동
-    if (name.includes("런닝") || name.includes("러닝") || name.includes("조깅") ||
-        name.includes("사이클") || name.includes("자전거") || name.includes("달리기") ||
-        name.includes("줄넘기") || name.includes("로잉") || name.includes("계단")) {
+    if (
+      name.includes("런닝") ||
+      name.includes("러닝") ||
+      name.includes("조깅") ||
+      name.includes("사이클") ||
+      name.includes("자전거") ||
+      name.includes("달리기") ||
+      name.includes("줄넘기") ||
+      name.includes("로잉") ||
+      name.includes("계단")
+    ) {
       return "유산소";
     }
 
     // 웨이트 트레이닝 (바벨, 덤벨 사용)
-    if (name.includes("바벨") || name.includes("덤벨") ||
-        name.includes("벤치프레스") || name.includes("데드리프트") ||
-        name.includes("머신") || name.includes("케이블")) {
+    if (name.includes("바벨") || name.includes("덤벨") || name.includes("벤치프레스") || name.includes("데드리프트") || name.includes("머신") || name.includes("케이블")) {
       return "웨이트";
     }
 
@@ -614,8 +605,7 @@ export const statisticsService = {
   // 헬퍼: 카테고리 추측
   guessCategory(routineName: string): string {
     if (routineName.includes("맨몸") || routineName.includes("홈")) return "맨몸";
-    if (routineName.includes("웨이트") || routineName.includes("벤치") || routineName.includes("데드"))
-      return "웨이트";
+    if (routineName.includes("웨이트") || routineName.includes("벤치") || routineName.includes("데드")) return "웨이트";
     if (routineName.includes("유산소") || routineName.includes("HIIT")) return "유산소";
     return "맨몸";
   },
@@ -639,15 +629,16 @@ export const statisticsService = {
         if (completedSets.length === 0) return;
 
         const date = new Date(record.date);
-        let periodKey = '';
+        let periodKey = "";
 
-        if (period === 'week') {
+        if (period === "week") {
           // ISO week number
           const weekNumber = this.getWeekNumber(date);
           periodKey = `${date.getFullYear()}-W${weekNumber}`;
-        } else if (period === 'month') {
-          periodKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-        } else { // year
+        } else if (period === "month") {
+          periodKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+        } else {
+          // year
           periodKey = `${date.getFullYear()}`;
         }
 
@@ -674,9 +665,9 @@ export const statisticsService = {
 
       // 기간별로 최근 N개만 표시
       let recentTrends = trendArray;
-      if (period === 'week') {
+      if (period === "week") {
         recentTrends = trendArray.slice(-8); // 최근 8주
-      } else if (period === 'month') {
+      } else if (period === "month") {
         recentTrends = trendArray.slice(-6); // 최근 6개월
       }
 
@@ -698,18 +689,19 @@ export const statisticsService = {
 
   // 기간 레이블 포맷팅
   formatPeriodLabel(periodKey: string, period: TrendPeriod): string {
-    if (period === 'week') {
-      const [year, week] = periodKey.split('-W');
+    if (period === "week") {
+      const [year, week] = periodKey.split("-W");
       const weekNum = parseInt(week);
       // 해당 주의 첫날 구하기
       const date = this.getDateOfISOWeek(weekNum, parseInt(year));
       const month = date.getMonth() + 1;
       const weekOfMonth = Math.ceil(date.getDate() / 7);
       return `${month}월 ${weekOfMonth}주`;
-    } else if (period === 'month') {
-      const [year, month] = periodKey.split('-');
+    } else if (period === "month") {
+      const [year, month] = periodKey.split("-");
       return `${year}.${month}`;
-    } else { // year
+    } else {
+      // year
       return `${periodKey}년`;
     }
   },
