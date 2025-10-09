@@ -10,13 +10,88 @@ import {
 } from "@/services/statistics";
 import { profileService } from "@/services/profile";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View, Dimensions, Alert } from "react-native";
 import { generateMockWorkoutData } from "@/utils/generateMockData";
 import { PieChart } from "react-native-chart-kit";
 import Svg, { Rect, Line, Text as SvgText } from "react-native-svg";
 import { useTranslation } from "react-i18next";
+
+// 한글 이름 -> exerciseId 역매핑
+const koreanToExerciseId: Record<string, string> = {
+  '일반 푸시업': 'regularPushup',
+  '다이아몬드 푸시업': 'diamondPushup',
+  '와이드 푸시업': 'widePushup',
+  '인클라인 푸시업': 'inclinePushup',
+  '디클라인 푸시업': 'declinePushup',
+  '풀업': 'regularPullup',
+  '친업': 'chinup',
+  '어시스트 풀업': 'assistedPullup',
+  '바디웨이트 스쿼트': 'bodyweightSquat',
+  '점프 스쿼트': 'jumpSquat',
+  '피스톨 스쿼트': 'pistolSquat',
+  '불가리안 스플릿 스쿼트': 'bulgarianSplitSquat',
+  '플랫 벤치프레스': 'flatBenchPress',
+  '인클라인 벤치프레스': 'inclineBenchPress',
+  '디클라인 벤치프레스': 'declineBenchPress',
+  '덤벨 벤치프레스': 'dumbbellBenchPress',
+  '컨벤셔널 데드리프트': 'conventionalDeadlift',
+  '스모 데드리프트': 'sumoDeadlift',
+  '루마니안 데드리프트': 'romanianDeadlift',
+  '덤벨 플라이': 'dumbbellFly',
+  '바벨 로우': 'barbellRow',
+  '덤벨 로우': 'dumbbellRow',
+  '바디웨이트 딥스': 'bodyweightDips',
+  '어시스트 딥스': 'assistedDips',
+  '플랭크': 'regularPlank',
+  '사이드 플랭크': 'sidePlank',
+  '플랭크 업다운': 'plankUpDown',
+  '버피': 'burpee',
+  '마운틴클라이머': 'mountainClimber',
+  '점핑잭': 'jumpingJack',
+  '하이니': 'highKnees',
+  '햄스트링 스트레칭': 'hamstringStretch',
+  '어깨 스트레칭': 'shoulderStretch',
+  '가슴 스트레칭': 'chestStretch',
+};
+
+// 번역 헬퍼 함수들
+const getExerciseName = (t: any, exerciseId: string, exerciseName?: string) => {
+  // exerciseId가 없거나 비어있으면 한글 이름에서 ID 추론 시도
+  if (!exerciseId && exerciseName) {
+    const inferredId = koreanToExerciseId[exerciseName];
+    if (inferredId) {
+      return t(`exercises.${inferredId}`);
+    }
+    // 추론 실패하면 원래 이름 반환
+    return exerciseName;
+  }
+
+  // 커스텀 운동이면 실제 이름 반환 (번역 불필요)
+  if (exerciseId && exerciseId.startsWith('ex_custom_')) {
+    return exerciseName || exerciseId;
+  }
+
+  // 기본 운동은 번역 키 사용
+  if (exerciseId) {
+    return t(`exercises.${exerciseId}`);
+  }
+
+  // fallback
+  return exerciseName || '';
+};
+
+const getExerciseTypeName = (t: any, type: string) => {
+  const typeMap: Record<string, string> = {
+    '유산소': 'cardio',
+    '웨이트': 'weights',
+    '맨몸/기타': 'bodyweight',
+    '맨몸': 'bodyweight',
+  };
+  const key = typeMap[type] || type;
+  return t(`category.${key}`);
+};
 
 export default function StatisticsScreen() {
   const { colors } = useTheme();
@@ -66,9 +141,11 @@ export default function StatisticsScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    loadStatistics();
-  }, [loadStatistics]);
+  useFocusEffect(
+    useCallback(() => {
+      loadStatistics();
+    }, [loadStatistics])
+  );
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -301,7 +378,7 @@ export default function StatisticsScreen() {
                     <Text style={[styles.prRankText, { color: colors.primary }]}>{index + 1}</Text>
                   </View>
                   <View style={styles.prContent}>
-                    <Text style={[styles.prExercise, { color: colors.text }]}>{pr.exerciseName}</Text>
+                    <Text style={[styles.prExercise, { color: colors.text }]}>{getExerciseName(t, pr.exerciseId, pr.exerciseName)}</Text>
                     <Text style={[styles.prDate, { color: colors.textSecondary }]}>
                       {new Date(pr.date).toLocaleDateString("ko-KR", { month: "short", day: "numeric" })}
                     </Text>
@@ -371,7 +448,7 @@ export default function StatisticsScreen() {
                           { color: isSelected ? colors.primary : colors.text },
                         ]}
                       >
-                        {ex.exerciseName}
+                        {getExerciseName(t, ex.exerciseId, ex.exerciseName)}
                       </Text>
                     </TouchableOpacity>
                   );
@@ -416,7 +493,7 @@ export default function StatisticsScreen() {
 
               return (
                 <View style={[styles.chartContainer, { backgroundColor: colors.surface }]}>
-                  <Text style={[styles.chartTitle, { color: colors.text }]}>총 중량 비교</Text>
+                  <Text style={[styles.chartTitle, { color: colors.text }]}>{t('statistics.volumeComparison')}</Text>
                   <Svg width={chartWidth} height={chartHeight}>
                     {/* 가로 그리드 라인 */}
                     {[0, 0.25, 0.5, 0.75, 1].map((ratio, idx) => {
@@ -491,17 +568,59 @@ export default function StatisticsScreen() {
                             {ex.totalVolume.toLocaleString()}
                           </SvgText>
 
-                          {/* X축 레이블 */}
-                          <SvgText
-                            x={x + barWidth / 2}
-                            y={chartHeight - padding.bottom + 20}
-                            fontSize="10"
-                            fill={colors.text}
-                            textAnchor="middle"
-                            fontWeight="600"
-                          >
-                            {ex.exerciseName.length > 6 ? ex.exerciseName.slice(0, 6) + "..." : ex.exerciseName}
-                          </SvgText>
+                          {/* X축 레이블 - 줄바꿈 처리 */}
+                          {(() => {
+                            const name = getExerciseName(t, ex.exerciseId, ex.exerciseName);
+                            const maxLineLength = 8;
+
+                            if (name.length <= maxLineLength) {
+                              return (
+                                <SvgText
+                                  x={x + barWidth / 2}
+                                  y={chartHeight - padding.bottom + 20}
+                                  fontSize="10"
+                                  fill={colors.text}
+                                  textAnchor="middle"
+                                  fontWeight="600"
+                                >
+                                  {name}
+                                </SvgText>
+                              );
+                            }
+
+                            // 긴 이름은 두 줄로 나눔
+                            const midPoint = Math.floor(name.length / 2);
+                            const spaceIndex = name.indexOf(' ', midPoint - 3);
+                            const splitIndex = spaceIndex > 0 && spaceIndex < name.length - 3 ? spaceIndex : midPoint;
+
+                            const line1 = name.substring(0, splitIndex).trim();
+                            const line2 = name.substring(splitIndex).trim();
+
+                            return (
+                              <>
+                                <SvgText
+                                  x={x + barWidth / 2}
+                                  y={chartHeight - padding.bottom + 15}
+                                  fontSize="9"
+                                  fill={colors.text}
+                                  textAnchor="middle"
+                                  fontWeight="600"
+                                >
+                                  {line1.length > 10 ? line1.substring(0, 10) + '...' : line1}
+                                </SvgText>
+                                <SvgText
+                                  x={x + barWidth / 2}
+                                  y={chartHeight - padding.bottom + 27}
+                                  fontSize="9"
+                                  fill={colors.text}
+                                  textAnchor="middle"
+                                  fontWeight="600"
+                                >
+                                  {line2.length > 10 ? line2.substring(0, 10) + '...' : line2}
+                                </SvgText>
+                              </>
+                            );
+                          })()}
                         </React.Fragment>
                       );
                     })}
@@ -529,7 +648,7 @@ export default function StatisticsScreen() {
                   .map((ex, index) => (
                     <View key={index} style={[styles.exerciseStatItem, { borderBottomColor: colors.border }]}>
                       <View style={styles.exerciseStatHeader}>
-                        <Text style={[styles.exerciseStatName, { color: colors.text }]}>{ex.exerciseName}</Text>
+                        <Text style={[styles.exerciseStatName, { color: colors.text }]}>{getExerciseName(t, ex.exerciseId, ex.exerciseName)}</Text>
                         <Text style={[styles.exerciseStatWorkouts, { color: colors.textSecondary }]}>
                           {t('statistics.workoutDays', { count: ex.workoutCount })}
                         </Text>
@@ -581,7 +700,7 @@ export default function StatisticsScreen() {
                 data={exerciseTypeDistribution.map((item, index) => {
                   const chartColors = ["#4F46E5", "#059669", "#D97706", "#DC2626", "#7C3AED"];
                   return {
-                    name: item.type,
+                    name: getExerciseTypeName(t, item.type),
                     population: item.count,
                     color: chartColors[index % chartColors.length],
                     legendFontColor: colors.text,

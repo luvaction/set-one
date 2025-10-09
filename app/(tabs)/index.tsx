@@ -7,6 +7,45 @@ import { routineService, workoutSessionService, workoutRecordService, profileSer
 import { Routine, WorkoutRecord } from "@/models";
 import { useTranslation } from "react-i18next";
 
+// 번역 헬퍼 함수
+const getRoutineName = (t: any, routineId?: string, routineName?: string) => {
+  // 추천 루틴인 경우 ID로 번역 (routine_user_는 제외)
+  if (routineId && routineId.startsWith('routine_') && !routineId.startsWith('routine_user_')) {
+    return t(`routines.${routineId}`);
+  }
+
+  // 한글 루틴 이름 매핑 (추천 루틴의 경우)
+  const koreanRoutineMap: Record<string, string> = {
+    '초보자 전신 운동': 'routine_beginner_fullbody',
+    '가슴 집중 운동': 'routine_chest_day',
+    '등 집중 운동': 'routine_back_day',
+    '하체 집중 운동': 'routine_leg_day',
+    '홈트레이닝': 'routine_home_workout',
+  };
+
+  // 한글 이름으로 저장된 추천 루틴 변환
+  if (routineName && koreanRoutineMap[routineName]) {
+    return t(`routines.${koreanRoutineMap[routineName]}`);
+  }
+
+  // 일반 루틴은 이름 그대로 반환
+  return routineName || '';
+};
+
+const getCategoryName = (t: any, category?: string) => {
+  if (!category) return '';
+  const categoryMap: Record<string, string> = {
+    '전신': 'fullBody',
+    '상체': 'upperBody',
+    '하체': 'lowerBody',
+    '맨몸': 'bodyweight',
+    '웨이트': 'weights',
+    '유산소': 'cardio',
+  };
+  const key = categoryMap[category] || category;
+  return t(`category.${key}`);
+};
+
 export default function HomeScreen() {
   const { colors } = useTheme();
   const { t } = useTranslation();
@@ -168,7 +207,7 @@ export default function HomeScreen() {
               onPress={() => router.push("/(tabs)/history")}
             >
               <View style={styles.recentHeader}>
-                <Text style={[styles.recentTitle, { color: colors.text }]}>{record.routineName}</Text>
+                <Text style={[styles.recentTitle, { color: colors.text }]}>{getRoutineName(t, record.routineId, record.routineName)}</Text>
                 <Text style={[styles.recentDate, { color: colors.textSecondary }]}>{record.date}</Text>
               </View>
               <View style={styles.recentStats}>
@@ -198,14 +237,14 @@ export default function HomeScreen() {
         {recommendedRoutines.map((routine) => (
           <TouchableOpacity key={routine.id} style={[styles.routineCard, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={() => handlePlayRoutine(routine)}>
             <View style={styles.routineHeader}>
-              <Text style={[styles.routineTitle, { color: colors.text }]}>{routine.name}</Text>
+              <Text style={[styles.routineTitle, { color: colors.text }]}>{getRoutineName(t, routine.id, routine.name)}</Text>
               {routine.category && (
                 <View style={[styles.routineBadge, { backgroundColor: colors.primary + "20" }]}>
-                  <Text style={[styles.routineBadgeText, { color: colors.primary }]}>{routine.category}</Text>
+                  <Text style={[styles.routineBadgeText, { color: colors.primary }]}>{getCategoryName(t, routine.category)}</Text>
                 </View>
               )}
             </View>
-            {routine.description && <Text style={[styles.routineDescription, { color: colors.textSecondary }]}>{routine.description}</Text>}
+            {routine.description && <Text style={[styles.routineDescription, { color: colors.textSecondary }]}>{t(`routines.${routine.id}_description`)}</Text>}
             {routine.duration && <Text style={[styles.routineDuration, { color: colors.icon }]}>⏱ {routine.duration}</Text>}
           </TouchableOpacity>
         ))}

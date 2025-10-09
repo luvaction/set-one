@@ -8,6 +8,94 @@ import { useTranslation } from "react-i18next";
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Calendar, DateData } from "react-native-calendars";
 
+// 한글 이름 -> exerciseId 역매핑
+const koreanToExerciseId: Record<string, string> = {
+  '일반 푸시업': 'regularPushup',
+  '다이아몬드 푸시업': 'diamondPushup',
+  '와이드 푸시업': 'widePushup',
+  '인클라인 푸시업': 'inclinePushup',
+  '디클라인 푸시업': 'declinePushup',
+  '풀업': 'regularPullup',
+  '친업': 'chinup',
+  '어시스트 풀업': 'assistedPullup',
+  '바디웨이트 스쿼트': 'bodyweightSquat',
+  '점프 스쿼트': 'jumpSquat',
+  '피스톨 스쿼트': 'pistolSquat',
+  '불가리안 스플릿 스쿼트': 'bulgarianSplitSquat',
+  '플랫 벤치프레스': 'flatBenchPress',
+  '인클라인 벤치프레스': 'inclineBenchPress',
+  '디클라인 벤치프레스': 'declineBenchPress',
+  '덤벨 벤치프레스': 'dumbbellBenchPress',
+  '컨벤셔널 데드리프트': 'conventionalDeadlift',
+  '스모 데드리프트': 'sumoDeadlift',
+  '루마니안 데드리프트': 'romanianDeadlift',
+  '덤벨 플라이': 'dumbbellFly',
+  '바벨 로우': 'barbellRow',
+  '덤벨 로우': 'dumbbellRow',
+  '바디웨이트 딥스': 'bodyweightDips',
+  '어시스트 딥스': 'assistedDips',
+  '플랭크': 'regularPlank',
+  '사이드 플랭크': 'sidePlank',
+  '플랭크 업다운': 'plankUpDown',
+  '버피': 'burpee',
+  '마운틴클라이머': 'mountainClimber',
+  '점핑잭': 'jumpingJack',
+  '하이니': 'highKnees',
+  '햄스트링 스트레칭': 'hamstringStretch',
+  '어깨 스트레칭': 'shoulderStretch',
+  '가슴 스트레칭': 'chestStretch',
+};
+
+// 번역 헬퍼 함수
+const getExerciseName = (t: any, exerciseId: string, exerciseName?: string) => {
+  // exerciseId가 없거나 비어있으면 한글 이름에서 ID 추론 시도
+  if (!exerciseId && exerciseName) {
+    const inferredId = koreanToExerciseId[exerciseName];
+    if (inferredId) {
+      return t(`exercises.${inferredId}`);
+    }
+    // 추론 실패하면 원래 이름 반환
+    return exerciseName;
+  }
+
+  // 커스텀 운동인 경우 실제 이름 반환
+  if (exerciseId && exerciseId.startsWith('ex_custom_')) {
+    return exerciseName || exerciseId;
+  }
+
+  // 기본 운동은 번역 키로 조회
+  if (exerciseId) {
+    return t(`exercises.${exerciseId}`);
+  }
+
+  // fallback
+  return exerciseName || '';
+};
+
+const getRoutineName = (t: any, routineId?: string, routineName?: string) => {
+  // 추천 루틴인 경우 ID로 번역 (routine_user_는 제외)
+  if (routineId && routineId.startsWith('routine_') && !routineId.startsWith('routine_user_')) {
+    return t(`routines.${routineId}`);
+  }
+
+  // 한글 루틴 이름 매핑 (추천 루틴의 경우)
+  const koreanRoutineMap: Record<string, string> = {
+    '초보자 전신 운동': 'routine_beginner_fullbody',
+    '가슴 집중 운동': 'routine_chest_day',
+    '등 집중 운동': 'routine_back_day',
+    '하체 집중 운동': 'routine_leg_day',
+    '홈트레이닝': 'routine_home_workout',
+  };
+
+  // 한글 이름으로 저장된 추천 루틴 변환
+  if (routineName && koreanRoutineMap[routineName]) {
+    return t(`routines.${koreanRoutineMap[routineName]}`);
+  }
+
+  // 일반 루틴은 이름 그대로 반환
+  return routineName || '';
+};
+
 export default function HistoryScreen() {
   const { theme, colors } = useTheme();
   const { t } = useTranslation();
@@ -184,7 +272,7 @@ export default function HistoryScreen() {
                     }}
                   >
                     <View style={styles.recordHeader}>
-                      <Text style={[styles.recordTitle, { color: colors.text }]}>{record.routineName}</Text>
+                      <Text style={[styles.recordTitle, { color: colors.text }]}>{getRoutineName(t, record.routineId, record.routineName)}</Text>
                       <View style={[styles.statusBadge, { backgroundColor: record.status === "completed" ? colors.primary + "20" : colors.textSecondary + "20" }]}>
                         <Text style={[styles.statusText, { color: record.status === "completed" ? colors.primary : colors.textSecondary }]}>
                           {record.status === "completed" ? t("history.completed") : t("history.stopped")}
@@ -212,7 +300,7 @@ export default function HistoryScreen() {
                     {record.exercises.map((ex, exIdx) => (
                       <View key={exIdx} style={styles.exerciseItem}>
                         <View style={{ flex: 1 }}>
-                          <Text style={[styles.exerciseName, { color: colors.text }]}>{ex.exerciseName}</Text>
+                          <Text style={[styles.exerciseName, { color: colors.text }]}>{getExerciseName(t, ex.exerciseId, ex.exerciseName)}</Text>
                           <Text style={[styles.exerciseSets, { color: colors.textSecondary }]}>
                             {t("history.sets", { completed: ex.sets.filter((s) => s.isCompleted).length, total: ex.sets.length })}
                           </Text>
@@ -268,7 +356,7 @@ export default function HistoryScreen() {
               <>
                 <View style={styles.modalInfoRow}>
                   <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>
-                    {t("history.routine")}: {currentRecord.routineName}
+                    {t("history.routine")}: {getRoutineName(t, currentRecord.routineId, currentRecord.routineName)}
                   </Text>
                   <View style={[styles.statusBadge, { backgroundColor: currentRecord.status === "completed" ? colors.primary + "20" : colors.textSecondary + "20" }]}>
                     <Text style={[styles.statusText, { color: currentRecord.status === "completed" ? colors.primary : colors.textSecondary }]}>

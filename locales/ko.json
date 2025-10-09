@@ -33,6 +33,16 @@
     "myRoutines": "내 루틴",
     "library": "라이브러리",
     "recommended": "추천 루틴",
+    "routine_beginner_fullbody": "초보자 전신 운동",
+    "routine_beginner_fullbody_description": "헬스 입문자를 위한 기본 전신 운동 루틴",
+    "routine_chest_day": "가슴 집중 운동",
+    "routine_chest_day_description": "가슴 근육 발달을 위한 루틴",
+    "routine_back_day": "등 집중 운동",
+    "routine_back_day_description": "넓은 등을 만들기 위한 루틴",
+    "routine_leg_day": "하체 집중 운동",
+    "routine_leg_day_description": "강한 하체를 위한 루틴",
+    "routine_home_workout": "홈트레이닝",
+    "routine_home_workout_description": "집에서 기구 없이 할 수 있는 운동",
     "createRoutine": "새 루틴 만들기",
     "routineName": "루틴 이름",
     "routineNamePlaceholder": "루틴 이름을 입력하세요",
@@ -80,7 +90,13 @@
     "exerciseAddedToRoutine": "\"{{exercise}}\"을(를) \"{{routine}}\" 루틴에 추가했습니다.",
     "routineCopied": "\"{{name}}\"이(가) 내 루틴에 추가되었습니다.",
     "routineCopyFailed": "루틴 복사에 실패했습니다.",
-    "routineDeleted": "루틴이 삭제되었습니다."
+    "routineDeleted": "루틴이 삭제되었습니다.",
+    "exerciseMuscleGroup": "운동 부위",
+    "exerciseMuscleGroupPlaceholder": "예: 가슴, 등, 하체, 코어 등",
+    "createNewRoutine": "새 루틴 만들기",
+    "addToExistingRoutine": "기존 루틴에 추가",
+    "addExerciseTitle": "{{name}} 추가",
+    "exerciseCount": "{{count}}개 운동"
   },
   "workout": {
     "title": "운동",
@@ -290,12 +306,15 @@
     "completeSetFailed": "세트 완료 처리에 실패했습니다.",
     "setInfo": "세트 {{number}} (목표: {{target}}회)"
   },
-  "categories": {
+  "category": {
     "all": "전체",
     "bodyweight": "맨몸운동",
     "weights": "웨이트",
     "cardio": "유산소",
-    "stretch": "스트레칭"
+    "stretch": "스트레칭",
+    "fullBody": "전신",
+    "upperBody": "상체",
+    "lowerBody": "하체"
   },
   "difficulty": {
     "beginner": "초급",

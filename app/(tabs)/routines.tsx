@@ -23,11 +23,11 @@ const formatReps = (reps: { min: number; max: number } | string): string => {
 };
 
 const categories = [
-  { id: "all", nameKey: "categories.all", icon: "grid" },
-  { id: "bodyweight", nameKey: "categories.bodyweight", icon: "body" },
-  { id: "weights", nameKey: "categories.weights", icon: "barbell" },
-  { id: "cardio", nameKey: "categories.cardio", icon: "heart" },
-  { id: "stretch", nameKey: "categories.stretch", icon: "accessibility" },
+  { id: "all", nameKey: "category.all", icon: "grid" },
+  { id: "bodyweight", nameKey: "category.bodyweight", icon: "body" },
+  { id: "weights", nameKey: "category.weights", icon: "barbell" },
+  { id: "cardio", nameKey: "category.cardio", icon: "heart" },
+  { id: "stretch", nameKey: "category.stretch", icon: "accessibility" },
 ];
 
 // 추천 루틴 그룹 구조
@@ -49,7 +49,7 @@ const recommendedRoutineGroups = {
 // 세부 카테고리 구조 (라이브러리용)
 const exerciseCategories = {
   bodyweight: {
-    nameKey: "categories.bodyweight",
+    nameKey: "category.bodyweight",
     icon: "body",
     subcategories: {
       chest: { nameKey: "muscleGroups.chest", exercises: ["regularPushup", "widePushup", "diamondPushup", "inclinePushup", "declinePushup"] },
@@ -60,7 +60,7 @@ const exerciseCategories = {
     },
   },
   weights: {
-    nameKey: "categories.weights",
+    nameKey: "category.weights",
     icon: "barbell",
     subcategories: {
       chest: { nameKey: "muscleGroups.chest", exercises: ["flatBenchPress", "inclineBenchPress", "declineBenchPress", "dumbbellBenchPress", "dumbbellFly"] },
@@ -68,14 +68,14 @@ const exerciseCategories = {
     },
   },
   cardio: {
-    nameKey: "categories.cardio",
+    nameKey: "category.cardio",
     icon: "heart",
     subcategories: {
       hiit: { nameKey: "subcategories.hiit", exercises: ["burpee", "mountainClimber", "jumpingJack", "highKnees"] },
     },
   },
   stretch: {
-    nameKey: "categories.stretch",
+    nameKey: "category.stretch",
     icon: "accessibility",
     subcategories: {
       flexibility: { nameKey: "subcategories.flexibility", exercises: ["hamstringStretch", "shoulderStretch", "chestStretch"] },
@@ -276,6 +276,15 @@ const getExerciseName = (t: any, exerciseId: string, exerciseName?: string) => {
   }
   // 기본 운동은 번역 키 사용
   return t(`exercises.${exerciseId}`);
+};
+
+const getRoutineName = (t: any, routineId?: string, routineName?: string) => {
+  // 추천 루틴인 경우 ID로 번역 (routine_user_는 제외)
+  if (routineId && routineId.startsWith('routine_') && !routineId.startsWith('routine_user_')) {
+    return t(`routines.${routineId}`);
+  }
+  // 일반 루틴은 이름 그대로 반환
+  return routineName || '';
 };
 
 const getMuscleGroupKey = (targetMuscle: string | undefined) => {
@@ -789,7 +798,7 @@ export default function RoutinesScreen() {
                 <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
                   <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
                     <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-                      <Text style={[styles.modalTitle, { color: colors.text }]}>{selectedExerciseForAdd?.name} 추가</Text>
+                      <Text style={[styles.modalTitle, { color: colors.text }]}>{t('routines.addExerciseTitle', { name: getExerciseName(t, selectedExerciseForAdd?.id || '', selectedExerciseForAdd?.name) })}</Text>
                       <TouchableOpacity style={styles.modalCloseButton} onPress={() => setShowAddToRoutineModal(false)}>
                         <Ionicons name="close" size={24} color={colors.textSecondary} />
                       </TouchableOpacity>
@@ -798,13 +807,13 @@ export default function RoutinesScreen() {
                     <View style={styles.modalOptions}>
                       <TouchableOpacity style={[styles.modalOption, { backgroundColor: colors.background }]} onPress={addToNewRoutine}>
                         <Ionicons name="add-circle" size={24} color={colors.primary} />
-                        <Text style={[styles.modalOptionText, { color: colors.text }]}>새 루틴 만들기</Text>
+                        <Text style={[styles.modalOptionText, { color: colors.text }]}>{t('routines.createNewRoutine')}</Text>
                       </TouchableOpacity>
 
                       {filteredMyRoutines.length > 0 && (
                         <>
                           <View style={[styles.modalDivider, { backgroundColor: colors.border }]} />
-                          <Text style={[styles.modalSectionTitle, { color: colors.textSecondary }]}>기존 루틴에 추가</Text>
+                          <Text style={[styles.modalSectionTitle, { color: colors.textSecondary }]}>{t('routines.addToExistingRoutine')}</Text>
                           {filteredMyRoutines.map((routine) => (
                             <TouchableOpacity
                               key={routine.id}
@@ -814,7 +823,7 @@ export default function RoutinesScreen() {
                               <Ionicons name="list" size={20} color={colors.textSecondary} />
                               <View style={styles.routineOptionContent}>
                                 <Text style={[styles.modalOptionText, { color: colors.text }]}>{routine.name}</Text>
-                                <Text style={[styles.routineExerciseCount, { color: colors.textSecondary }]}>{routine.exercises.length}개 운동</Text>
+                                <Text style={[styles.routineExerciseCount, { color: colors.textSecondary }]}>{t('routines.exerciseCount', { count: routine.exercises.length })}</Text>
                               </View>
                             </TouchableOpacity>
                           ))}
@@ -837,29 +846,29 @@ export default function RoutinesScreen() {
                       <Text style={[styles.modalTitle, { color: colors.text }]}>{editingExerciseId ? t('routines.editCustomExercise') : t('routines.addCustomExercise')}</Text>
 
                       {/* 운동 이름 */}
-                      <Text style={[styles.inputLabel, { color: colors.text }]}>운동 이름</Text>
+                      <Text style={[styles.inputLabel, { color: colors.text }]}>{t('routines.exerciseName')}</Text>
                       <TextInput
                         style={[styles.modalInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
                         value={customExerciseName}
                         onChangeText={setCustomExerciseName}
-                        placeholder="예: 사이타마 푸시업"
+                        placeholder={t('routines.exerciseNamePlaceholder')}
                         placeholderTextColor={colors.textSecondary}
                         returnKeyType="next"
                       />
 
                       {/* 운동 부위 */}
-                      <Text style={[styles.inputLabel, { color: colors.text }]}>운동 부위</Text>
+                      <Text style={[styles.inputLabel, { color: colors.text }]}>{t('routines.exerciseMuscleGroup')}</Text>
                       <TextInput
                         style={[styles.modalInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
                         value={customExerciseMuscle}
                         onChangeText={setCustomExerciseMuscle}
-                        placeholder="예: 가슴, 등, 하체, 코어 등"
+                        placeholder={t('routines.exerciseMuscleGroupPlaceholder')}
                         placeholderTextColor={colors.textSecondary}
                         returnKeyType="done"
                       />
 
                       {/* 카테고리 선택 */}
-                      <Text style={[styles.inputLabel, { color: colors.text }]}>카테고리</Text>
+                      <Text style={[styles.inputLabel, { color: colors.text }]}>{t('routines.category')}</Text>
                       <View style={styles.categoryButtons}>
                         <TouchableOpacity
                           style={[
@@ -870,7 +879,7 @@ export default function RoutinesScreen() {
                           onPress={() => setCustomExerciseCategory("bodyweight")}
                         >
                           <Text style={[styles.modalCategoryButtonText, { color: colors.text }, customExerciseCategory === "bodyweight" && { color: colors.buttonText }]}>
-                            맨몸
+                            {t('category.bodyweight')}
                           </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
@@ -881,7 +890,7 @@ export default function RoutinesScreen() {
                           ]}
                           onPress={() => setCustomExerciseCategory("weights")}
                         >
-                          <Text style={[styles.modalCategoryButtonText, { color: colors.text }, customExerciseCategory === "weights" && { color: colors.buttonText }]}>웨이트</Text>
+                          <Text style={[styles.modalCategoryButtonText, { color: colors.text }, customExerciseCategory === "weights" && { color: colors.buttonText }]}>{t('category.weights')}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={[
@@ -891,7 +900,7 @@ export default function RoutinesScreen() {
                           ]}
                           onPress={() => setCustomExerciseCategory("cardio")}
                         >
-                          <Text style={[styles.modalCategoryButtonText, { color: colors.text }, customExerciseCategory === "cardio" && { color: colors.buttonText }]}>유산소</Text>
+                          <Text style={[styles.modalCategoryButtonText, { color: colors.text }, customExerciseCategory === "cardio" && { color: colors.buttonText }]}>{t('category.cardio')}</Text>
                         </TouchableOpacity>
                       </View>
 
@@ -908,10 +917,10 @@ export default function RoutinesScreen() {
                             Keyboard.dismiss();
                           }}
                         >
-                          <Text style={[styles.cancelButtonText, { color: colors.text }]}>취소</Text>
+                          <Text style={[styles.cancelButtonText, { color: colors.text }]}>{t('common.cancel')}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={[styles.modalButton, styles.saveButton, { backgroundColor: colors.primary }]} onPress={handleCreateCustomExercise}>
-                          <Text style={[styles.saveButtonText, { color: colors.buttonText }]}>{editingExerciseId ? "수정" : "저장"}</Text>
+                          <Text style={[styles.saveButtonText, { color: colors.buttonText }]}>{editingExerciseId ? t('common.edit') : t('common.save')}</Text>
                         </TouchableOpacity>
                       </View>
                     </ScrollView>
@@ -1048,10 +1057,10 @@ export default function RoutinesScreen() {
                           >
                             <View style={styles.exerciseLibraryInfo}>
                               <View style={styles.exerciseNameRow}>
-                                <Text style={[styles.exerciseLibraryName, { color: colors.text }]}>{typedExercise.name}</Text>
+                                <Text style={[styles.exerciseLibraryName, { color: colors.text }]}>{getExerciseName(t, typedExercise.id, typedExercise.name)}</Text>
                                 {typedExercise.isCustom && (
                                   <View style={[styles.customBadge, { backgroundColor: colors.primary }]}>
-                                    <Text style={[styles.customBadgeText, { color: colors.buttonText }]}>커스텀</Text>
+                                    <Text style={[styles.customBadgeText, { color: colors.buttonText }]}>{t('customExercise.customBadge')}</Text>
                                   </View>
                                 )}
                               </View>
@@ -1073,7 +1082,7 @@ export default function RoutinesScreen() {
                                     typedExercise.targetMuscle === "이두" && styles.bicepsTag,
                                   ]}
                                 >
-                                  <Text style={[styles.muscleTagText, { color: colors.text }]}>{typedExercise.targetMuscle}</Text>
+                                  <Text style={[styles.muscleTagText, { color: colors.text }]}>{t(`muscleGroups.${getMuscleGroupKey(typedExercise.targetMuscle)}`)}</Text>
                                 </View>
                                 <View
                                   style={[
@@ -1083,7 +1092,7 @@ export default function RoutinesScreen() {
                                     typedExercise.difficulty === "고급" && styles.advancedTag,
                                   ]}
                                 >
-                                  <Text style={[styles.difficultyTagText, { color: "#FFFFFF" }]}>{typedExercise.difficulty}</Text>
+                                  <Text style={[styles.difficultyTagText, { color: "#FFFFFF" }]}>{t(`difficulty.${getDifficultyKey(typedExercise.difficulty)}`)}</Text>
                                 </View>
                               </View>
                               <Text style={[styles.exerciseDefaultSets, { color: colors.textSecondary }]}>
@@ -1239,7 +1248,7 @@ export default function RoutinesScreen() {
                     >
                       <View style={styles.categoryHeaderContent}>
                         <Ionicons name="star" size={20} color={colors.primary} />
-                        <Text style={[styles.categoryHeaderText, { color: colors.text }]}>커스텀 운동</Text>
+                        <Text style={[styles.categoryHeaderText, { color: colors.text }]}>{t('routines.customExercise')}</Text>
                       </View>
                       <Ionicons name={expandedCategories.custom ? "chevron-down" : "chevron-forward"} size={20} color={colors.textSecondary} />
                     </TouchableOpacity>
@@ -1269,7 +1278,7 @@ export default function RoutinesScreen() {
                                 <View style={styles.exerciseNameRow}>
                                   <Text style={[styles.exerciseLibraryName, { color: colors.text }]}>{exercise.name}</Text>
                                   <View style={[styles.customBadge, { backgroundColor: colors.primary }]}>
-                                    <Text style={[styles.customBadgeText, { color: colors.buttonText }]}>커스텀</Text>
+                                    <Text style={[styles.customBadgeText, { color: colors.buttonText }]}>{t('customExercise.customBadge')}</Text>
                                   </View>
                                 </View>
                                 <View style={styles.exerciseTags}>
@@ -1338,7 +1347,7 @@ export default function RoutinesScreen() {
                         <View key={routine.id} style={[styles.routineCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                           <View style={styles.routineHeader}>
                             <View style={styles.routineInfo}>
-                              <Text style={[styles.routineName, { color: colors.text }]}>{routine.name}</Text>
+                              <Text style={[styles.routineName, { color: colors.text }]}>{getRoutineName(t, routine.id, routine.name)}</Text>
                               <View style={styles.routineMeta}>
                                 <Text style={[styles.routineDuration, { color: colors.icon }]}>⏱ {routine.exercises.length}개 운동</Text>
                               </View>
@@ -1433,7 +1442,7 @@ export default function RoutinesScreen() {
                                 <View key={routine.id} style={[styles.routineCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                                   <View style={styles.routineHeader}>
                                     <View style={styles.routineInfo}>
-                                      <Text style={[styles.routineName, { color: colors.text }]}>{routine.name}</Text>
+                                      <Text style={[styles.routineName, { color: colors.text }]}>{getRoutineName(t, routine.id, routine.name)}</Text>
                                       <View style={styles.routineMeta}>
                                         <Text style={[styles.routineDuration, { color: colors.icon }]}>⏱ {routine.exercises.length}개 운동</Text>
                                       </View>

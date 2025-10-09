@@ -40,6 +40,7 @@ export interface CategoryDistribution {
 }
 
 export interface PersonalRecord {
+  exerciseId: string;
   exerciseName: string;
   weight: number;
   reps: number;
@@ -77,6 +78,7 @@ export interface MonthlyCalendar {
 }
 
 export interface ExerciseStats {
+  exerciseId: string;
   exerciseName: string;
   totalSets: number;
   totalReps: number;
@@ -357,6 +359,7 @@ export const statisticsService = {
 
             if (!currentPR || score > currentPR.weight * currentPR.reps) {
               prMap[key] = {
+                exerciseId: exercise.exerciseId,
                 exerciseName: exercise.exerciseName,
                 weight: set.weight,
                 reps: set.actualReps,
@@ -524,6 +527,7 @@ export const statisticsService = {
     const completedRecords = records.filter((r) => r.status === "completed");
 
     const exerciseMap: Record<string, {
+      exerciseId: string;
       sets: number;
       reps: number;
       volume: number;
@@ -535,6 +539,7 @@ export const statisticsService = {
       record.exercises.forEach((exercise) => {
         if (!exerciseMap[exercise.exerciseName]) {
           exerciseMap[exercise.exerciseName] = {
+            exerciseId: exercise.exerciseId,
             sets: 0,
             reps: 0,
             volume: 0,
@@ -561,6 +566,7 @@ export const statisticsService = {
 
     return Object.entries(exerciseMap)
       .map(([exerciseName, data]) => ({
+        exerciseId: data.exerciseId,
         exerciseName,
         totalSets: data.sets,
         totalReps: data.reps,

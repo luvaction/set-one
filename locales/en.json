@@ -33,6 +33,16 @@
     "myRoutines": "My Routines",
     "library": "Library",
     "recommended": "Recommended",
+    "routine_beginner_fullbody": "Beginner Full Body",
+    "routine_beginner_fullbody_description": "Basic full body routine for fitness beginners",
+    "routine_chest_day": "Chest Focus",
+    "routine_chest_day_description": "Routine for chest muscle development",
+    "routine_back_day": "Back Focus",
+    "routine_back_day_description": "Routine for building a wide back",
+    "routine_leg_day": "Leg Focus",
+    "routine_leg_day_description": "Routine for strong lower body",
+    "routine_home_workout": "Home Workout",
+    "routine_home_workout_description": "Exercises you can do at home without equipment",
     "createRoutine": "Create New Routine",
     "routineName": "Routine Name",
     "routineNamePlaceholder": "Enter routine name",
@@ -80,7 +90,13 @@
     "exerciseAddedToRoutine": "Added \"{{exercise}}\" to \"{{routine}}\".",
     "routineCopied": "\"{{name}}\" added to My Routines.",
     "routineCopyFailed": "Failed to copy routine.",
-    "routineDeleted": "Routine deleted."
+    "routineDeleted": "Routine deleted.",
+    "exerciseMuscleGroup": "Muscle Group",
+    "exerciseMuscleGroupPlaceholder": "e.g. Chest, Back, Legs, Core",
+    "createNewRoutine": "Create New Routine",
+    "addToExistingRoutine": "Add to Existing Routine",
+    "addExerciseTitle": "Add {{name}}",
+    "exerciseCount": "{{count}} exercises"
   },
   "workout": {
     "title": "Workout",
@@ -290,12 +306,15 @@
     "completeSetFailed": "Failed to complete set.",
     "setInfo": "Set {{number}} (target: {{target}} reps)"
   },
-  "categories": {
+  "category": {
     "all": "All",
     "bodyweight": "Bodyweight",
     "weights": "Weights",
     "cardio": "Cardio",
-    "stretch": "Stretch"
+    "stretch": "Stretch",
+    "fullBody": "Full Body",
+    "upperBody": "Upper Body",
+    "lowerBody": "Lower Body"
   },
   "difficulty": {
     "beginner": "Beginner",
