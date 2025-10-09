@@ -2,6 +2,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { Routine, WorkoutSession } from "@/models";
 import { routineService } from "@/services/routine";
 import { workoutSessionService } from "@/services/workoutSession";
+import { getOrCreateUserId } from "@/utils/userIdHelper";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -114,24 +115,34 @@ type RestTimerState = {
 };
 
 // reps를 표시용 문자열로 변환하는 헬퍼 함수
-const formatReps = (reps: { min: number; max: number } | string): string => {
-  if (typeof reps === "string") {
-    return reps;
+const formatReps = (reps?: number, repsMin?: number, repsMax?: number, durationSeconds?: number): string => {
+  if (durationSeconds) {
+    return `${durationSeconds}초`;
   }
-  if (reps.min === reps.max) {
-    return `${reps.min}`;
+  if (reps) { // If a single rep value is provided
+    return `${reps}`;
   }
-  return `${reps.min}-${reps.max}`;
+  if (repsMin && repsMax) {
+    if (repsMin === repsMax) {
+      return `${repsMin}`;
+    }
+    return `${repsMin}-${repsMax}`;
+  }
+  return ""; // Fallback
 };
 
 // reps에서 최솟값 추출 (기본값으로 사용)
-const getMinReps = (reps: { min: number; max: number } | string): number => {
-  if (typeof reps === "string") {
-    // 문자열인 경우 숫자 추출 (예: "10-15" → 10, "30초" → 30)
-    const match = reps.match(/\d+/);
-    return match ? parseInt(match[0]) : 0;
+const getMinReps = (targetReps?: number, targetRepsMin?: number, targetRepsMax?: number, targetDurationSeconds?: number): number => {
+  if (targetDurationSeconds) {
+    return targetDurationSeconds; // For time-based, return duration as "reps" for default
   }
-  return reps.min;
+  if (targetReps) {
+    return targetReps;
+  }
+  if (targetRepsMin) {
+    return targetRepsMin;
+  }
+  return 0; // Fallback
 };
 
 export default function WorkoutScreen() {
@@ -150,8 +161,16 @@ export default function WorkoutScreen() {
 
   // 세트 완료 입력 모달 상태
   const [showSetCompleteModal, setShowSetCompleteModal] = useState(false);
-  const [completingSet, setCompletingSet] = useState<{ exerciseIndex: number; setIndex: number; targetReps: string } | null>(null);
+  const [completingSet, setCompletingSet] = useState<{
+    exerciseIndex: number;
+    setIndex: number;
+    targetReps?: number;
+    targetRepsMin?: number;
+    targetRepsMax?: number;
+    targetDurationSeconds?: number;
+  } | null>(null);
   const [actualReps, setActualReps] = useState("");
+  const [actualDurationSeconds, setActualDurationSeconds] = useState(""); // New state for actual duration
   const [weight, setWeight] = useState("");
 
   const totalTimerRef = useRef<number | null>(null);
@@ -331,7 +350,9 @@ export default function WorkoutScreen() {
 
   const startWorkout = async (routine: Routine) => {
     try {
-      const session = await workoutSessionService.startSession(routine);
+      const userId = await getOrCreateUserId();
+
+      const session = await workoutSessionService.startSession(userId, routine);
       setActiveSession(session);
       setShowRoutineSelector(false);
 
@@ -403,20 +424,24 @@ export default function WorkoutScreen() {
     const exercise = activeSession.exercises[exerciseIndex];
     const set = exercise.sets[setIndex];
 
-    // 목표 횟수 포맷 (표시용)
-    const targetRepsString = set.targetReps || "0";
-
-    // 기본값: 최솟값 추출
-    const minReps = getMinReps(targetRepsString);
-
     setCompletingSet({
       exerciseIndex,
       setIndex,
-      targetReps: targetRepsString, // 원본 데이터 저장 (표시용)
+      targetReps: set.targetReps,
+      targetRepsMin: set.targetRepsMin,
+      targetRepsMax: set.targetRepsMax,
+      targetDurationSeconds: set.targetDurationSeconds,
     });
 
-    // 기본값 설정: 최솟값을 기본값으로 설정
-    setActualReps(String(minReps));
+    // 기본값 설정
+    if (set.targetDurationSeconds) {
+      setActualDurationSeconds(String(set.targetDurationSeconds));
+      setActualReps(""); // Clear reps if duration-based
+    } else {
+      const minReps = getMinReps(set.targetReps, set.targetRepsMin, set.targetRepsMax);
+      setActualReps(String(minReps));
+      setActualDurationSeconds(""); // Clear duration if reps-based
+    }
 
     // 무게 기본값: 목표 무게가 있으면 사용, 없으면 이전 세트의 무게 사용
     let defaultWeight = "";
@@ -438,9 +463,10 @@ export default function WorkoutScreen() {
     if (!activeSession || !completingSet) return;
 
     const reps = parseInt(actualReps) || 0;
+    const duration = parseInt(actualDurationSeconds) || 0; // New
     const weightValue = parseFloat(weight) || 0;
 
-    if (reps <= 0) {
+    if (reps <= 0 && duration <= 0) {
       Alert.alert(t('workoutSession.error'), t('workoutSession.repsMinimum'));
       return;
     }
@@ -450,7 +476,14 @@ export default function WorkoutScreen() {
       const exercise = activeSession.exercises[exerciseIndex];
 
       // 세트 완료 처리
-      const updated = await workoutSessionService.completeSet(activeSession.id, exerciseIndex, setIndex, reps, weightValue);
+      const updated = await workoutSessionService.completeSet(
+        activeSession.id,
+        exerciseIndex,
+        setIndex,
+        reps,
+        duration, // Pass duration
+        weightValue
+      );
       setActiveSession(updated);
 
       // 세트 타이머 중지
@@ -544,7 +577,7 @@ export default function WorkoutScreen() {
                           {isActiveSet && !set.isCompleted && <Ionicons name="play-circle" size={16} color={colors.primary} />}
                           <Text style={[styles.setNumber, { color: set.isCompleted || isActiveSet ? colors.primary : colors.textSecondary }]}>{t('workoutSession.setNumber', { number: set.setNumber })}</Text>
                         </View>
-                        <Text style={[styles.targetReps, { color: colors.textSecondary }]}>{t('workoutSession.target', { reps: formatReps(set.targetReps) })}</Text>
+                        <Text style={[styles.targetReps, { color: colors.textSecondary }]}>{t('workoutSession.target', { reps: formatReps(set.targetReps, set.targetRepsMin, set.targetRepsMax, set.targetDurationSeconds) })}</Text>
                       </View>
 
                       {set.isCompleted ? (
@@ -624,20 +657,45 @@ export default function WorkoutScreen() {
 
                   {/* 오류 발생 위치 수정 완료 */}
                   <Text style={[styles.modalLabel, { color: colors.textSecondary, marginBottom: 15 }]}>
-                    {t('workoutSession.setInfo', { number: completingSet.setIndex + 1, target: completingSet.targetReps })}
+                    {t('workoutSession.setInfo', {
+                      number: completingSet.setIndex + 1,
+                      target: formatReps(
+                        completingSet.targetReps,
+                        completingSet.targetRepsMin,
+                        completingSet.targetRepsMax,
+                        completingSet.targetDurationSeconds
+                      ),
+                    })}
                   </Text>
 
                   {/* 횟수 입력 */}
-                  <Text style={[styles.inputLabel, { color: colors.text }]}>{t('workoutSession.actualReps')}</Text>
-                  <TextInput
-                    style={[styles.modalInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-                    value={actualReps}
-                    onChangeText={setActualReps}
-                    keyboardType="numeric"
-                    placeholder={t('workoutSession.repsRequired')}
-                    placeholderTextColor={colors.textSecondary}
-                    maxLength={3}
-                  />
+                  {completingSet.targetDurationSeconds === undefined ? (
+                    <View>
+                      <Text style={[styles.inputLabel, { color: colors.text }]}>{t('workoutSession.actualReps')}</Text>
+                      <TextInput
+                        style={[styles.modalInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                        value={actualReps}
+                        onChangeText={setActualReps}
+                        keyboardType="numeric"
+                        placeholder={t('workoutSession.repsRequired')}
+                        placeholderTextColor={colors.textSecondary}
+                        maxLength={3}
+                      />
+                    </View>
+                  ) : (
+                    <View>
+                      <Text style={[styles.inputLabel, { color: colors.text }]}>{t('workoutSession.actualDuration')}</Text>
+                      <TextInput
+                        style={[styles.modalInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                        value={actualDurationSeconds}
+                        onChangeText={setActualDurationSeconds}
+                        keyboardType="numeric"
+                        placeholder={t('workoutSession.durationRequired')}
+                        placeholderTextColor={colors.textSecondary}
+                        maxLength={3}
+                      />
+                    </View>
+                  )}
 
                   {/* 무게 입력 */}
                   <Text style={[styles.inputLabel, { color: colors.text, marginTop: 15 }]}>{t('workoutSession.weightKg')}</Text>

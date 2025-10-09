@@ -1,6 +1,7 @@
 import { useTheme } from "@/contexts/ThemeContext";
-import { CreateRoutineData } from "@/models";
+import { CreateRoutineData, RoutineExercise } from "@/models";
 import { routineService } from "@/services/routine";
+import { getOrCreateUserId } from "@/utils/userIdHelper";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
@@ -11,20 +12,23 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 // reps를 표시용 문자열로 변환하는 헬퍼 함수
-const formatReps = (reps: { min: number; max: number } | string): string => {
-  if (typeof reps === "string") {
-    return reps;
+const formatReps = (repsMin?: number, repsMax?: number, durationSeconds?: number): string => {
+  if (durationSeconds) {
+    return `${durationSeconds}초`;
   }
-  if (reps.min === reps.max) {
-    return `${reps.min}`;
+  if (repsMin && repsMax) {
+    if (repsMin === repsMax) {
+      return `${repsMin}`;
+    }
+    return `${repsMin}-${repsMax}`;
   }
-  return `${reps.min}-${reps.max}`;
+  return ""; // Fallback
 };
 
 // 번역 헬퍼 함수들
 const getExerciseName = (t: any, exerciseId: string, exerciseName?: string) => {
   // 커스텀 운동이면 실제 이름 반환 (번역 불필요)
-  if (exerciseId.startsWith('ex_custom_')) {
+  if (exerciseId.startsWith("ex_custom_")) {
     return exerciseName || exerciseId;
   }
   // 기본 운동은 번역 키 사용
@@ -59,34 +63,63 @@ const getDifficultyKey = (difficulty: string) => {
 };
 
 // 문자열을 reps 객체로 파싱하는 헬퍼 함수
-const parseReps = (reps: string): { min: number; max: number } | string => {
-  // 숫자가 없으면 문자열 그대로 반환 (예: "30초")
-  if (!/\d/.test(reps)) {
-    return reps;
+interface ParsedReps {
+  repsMin?: number;
+  repsMax?: number;
+  durationSeconds?: number;
+}
+
+const parseRepsInput = (input: string): ParsedReps => {
+  const trimmedInput = input.trim();
+
+  // 시간 기반 (예: "30초", "30s")
+  const durationMatch = trimmedInput.match(/^(\d+)(초|s)$/);
+  if (durationMatch) {
+    return { durationSeconds: parseInt(durationMatch[1], 10) };
   }
 
-  // "10-15" 형태
-  if (reps.includes("-")) {
-    const parts = reps.split("-").map((s) => parseInt(s.trim()));
-    if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-      return { min: parts[0], max: parts[1] };
-    }
+  // 범위 (예: "10-15")
+  const rangeMatch = trimmedInput.match(/^(\d+)-(\d+)$/);
+  if (rangeMatch) {
+    return { repsMin: parseInt(rangeMatch[1], 10), repsMax: parseInt(rangeMatch[2], 10) };
   }
 
-  // "10" 형태 (단일 숫자)
-  const num = parseInt(reps);
-  if (!isNaN(num)) {
-    return { min: num, max: num };
+  // 단일 숫자 (예: "10")
+  const singleNum = parseInt(trimmedInput, 10);
+  if (!isNaN(singleNum)) {
+    return { repsMin: singleNum, repsMax: singleNum };
   }
 
-  // 파싱 실패 시 문자열 그대로 반환
-  return reps;
+  return {}; // Fallback for unparseable input
 };
 
+interface DefaultExercise {
+  id: string;
+  name: string;
+  category: string;
+  targetMuscle: string;
+  difficulty: string;
+  defaultSets: number;
+  defaultRepsMin?: number;
+  defaultRepsMax?: number;
+  defaultDurationSeconds?: number;
+  restTime?: number;
+}
+
 // 운동 데이터 (routines.tsx에서 가져온 것과 동일)
-const exercises = {
+const exercises: Record<string, DefaultExercise> = {
   // 푸시업 계열 (맨몸)
-  regularPushup: { id: "regularPushup", name: "일반 푸시업", category: "bodyweight", targetMuscle: "가슴", difficulty: "초급", defaultSets: 3, defaultReps: { min: 10, max: 15 } },
+  regularPushup: {
+    id: "regularPushup",
+    name: "일반 푸시업",
+    category: "bodyweight",
+    targetMuscle: "가슴",
+    difficulty: "초급",
+    defaultSets: 3,
+    defaultRepsMin: 10,
+    defaultRepsMax: 15,
+    restTime: 60,
+  },
   diamondPushup: {
     id: "diamondPushup",
     name: "다이아몬드 푸시업",
@@ -94,9 +127,21 @@ const exercises = {
     targetMuscle: "삼두",
     difficulty: "중급",
     defaultSets: 3,
-    defaultReps: { min: 8, max: 12 },
+    defaultRepsMin: 8,
+    defaultRepsMax: 12,
+    restTime: 60,
   },
-  widePushup: { id: "widePushup", name: "와이드 푸시업", category: "bodyweight", targetMuscle: "가슴", difficulty: "초급", defaultSets: 3, defaultReps: { min: 10, max: 15 } },
+  widePushup: {
+    id: "widePushup",
+    name: "와이드 푸시업",
+    category: "bodyweight",
+    targetMuscle: "가슴",
+    difficulty: "초급",
+    defaultSets: 3,
+    defaultRepsMin: 10,
+    defaultRepsMax: 15,
+    restTime: 60,
+  },
   inclinePushup: {
     id: "inclinePushup",
     name: "인클라인 푸시업",
@@ -104,12 +149,24 @@ const exercises = {
     targetMuscle: "가슴",
     difficulty: "초급",
     defaultSets: 3,
-    defaultReps: { min: 15, max: 20 },
+    defaultRepsMin: 15,
+    defaultRepsMax: 20,
+    restTime: 60,
   },
 
   // 풀업/친업 계열 (맨몸)
-  regularPullup: { id: "regularPullup", name: "풀업", category: "bodyweight", targetMuscle: "등", difficulty: "중급", defaultSets: 3, defaultReps: { min: 5, max: 10 } },
-  chinup: { id: "chinup", name: "친업", category: "bodyweight", targetMuscle: "이두", difficulty: "중급", defaultSets: 3, defaultReps: { min: 6, max: 10 } },
+  regularPullup: {
+    id: "regularPullup",
+    name: "풀업",
+    category: "bodyweight",
+    targetMuscle: "등",
+    difficulty: "중급",
+    defaultSets: 3,
+    defaultRepsMin: 5,
+    defaultRepsMax: 10,
+    restTime: 90,
+  },
+  chinup: { id: "chinup", name: "친업", category: "bodyweight", targetMuscle: "이두", difficulty: "중급", defaultSets: 3, defaultRepsMin: 6, defaultRepsMax: 10, restTime: 90 },
 
   // 스쿼트 계열 (맨몸)
   bodyweightSquat: {
@@ -119,13 +176,25 @@ const exercises = {
     targetMuscle: "하체",
     difficulty: "초급",
     defaultSets: 3,
-    defaultReps: { min: 15, max: 20 },
+    defaultRepsMin: 15,
+    defaultRepsMax: 20,
+    restTime: 60,
   },
-  jumpSquat: { id: "jumpSquat", name: "점프 스쿼트", category: "bodyweight", targetMuscle: "하체", difficulty: "중급", defaultSets: 3, defaultReps: { min: 10, max: 15 } },
+  jumpSquat: {
+    id: "jumpSquat",
+    name: "점프 스쿼트",
+    category: "bodyweight",
+    targetMuscle: "하체",
+    difficulty: "중급",
+    defaultSets: 3,
+    defaultRepsMin: 10,
+    defaultRepsMax: 15,
+    restTime: 60,
+  },
 
   // 플랭크 계열 (맨몸)
-  regularPlank: { id: "regularPlank", name: "플랭크", category: "bodyweight", targetMuscle: "코어", difficulty: "초급", defaultSets: 3, defaultReps: "30-60초" },
-  sidePlank: { id: "sidePlank", name: "사이드 플랭크", category: "bodyweight", targetMuscle: "코어", difficulty: "중급", defaultSets: 3, defaultReps: "20-45초" },
+  regularPlank: { id: "regularPlank", name: "플랭크", category: "bodyweight", targetMuscle: "코어", difficulty: "초급", defaultSets: 3, defaultDurationSeconds: 60, restTime: 45 },
+  sidePlank: { id: "sidePlank", name: "사이드 플랭크", category: "bodyweight", targetMuscle: "코어", difficulty: "중급", defaultSets: 3, defaultDurationSeconds: 45, restTime: 45 },
 
   // 웨이트
   flatBenchPress: {
@@ -135,7 +204,9 @@ const exercises = {
     targetMuscle: "가슴",
     difficulty: "중급",
     defaultSets: 3,
-    defaultReps: { min: 8, max: 12 },
+    defaultRepsMin: 8,
+    defaultRepsMax: 12,
+    restTime: 90,
   },
   inclineBenchPress: {
     id: "inclineBenchPress",
@@ -144,19 +215,34 @@ const exercises = {
     targetMuscle: "가슴 상부",
     difficulty: "중급",
     defaultSets: 3,
-    defaultReps: { min: 8, max: 12 },
+    defaultRepsMin: 8,
+    defaultRepsMax: 12,
+    restTime: 90,
   },
-  dumbbellFly: { id: "dumbbellFly", name: "덤벨 플라이", category: "weights", targetMuscle: "가슴", difficulty: "초급", defaultSets: 3, defaultReps: { min: 10, max: 15 } },
+  dumbbellFly: {
+    id: "dumbbellFly",
+    name: "덤벨 플라이",
+    category: "weights",
+    targetMuscle: "가슴",
+    difficulty: "초급",
+    defaultSets: 3,
+    defaultRepsMin: 10,
+    defaultRepsMax: 15,
+    restTime: 60,
+  },
 };
 
 type Exercise = {
   id: string;
   name: string;
   sets: number;
-  reps: string;
+  repsMin?: number;
+  repsMax?: number;
+  durationSeconds?: number;
   targetWeight?: number;
   targetMuscle: string;
   difficulty: string;
+  restTime?: number;
 };
 
 export default function RoutineBuilderScreen() {
@@ -195,10 +281,13 @@ export default function RoutineBuilderScreen() {
             id: ex.id,
             name: ex.name,
             sets: ex.sets,
-            reps: formatReps(ex.reps), // 객체를 문자열로 변환
+            repsMin: ex.repsMin, // New
+            repsMax: ex.repsMax, // New
+            durationSeconds: ex.durationSeconds, // New
             targetWeight: ex.targetWeight,
-            targetMuscle: ex.targetMuscle || "", // Ensure targetMuscle is string
-            difficulty: ex.difficulty || "", // Ensure difficulty is string
+            targetMuscle: ex.targetMuscle || "",
+            difficulty: ex.difficulty || "",
+            restTime: ex.restTime, // New
           }))
         );
       }
@@ -213,14 +302,17 @@ export default function RoutineBuilderScreen() {
     (exercise) => exercise.name.toLowerCase().includes(searchQuery.toLowerCase()) || exercise.targetMuscle.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const addExercise = (exercise: (typeof exercises)[keyof typeof exercises]) => {
+  const addExercise = (exercise: DefaultExercise) => {
     const newExercise: Exercise = {
       id: exercise.id,
       name: exercise.name,
       sets: exercise.defaultSets,
-      reps: formatReps(exercise.defaultReps), // 객체를 문자열로 변환
+      repsMin: exercise.defaultRepsMin,
+      repsMax: exercise.defaultRepsMax,
+      durationSeconds: exercise.defaultDurationSeconds,
       targetMuscle: exercise.targetMuscle,
       difficulty: exercise.difficulty,
+      restTime: exercise.restTime,
     };
     setSelectedExercises([...selectedExercises, newExercise]);
     setShowExerciseLibrary(false);
@@ -237,8 +329,12 @@ export default function RoutineBuilderScreen() {
     } else if (field === "targetWeight") {
       const weight = parseFloat(value);
       updated[index].targetWeight = isNaN(weight) ? undefined : weight;
-    } else {
-      updated[index].reps = value;
+    } else if (field === "reps") {
+      // Handle reps field
+      const parsed = parseRepsInput(value);
+      updated[index].repsMin = parsed.repsMin;
+      updated[index].repsMax = parsed.repsMax;
+      updated[index].durationSeconds = parsed.durationSeconds;
     }
     setSelectedExercises(updated);
   };
@@ -292,7 +388,7 @@ export default function RoutineBuilderScreen() {
               <Text style={[styles.controlLabel, { color: colors.textSecondary }]}>{t("routineBuilder.repsOrTime")}</Text>
               <TextInput
                 style={[styles.repsInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-                value={item.reps}
+                value={formatReps(item.repsMin, item.repsMax, item.durationSeconds)}
                 onChangeText={(value) => updateExercise(safeIndex, "reps", value)}
                 placeholder={t("routineBuilder.repsPlaceholder")}
                 placeholderTextColor={colors.textSecondary}
@@ -327,13 +423,26 @@ export default function RoutineBuilderScreen() {
     }
 
     try {
+      const userId = await getOrCreateUserId();
+
       const routineData: CreateRoutineData = {
         name: routineName,
-        exercises: selectedExercises.map((ex) => ({
-          ...ex,
-          reps: parseReps(ex.reps), // 문자열을 객체로 변환
-          targetWeight: ex.targetWeight,
-        })),
+        userId,
+        exercises: selectedExercises.map((ex) => {
+          const routineExercise: RoutineExercise = {
+            id: ex.id,
+            name: ex.name,
+            sets: ex.sets,
+            repsMin: ex.repsMin,
+            repsMax: ex.repsMax,
+            durationSeconds: ex.durationSeconds,
+            targetWeight: ex.targetWeight,
+            targetMuscle: ex.targetMuscle,
+            difficulty: ex.difficulty,
+            restTime: ex.restTime,
+          };
+          return routineExercise;
+        }),
         isRecommended: false,
       };
 
@@ -343,7 +452,7 @@ export default function RoutineBuilderScreen() {
         Alert.alert(t("routineBuilder.saveComplete"), t("routineBuilder.routineUpdated"), [{ text: t("common.confirm"), onPress: () => router.back() }]);
       } else {
         // 새로 생성
-        await routineService.createRoutine(routineData);
+        await routineService.createRoutine(userId, routineData);
         Alert.alert(t("routineBuilder.saveComplete"), t("routineBuilder.routineSaved"), [{ text: t("common.confirm"), onPress: () => router.back() }]);
       }
     } catch (error) {
@@ -402,7 +511,10 @@ export default function RoutineBuilderScreen() {
                     <Text style={[styles.difficultyText, { color: colors.textSecondary }]}>{t(`difficulty.${getDifficultyKey(exercise.difficulty)}`)}</Text>
                   </View>
                   <Text style={[styles.defaultSets, { color: colors.textSecondary }]}>
-                    {t("routineBuilder.recommendedFormat", { sets: exercise.defaultSets, reps: formatReps(exercise.defaultReps) })}
+                    {t("routineBuilder.recommendedFormat", {
+                      sets: exercise.defaultSets,
+                      reps: formatReps(exercise.defaultRepsMin, exercise.defaultRepsMax, exercise.defaultDurationSeconds),
+                    })}
                   </Text>
                 </View>
                 <Ionicons name="add-circle" size={24} color={colors.primary} />
@@ -413,6 +525,42 @@ export default function RoutineBuilderScreen() {
       </GestureHandlerRootView>
     );
   }
+
+  const renderHeader = () => (
+    <View style={styles.content}>
+      {/* 루틴 이름 입력 */}
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("routines.routineName")}</Text>
+        <TextInput
+          style={[styles.nameInput, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
+          placeholder={t("routines.routineNamePlaceholder")}
+          placeholderTextColor={colors.textSecondary}
+          value={routineName}
+          onChangeText={setRoutineName}
+        />
+      </View>
+
+      {/* 운동 목록 헤더 */}
+      <View style={[styles.section, { marginBottom: 16 }]}>
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("routineBuilder.exerciseList", { count: selectedExercises.length })}</Text>
+          <TouchableOpacity style={[styles.addExerciseButton, { backgroundColor: colors.primary + "20" }]} onPress={() => setShowExerciseLibrary(true)}>
+            <Ionicons name="add" size={20} color={colors.primary} />
+            <Text style={[styles.addExerciseText, { color: colors.primary }]}>{t("routines.addExercise")}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+
+  const renderEmptyComponent = () => (
+    <View style={[styles.emptyState, { backgroundColor: colors.surface, borderColor: colors.border, marginHorizontal: 20 }]}>
+      <Ionicons name="fitness-outline" size={48} color={colors.textSecondary} />
+      <Text style={[styles.emptyTitle, { color: colors.text }]}>{t("routineBuilder.addExercisePrompt")}</Text>
+      <Text style={[styles.emptyDescription, { color: colors.textSecondary }]}>{t("routineBuilder.addExerciseDescription")}</Text>
+      <Text style={[styles.emptyDescription, { color: colors.textSecondary, marginTop: 8 }]}>{t("routineBuilder.dragExerciseTip")}</Text>
+    </View>
+  );
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -427,48 +575,16 @@ export default function RoutineBuilderScreen() {
           </TouchableOpacity>
         </View>
 
-        <ScrollView style={styles.content}>
-          {/* 루틴 이름 입력 */}
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("routines.routineName")}</Text>
-            <TextInput
-              style={[styles.nameInput, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
-              placeholder={t("routines.routineNamePlaceholder")}
-              placeholderTextColor={colors.textSecondary}
-              value={routineName}
-              onChangeText={setRoutineName}
-            />
-          </View>
-
-          {/* 운동 목록 */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("routineBuilder.exerciseList", { count: selectedExercises.length })}</Text>
-              <TouchableOpacity style={[styles.addExerciseButton, { backgroundColor: colors.primary + "20" }]} onPress={() => setShowExerciseLibrary(true)}>
-                <Ionicons name="add" size={20} color={colors.primary} />
-                <Text style={[styles.addExerciseText, { color: colors.primary }]}>{t("routines.addExercise")}</Text>
-              </TouchableOpacity>
-            </View>
-
-            {selectedExercises.length === 0 ? (
-              <View style={[styles.emptyState, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                <Ionicons name="fitness-outline" size={48} color={colors.textSecondary} />
-                <Text style={[styles.emptyTitle, { color: colors.text }]}>{t("routineBuilder.addExercisePrompt")}</Text>
-                <Text style={[styles.emptyDescription, { color: colors.textSecondary }]}>{t("routineBuilder.addExerciseDescription")}</Text>
-                <Text style={[styles.emptyDescription, { color: colors.textSecondary, marginTop: 8 }]}>{t("routineBuilder.dragExerciseTip")}</Text>
-              </View>
-            ) : (
-              <DraggableFlatList
-                data={selectedExercises}
-                onDragEnd={({ data }) => setSelectedExercises(data)}
-                keyExtractor={(item, index) => `${item.id}_${index}`}
-                renderItem={renderExerciseItem}
-                containerStyle={styles.exerciseList}
-                scrollEnabled={false}
-              />
-            )}
-          </View>
-        </ScrollView>
+        <DraggableFlatList
+          data={selectedExercises}
+          onDragEnd={({ data }) => setSelectedExercises(data)}
+          keyExtractor={(item, index) => `${item.id}_${index}`}
+          renderItem={renderExerciseItem}
+          ListHeaderComponent={renderHeader}
+          ListEmptyComponent={renderEmptyComponent}
+          contentContainerStyle={{ paddingBottom: 100 }}
+          activationDistance={20}
+        />
       </SafeAreaView>
     </GestureHandlerRootView>
   );
@@ -506,8 +622,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   content: {
-    flex: 1,
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
   section: {
     marginBottom: 32,
@@ -566,6 +682,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     marginBottom: 16,
+    marginHorizontal: 20,
   },
   exerciseHeader: {
     flexDirection: "row",

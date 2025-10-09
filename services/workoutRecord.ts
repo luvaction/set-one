@@ -32,9 +32,10 @@ export const workoutRecordService = {
   },
 
   // 운동 기록 생성
-  async createRecord(data: CreateWorkoutRecordData): Promise<WorkoutRecord> {
+  async createRecord(userId: string, data: CreateWorkoutRecordData): Promise<WorkoutRecord> {
     const newRecord: WorkoutRecord = {
       id: generateId(),
+      userId,
       ...data,
       createdAt: now(),
       updatedAt: now(),

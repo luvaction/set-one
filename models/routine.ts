@@ -11,7 +11,9 @@ export interface RoutineExercise {
   id: string; // 운동 ID
   name: string; // 운동 이름
   sets: number; // 세트 수
-  reps: { min: number; max: number } | string; // 횟수 범위 또는 시간 (예: { min: 10, max: 15 } 또는 "30초")
+  repsMin?: number; // 횟수 최소값 (횟수 기반 운동)
+  repsMax?: number; // 횟수 최대값 (횟수 기반 운동)
+  durationSeconds?: number; // 시간 (시간 기반 운동)
   targetWeight?: number; // 목표 무게 (kg) - 운동 시 기본값으로 사용
   targetMuscle?: string; // 타겟 근육
   difficulty?: string; // 난이도
@@ -27,6 +29,7 @@ export interface DetailedRoutineExercise {
 }
 
 export interface Routine extends BaseEntity {
+  userId: string; // 루틴을 생성한 사용자 ID
   name: string;
   description?: string;
   exercises: RoutineExercise[];

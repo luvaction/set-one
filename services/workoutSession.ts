@@ -24,16 +24,7 @@ const toLocalDateString = (date: Date): string => {
   return `${year}-${month}-${day}`;
 };
 
-// reps를 문자열로 변환하는 헬퍼 함수
-const formatRepsToString = (reps: { min: number; max: number } | string): string => {
-  if (typeof reps === "string") {
-    return reps;
-  }
-  if (reps.min === reps.max) {
-    return `${reps.min}`;
-  }
-  return `${reps.min}-${reps.max}`;
-};
+
 
 // 루틴을 WorkoutExercise로 변환
 const convertRoutineToWorkoutExercises = (routine: Routine): WorkoutExercise[] => {
@@ -44,8 +35,12 @@ const convertRoutineToWorkoutExercises = (routine: Routine): WorkoutExercise[] =
     targetWeight: exercise.targetWeight, // 목표 무게 복사
     sets: Array.from({ length: exercise.sets }, (_, i) => ({
       setNumber: i + 1,
-      targetReps: formatRepsToString(exercise.reps), // 객체를 문자열로 변환
+      targetReps: exercise.repsMin === exercise.repsMax ? exercise.repsMin : undefined, // If single rep, use targetReps
+      targetRepsMin: exercise.repsMin,
+      targetRepsMax: exercise.repsMax,
+      targetDurationSeconds: exercise.durationSeconds,
       actualReps: 0,
+      actualDurationSeconds: undefined, // Initialize as undefined
       weight: 0,
       isCompleted: false,
     })),
@@ -85,7 +80,7 @@ export const workoutSessionService = {
   },
 
   // 새 운동 세션 시작
-  async startSession(routine: Routine): Promise<WorkoutSession> {
+  async startSession(userId: string, routine: Routine): Promise<WorkoutSession> {
     // 기존 활성 세션이 있으면 중단 처리
     const existingSession = await this.getActiveSession();
     if (existingSession) {
@@ -96,6 +91,7 @@ export const workoutSessionService = {
 
     const newSession: WorkoutSession = {
       id: generateId(),
+      userId,
       routineId: routine.id,
       routineName: routine.name,
       status: "in_progress",
@@ -132,7 +128,8 @@ export const workoutSessionService = {
     sessionId: string,
     exerciseIndex: number,
     setIndex: number,
-    actualReps: number,
+    actualReps: number | undefined,
+    actualDurationSeconds: number | undefined,
     weight: number
   ): Promise<WorkoutSession> {
     const session = await this.getActiveSession();
@@ -143,7 +140,8 @@ export const workoutSessionService = {
     // 세트 완료 업데이트
     session.exercises[exerciseIndex].sets[setIndex] = {
       ...session.exercises[exerciseIndex].sets[setIndex],
-      actualReps,
+      actualReps: actualReps !== undefined ? actualReps : 0,
+      actualDurationSeconds: actualDurationSeconds,
       weight,
       isCompleted: true,
       completedAt: now(),
@@ -191,6 +189,7 @@ export const workoutSessionService = {
 
     const record: WorkoutRecord = {
       id: `record_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
+      userId: session.userId,
       date: toLocalDateString(startDate), // 로컬 시간대 기준 YYYY-MM-DD
       routineId: session.routineId,
       routineName: session.routineName,
@@ -227,6 +226,7 @@ export const workoutSessionService = {
 
     const record: WorkoutRecord = {
       id: `record_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
+      userId: session.userId,
       date: toLocalDateString(startDate), // 로컬 시간대 기준 YYYY-MM-DD
       routineId: session.routineId,
       routineName: session.routineName,

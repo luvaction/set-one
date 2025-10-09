@@ -296,9 +296,11 @@ export default function HistoryScreen() {
                             {ex.sets.map((set, setIdx) => (
                               <Text key={setIdx} style={[styles.setDetail, { color: colors.textSecondary }]}>
                                 {set.isCompleted
-                                  ? set.weight > 0
-                                    ? t("history.repsWithWeight", { reps: set.actualReps, weight: set.weight })
-                                    : t("history.reps", { reps: set.actualReps })
+                                  ? set.actualDurationSeconds !== undefined && set.actualDurationSeconds > 0
+                                    ? t("history.duration", { minutes: Math.round(set.actualDurationSeconds / 60) })
+                                    : set.weight > 0
+                                      ? t("history.repsWithWeight", { reps: set.actualReps, weight: set.weight })
+                                      : t("history.reps", { reps: set.actualReps })
                                   : "-"}
                               </Text>
                             ))}

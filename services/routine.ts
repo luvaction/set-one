@@ -31,9 +31,10 @@ export const routineService = {
   },
 
   // 사용자 루틴 생성
-  async createRoutine(data: CreateRoutineData): Promise<Routine> {
+  async createRoutine(userId: string, data: CreateRoutineData): Promise<Routine> {
     const newRoutine: Routine = {
       id: generateId(),
+      userId,
       ...data,
       isRecommended: false, // 사용자 루틴은 무조건 false
       createdAt: now(),
@@ -93,7 +94,7 @@ export const routineService = {
   },
 
   // 추천 루틴을 복사해서 사용자 루틴으로 생성
-  async copyToUserRoutine(id: string): Promise<Routine> {
+  async copyToUserRoutine(userId: string, id: string): Promise<Routine> {
     const routine = await this.getRoutineById(id);
     if (!routine) {
       throw new Error(`Routine with id ${id} not found`);
@@ -106,7 +107,7 @@ export const routineService = {
       isRecommended: false,
     };
 
-    return await this.createRoutine(userCopy);
+    return await this.createRoutine(userId, userCopy);
   },
 
   // 루틴 마지막 사용 시간 업데이트 (사용자 루틴만)
@@ -131,7 +132,7 @@ export const routineService = {
   },
 
   // 루틴에 운동 추가 (사용자 루틴만)
-  async addExerciseToRoutine(routineId: string, exercise: { id: string; name: string; sets: number; reps: string; targetMuscle?: string; difficulty?: string }): Promise<Routine> {
+  async addExerciseToRoutine(routineId: string, exercise: { id: string; name: string; sets: number; repsMin?: number; repsMax?: number; durationSeconds?: number; targetMuscle?: string; difficulty?: string; restTime?: number }): Promise<Routine> {
     const routine = await this.getRoutineById(routineId);
     if (!routine) {
       throw new Error(`Routine with id ${routineId} not found`);
@@ -155,9 +156,12 @@ export const routineService = {
           id: exercise.id,
           name: exercise.name,
           sets: exercise.sets,
-          reps: exercise.reps,
+          repsMin: exercise.repsMin,
+          repsMax: exercise.repsMax,
+          durationSeconds: exercise.durationSeconds,
           targetMuscle: exercise.targetMuscle,
           difficulty: exercise.difficulty,
+          restTime: exercise.restTime,
         },
       ],
       updatedAt: now(),

@@ -1,6 +1,7 @@
 import { BaseEntity } from "./common";
 
 export interface UserProfile extends BaseEntity {
+  userId: string; // 사용자 ID (인증 시스템과 연동)
   name: string;
   gender: "male" | "female" | "";
   birthDate: string;

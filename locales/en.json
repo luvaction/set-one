@@ -15,7 +15,8 @@
     "add": "Add",
     "search": "Search",
     "today": "Today",
-    "viewAll": "View All"
+    "viewAll": "View All",
+    "optional": "Optional"
   },
   "home": {
     "greeting": "Hello!",
@@ -93,6 +94,13 @@
     "routineDeleted": "Routine deleted.",
     "exerciseMuscleGroup": "Muscle Group",
     "exerciseMuscleGroupPlaceholder": "e.g. Chest, Back, Legs, Core",
+    "difficulty": "Difficulty",
+    "defaultSets": "Default Sets",
+    "defaultReps": "Default Reps Range",
+    "minReps": "Min Reps (e.g. 10)",
+    "maxReps": "Max Reps (e.g. 15)",
+    "targetWeight": "Target Weight (kg)",
+    "targetWeightPlaceholder": "e.g. 20",
     "createNewRoutine": "Create New Routine",
     "addToExistingRoutine": "Add to Existing Routine",
     "addExerciseTitle": "Add {{name}}",
@@ -316,7 +324,9 @@
     "completeWorkoutFailed": "Failed to complete workout.",
     "repsMinimum": "Reps must be at least 1.",
     "completeSetFailed": "Failed to complete set.",
-    "setInfo": "Set {{number}} (target: {{target}} reps)"
+    "setInfo": "Set {{number}} (target: {{target}} reps)",
+    "actualDuration": "Actual Duration",
+    "durationRequired": "Enter duration (required)"
   },
   "category": {
     "all": "All",

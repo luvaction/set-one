@@ -3,6 +3,7 @@ import { saveLanguage } from "@/i18n/config";
 import { CreateProfileData } from "@/models";
 import { profileService } from "@/services/profile";
 import { storage } from "@/services/storage/asyncStorage";
+import { getOrCreateUserId } from "@/utils/userIdHelper";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -19,6 +20,7 @@ const emptyProfile: CreateProfileData = {
   activityLevel: "",
   weeklyGoal: 0,
   unitSystem: "metric",
+  userId: "",
 };
 
 export default function ProfileScreen() {
@@ -56,7 +58,11 @@ export default function ProfileScreen() {
 
   const handleSave = async () => {
     try {
-      const savedProfile = await profileService.saveProfile(editingProfile);
+      // Ensure userId is set before saving
+      const userId = editingProfile.userId || await getOrCreateUserId();
+      const profileToSave = { ...editingProfile, userId };
+
+      const savedProfile = await profileService.saveProfile(profileToSave);
       setProfile(savedProfile);
       setShowEditModal(false);
     } catch (error) {

@@ -3,8 +3,12 @@ import { BaseEntity } from "./common";
 // 완료된 세트 정보
 export interface CompletedSet {
   setNumber: number; // 몇 번째 세트인지
-  targetReps: string; // 목표 횟수 (예: "10", "10-15")
+  targetReps?: number; // 목표 횟수 (횟수 기반 운동)
+  targetRepsMin?: number; // 목표 횟수 최소값 (횟수 범위)
+  targetRepsMax?: number; // 목표 횟수 최대값 (횟수 범위)
+  targetDurationSeconds?: number; // 목표 시간 (시간 기반 운동)
   actualReps: number; // 실제 수행한 횟수
+  actualDurationSeconds?: number; // 실제 수행 시간 (시간 기반 운동)
   weight: number; // 무게 (kg)
   isCompleted: boolean; // 완료 여부
   completedAt?: string; // 완료 시간
@@ -25,6 +29,7 @@ export type WorkoutStatus = "in_progress" | "completed" | "stopped";
 
 // 진행 중인 운동 세션 (실시간 저장용)
 export interface WorkoutSession extends BaseEntity {
+  userId: string; // 운동 세션을 생성한 사용자 ID
   routineId: string;
   routineName: string;
   status: WorkoutStatus;
@@ -38,6 +43,7 @@ export interface WorkoutSession extends BaseEntity {
 
 // 완료된 운동 기록 (히스토리용)
 export interface WorkoutRecord extends BaseEntity {
+  userId: string; // 운동 기록을 생성한 사용자 ID
   date: string; // YYYY-MM-DD
   routineId?: string;
   routineName: string;

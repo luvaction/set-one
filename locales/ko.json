@@ -15,7 +15,8 @@
     "add": "추가",
     "search": "검색",
     "today": "Today",
-    "viewAll": "전체보기"
+    "viewAll": "전체보기",
+    "optional": "선택사항"
   },
   "home": {
     "greeting": "안녕하세요!",
@@ -93,6 +94,13 @@
     "routineDeleted": "루틴이 삭제되었습니다.",
     "exerciseMuscleGroup": "운동 부위",
     "exerciseMuscleGroupPlaceholder": "예: 가슴, 등, 하체, 코어 등",
+    "difficulty": "난이도",
+    "defaultSets": "기본 세트 수",
+    "defaultReps": "기본 횟수 범위",
+    "minReps": "최소 횟수 (예: 10)",
+    "maxReps": "최대 횟수 (예: 15)",
+    "targetWeight": "목표 무게 (kg)",
+    "targetWeightPlaceholder": "예: 20",
     "createNewRoutine": "새 루틴 만들기",
     "addToExistingRoutine": "기존 루틴에 추가",
     "addExerciseTitle": "{{name}} 추가",
@@ -316,7 +324,9 @@
     "completeWorkoutFailed": "운동 완료 처리에 실패했습니다.",
     "repsMinimum": "횟수는 1 이상이어야 합니다.",
     "completeSetFailed": "세트 완료 처리에 실패했습니다.",
-    "setInfo": "세트 {{number}} (목표: {{target}}회)"
+    "setInfo": "세트 {{number}} (목표: {{target}}회)",
+    "actualDuration": "실제 시간",
+    "durationRequired": "시간 입력 (필수)"
   },
   "category": {
     "all": "전체",

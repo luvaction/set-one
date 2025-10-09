@@ -365,7 +365,7 @@ export const statisticsService = {
     completedRecords.forEach((record) => {
       record.exercises.forEach((exercise) => {
         exercise.sets.forEach((set) => {
-          if (set.isCompleted && set.weight > 0) {
+          if (set.isCompleted && set.weight > 0 && set.actualReps > 0) {
             const key = exercise.exerciseName;
             const currentPR = prMap[key];
             const score = set.weight * set.actualReps;
@@ -580,8 +580,8 @@ export const statisticsService = {
 
         const completedSets = exercise.sets.filter((s) => s.isCompleted);
         exerciseMap[exercise.exerciseName].sets += completedSets.length;
-        exerciseMap[exercise.exerciseName].reps += completedSets.reduce((sum, s) => sum + s.actualReps, 0);
-        exerciseMap[exercise.exerciseName].volume += completedSets.reduce((sum, s) => sum + s.weight * s.actualReps, 0);
+        exerciseMap[exercise.exerciseName].reps += completedSets.reduce((sum, s) => sum + (s.actualReps || s.actualDurationSeconds || 0), 0);
+        exerciseMap[exercise.exerciseName].volume += completedSets.reduce((sum, s) => sum + (s.weight * (s.actualReps || 0)), 0);
         completedSets.forEach((s) => {
           if (s.weight > 0) {
             exerciseMap[exercise.exerciseName].weights.push(s.weight);
