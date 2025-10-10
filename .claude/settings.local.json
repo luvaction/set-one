@@ -17,7 +17,9 @@
       "Bash(xargs kill:*)",
       "Bash(awk:*)",
       "Bash(npm uninstall:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(echo $?)",
+      "Bash(npx eslint:*)"
     ],
     "deny": [],
     "ask": []

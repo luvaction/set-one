@@ -50,7 +50,6 @@
 ---
 
 ## 기술 스택
-
 - **Framework**: React Native (Expo)
 - **Navigation**: Expo Router
 - **Storage**: AsyncStorage (-> SQLite 마이그레이션 제안)

@@ -19,7 +19,6 @@ const emptyProfile: CreateProfileData = {
   goal: "",
   activityLevel: "",
   weeklyGoal: 0,
-  unitSystem: "metric",
   userId: "",
 };
 
@@ -59,9 +58,8 @@ export default function ProfileScreen() {
 
   const handleSave = async () => {
     try {
-      // Ensure userId is set before saving
-      const userId = editingProfile.userId || (await getOrCreateUserId());
-      const profileToSave = { ...editingProfile, userId };
+      // profileService.saveProfile will handle ID generation
+      const profileToSave = { ...editingProfile };
       console.log("Saving profile with weeklyGoal:", profileToSave.weeklyGoal);
 
       const savedProfile = await profileService.saveProfile(profileToSave);
