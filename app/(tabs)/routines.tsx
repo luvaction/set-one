@@ -982,8 +982,9 @@ export default function RoutinesScreen() {
           {/* 헤더 */}
           <View style={styles.header}>
             <View />
-            <TouchableOpacity style={styles.addButton} onPress={() => router.push("/routine-builder")}>
-              <Ionicons name="add-circle" size={28} color={colors.primary} />
+            <TouchableOpacity style={[styles.addButton, { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 20, backgroundColor: colors.primary + '10' }]} onPress={() => router.push("/routine-builder")}>
+              <Ionicons name="add-circle-outline" size={22} color={colors.primary} />
+              <Text style={{ color: colors.primary, fontSize: 15, fontWeight: '600' }}>{t("routines.createRoutine")}</Text>
             </TouchableOpacity>
           </View>
 
@@ -1098,8 +1099,9 @@ export default function RoutinesScreen() {
           {/* 헤더 */}
           <View style={styles.header}>
             <View />
-            <TouchableOpacity style={styles.addButton} onPress={() => router.push("/routine-builder")}>
-              <Ionicons name="add-circle" size={28} color={colors.primary} />
+            <TouchableOpacity style={[styles.addButton, { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 20, backgroundColor: colors.primary + '10' }]} onPress={() => router.push("/routine-builder")}>
+              <Ionicons name="add-circle-outline" size={22} color={colors.primary} />
+              <Text style={{ color: colors.primary, fontSize: 15, fontWeight: '600' }}>{t("routines.createRoutine")}</Text>
             </TouchableOpacity>
           </View>
 
