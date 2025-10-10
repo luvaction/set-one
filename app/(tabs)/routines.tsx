@@ -4,11 +4,14 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { Routine } from "@/models";
 import { routineService } from "@/services/routine";
 import { exerciseService } from "@/services/exercise";
+import { workoutSessionService } from "@/services";
 import { getOrCreateUserId } from "@/utils/userIdHelper";
+import { convertExerciseToRoutine } from "@/utils/workoutHelpers";
 import { Ionicons } from "@expo/vector-icons";
 import { Link, router, useFocusEffect } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useCallback, useState } from "react";
+import { CreateRoutineData } from "@/models/routine";
 import {
   ActivityIndicator,
   Alert,
@@ -783,7 +786,7 @@ export default function RoutinesScreen() {
 
       const userCopyData: CreateRoutineData = {
         name: newName,
-        description: originalRoutine.description,
+        description: originalRoutine.description ? t(originalRoutine.description) : undefined,
         exercises: originalRoutine.exercises,
         isRecommended: false,
         category: originalRoutine.category,
@@ -2027,6 +2030,7 @@ const styles = StyleSheet.create({
   routineDescription: {
     fontSize: 14,
     marginTop: 4,
+    lineHeight: 20,
   },
   routineMeta: {
     flexDirection: "column",
@@ -2051,13 +2055,8 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "600",
   },
-  routineDuration: {
-    fontSize: 11,
-  },
-  routineDescription: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
+  
+  
   addToMyButton: {
     padding: 8,
     borderRadius: 8,
@@ -2070,6 +2069,9 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   lastUsed: {
+    fontSize: 11,
+  },
+  routineDuration: {
     fontSize: 11,
   },
   emptyState: {
