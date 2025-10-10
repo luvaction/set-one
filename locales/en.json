@@ -16,7 +16,9 @@
     "search": "Search",
     "today": "Today",
     "viewAll": "View All",
-    "optional": "Optional"
+    "optional": "Optional",
+    "copy": "(Copy)",
+    "success": "Success"
   },
   "home": {
     "greeting": "Hello!",
@@ -301,7 +303,9 @@
     "saveRoutineFailed": "Failed to save routine.",
     "loadRoutineFailed": "Failed to load routine.",
     "targetWeight": "Target Weight",
-    "targetWeightPlaceholder": "Optional, e.g. 20"
+    "targetWeightPlaceholder": "Optional, e.g. 20",
+    "routineDescription": "Description",
+    "routineDescriptionPlaceholder": "Add a short description (optional)"
   },
   "workoutSession": {
     "workoutInProgress": "Workout In Progress",

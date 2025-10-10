@@ -6,7 +6,7 @@ export const RECOMMENDED_ROUTINES: Omit<Routine, "createdAt" | "updatedAt">[] = 
     id: "routine_beginner_fullbody",
     userId: "system", // System-provided routine
     name: "초보자 전신 운동",
-    description: "헬스 입문자를 위한 기본 전신 운동 루틴",
+    description: "routines.routine_beginner_fullbody_description",
     category: "전신",
     isRecommended: true,
     exercises: [
@@ -45,7 +45,7 @@ export const RECOMMENDED_ROUTINES: Omit<Routine, "createdAt" | "updatedAt">[] = 
     id: "routine_chest_day",
     userId: "system", // System-provided routine
     name: "가슴 집중 운동",
-    description: "가슴 근육 발달을 위한 루틴",
+    description: "routines.routine_chest_day_description",
     category: "상체",
     isRecommended: true,
     exercises: [
@@ -85,7 +85,7 @@ export const RECOMMENDED_ROUTINES: Omit<Routine, "createdAt" | "updatedAt">[] = 
     id: "routine_back_day",
     userId: "system", // System-provided routine
     name: "등 집중 운동",
-    description: "넓은 등을 만들기 위한 루틴",
+    description: "routines.routine_back_day_description",
     category: "상체",
     isRecommended: true,
     exercises: [
@@ -115,7 +115,7 @@ export const RECOMMENDED_ROUTINES: Omit<Routine, "createdAt" | "updatedAt">[] = 
     id: "routine_leg_day",
     userId: "system", // System-provided routine
     name: "하체 집중 운동",
-    description: "강한 하체를 위한 루틴",
+    description: "routines.routine_leg_day_description",
     category: "하체",
     isRecommended: true,
     exercises: [
@@ -145,7 +145,7 @@ export const RECOMMENDED_ROUTINES: Omit<Routine, "createdAt" | "updatedAt">[] = 
     id: "routine_home_workout",
     userId: "system", // System-provided routine
     name: "홈트레이닝",
-    description: "집에서 기구 없이 할 수 있는 운동",
+    description: "routines.routine_home_workout_description",
     category: "전신",
     isRecommended: true,
     exercises: [

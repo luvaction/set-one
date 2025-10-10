@@ -1,16 +1,33 @@
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Routine } from "@/models";
-import { routineService, workoutSessionService } from "@/services";
+import { routineService } from "@/services/routine";
 import { exerciseService } from "@/services/exercise";
 import { getOrCreateUserId } from "@/utils/userIdHelper";
-import { convertExerciseToRoutine } from "@/utils/workoutHelpers";
 import { Ionicons } from "@expo/vector-icons";
-import { router, useFocusEffect } from "expo-router";
-import { useCallback, useState } from "react";
+import { Link, router, useFocusEffect } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { Alert, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
-import DraggableFlatList, { RenderItemParams, ScaleDecorator, ShadowDecorator } from "react-native-draggable-flatlist";
+import { useCallback, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Modal,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  ScrollView,
+  TouchableWithoutFeedback,
+  KeyboardAvoidingView,
+  Platform,
+  Keyboard,
+} from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import DraggableFlatList, { ScaleDecorator, ShadowDecorator, RenderItemParams } from "react-native-draggable-flatlist";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 // reps를 표시용 문자열로 변환하는 헬퍼 함수
 const formatReps = (repsMin?: number, repsMax?: number, durationSeconds?: number): string => {
@@ -752,14 +769,34 @@ export default function RoutinesScreen() {
     }
   }; // 추천 루틴을 내 루틴으로 복사
 
-  const handleCopyToUserRoutine = async (routine: any) => {
+  const handleCopyToUserRoutine = async (routineToCopy: Routine) => {
     try {
-      const copiedRoutine = await routineService.copyToUserRoutine(await getOrCreateUserId(), routine.id);
-      await loadRoutines(); // 목록 새로고침
-      Alert.alert("성공", `"${copiedRoutine.name}"이(가) 내 루틴에 추가되었습니다.`);
+      const userId = await getOrCreateUserId();
+
+      const originalRoutine = await routineService.getRoutineById(routineToCopy.id);
+      if (!originalRoutine) {
+        throw new Error("Routine not found");
+      }
+
+      const originalName = getRoutineName(t, originalRoutine.id, originalRoutine.name);
+      const newName = `${originalName} ${t("common.copy")}`;
+
+      const userCopyData: CreateRoutineData = {
+        name: newName,
+        description: originalRoutine.description,
+        exercises: originalRoutine.exercises,
+        isRecommended: false,
+        category: originalRoutine.category,
+        duration: originalRoutine.duration,
+      };
+
+      const copiedRoutine = await routineService.createRoutine(userId, userCopyData);
+
+      await loadRoutines();
+      Alert.alert(t("common.success"), t("routines.routineCopied", { name: copiedRoutine.name }));
     } catch (error) {
       console.error("Failed to copy routine:", error);
-      Alert.alert("오류", "루틴 복사에 실패했습니다.");
+      Alert.alert(t("workoutSession.error"), t("routines.routineCopyFailed"));
     }
   }; // 루틴 삭제 함수
 
@@ -837,16 +874,23 @@ export default function RoutinesScreen() {
               </TouchableOpacity>
               <View style={styles.routineInfo}>
                 <View style={styles.routineNameRow}>
-                  <Text style={[styles.routineName, { color: colors.text }]}>{routine.name}</Text>
+                  <Text style={[styles.routineName, { color: colors.text }]}>
+                    {routine.name}
+                  </Text>
                   {routine.isRecommended && (
                     <View style={[styles.recommendedBadge, { backgroundColor: colors.primary }]}>
                       <Text style={[styles.recommendedText, { color: colors.buttonText }]}>추천</Text>
                     </View>
                   )}
                 </View>
+                {routine.description && (
+                  <Text style={[styles.routineDescription, { color: colors.textSecondary }]} numberOfLines={2} ellipsizeMode="tail">
+                    {t(routine.description)}
+                  </Text>
+                )}
                 <View style={styles.routineMeta}>
                   <Text style={[styles.lastUsed, { color: colors.icon }]}>마지막 사용: {routine.lastUsed || "사용한 적 없음"}</Text>
-                  <Text style={[styles.routineDuration, { color: colors.icon }]}>⏱ {routine.duration || `${routine.exercises.length}개 운동`}</Text>
+                  <Text style={[styles.routineDuration, { color: colors.icon }]}>⏱ {routine.duration || t('routines.exerciseCount', { count: routine.exercises.length })}</Text>
                 </View>
               </View>
             </View>
@@ -1487,8 +1531,13 @@ export default function RoutinesScreen() {
                           <View style={styles.routineHeader}>
                             <View style={styles.routineInfo}>
                               <Text style={[styles.routineName, { color: colors.text }]}>{getRoutineName(t, routine.id, routine.name)}</Text>
+                              {routine.description && (
+                                <Text style={[styles.routineDescription, { color: colors.textSecondary }]} numberOfLines={2} ellipsizeMode="tail">
+                                  {t(routine.description)}
+                                </Text>
+                              )}
                               <View style={styles.routineMeta}>
-                                <Text style={[styles.routineDuration, { color: colors.icon }]}>⏱ {routine.exercises.length}개 운동</Text>
+                                <Text style={[styles.routineDuration, { color: colors.icon }]}>⏱ {t('routines.exerciseCount', { count: routine.exercises.length })}</Text>
                               </View>
                             </View>
                             <View style={styles.routineActions}>
@@ -1584,8 +1633,13 @@ export default function RoutinesScreen() {
                                   <View style={styles.routineHeader}>
                                     <View style={styles.routineInfo}>
                                       <Text style={[styles.routineName, { color: colors.text }]}>{getRoutineName(t, routine.id, routine.name)}</Text>
+                                      {routine.description && (
+                                        <Text style={[styles.routineDescription, { color: colors.textSecondary }]} numberOfLines={2} ellipsizeMode="tail">
+                                          {t(routine.description)}
+                                        </Text>
+                                      )}
                                       <View style={styles.routineMeta}>
-                                        <Text style={[styles.routineDuration, { color: colors.icon }]}>⏱ {routine.exercises.length}개 운동</Text>
+                                        <Text style={[styles.routineDuration, { color: colors.icon }]}>⏱ {t('routines.exerciseCount', { count: routine.exercises.length })}</Text>
                                       </View>
                                     </View>
                                     <View style={styles.routineActions}>
@@ -1967,6 +2021,10 @@ const styles = StyleSheet.create({
   routineName: {
     fontSize: 16,
     fontWeight: "600",
+  },
+  routineDescription: {
+    fontSize: 14,
+    marginTop: 4,
   },
   routineMeta: {
     flexDirection: "column",

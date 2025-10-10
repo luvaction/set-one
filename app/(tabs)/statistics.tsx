@@ -387,21 +387,19 @@ export default function StatisticsScreen() {
         {/* 체중 추이 차트 */}
         {weightTrendData.length > 0 && (
           <View style={styles.section}>
-            <View style={[styles.sectionHeader, { marginBottom: 0 }]}>
-              <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0 }]}>{t("statistics.weightTrend")}</Text>
-              <View style={styles.filterButtons}>
-                {(["day", "week", "month", "year"] as TrendPeriod[]).map((period) => (
-                  <TouchableOpacity
-                    key={period}
-                    style={[styles.filterButton, { borderColor: colors.border }, weightTrendPeriod === period && { backgroundColor: colors.primary, borderColor: colors.primary }]}
-                    onPress={() => setWeightTrendPeriod(period)}
-                  >
-                    <Text style={[styles.filterButtonText, { color: weightTrendPeriod === period ? (theme === "dark" ? colors.buttonText : "#fff") : colors.text }]}>
-                      {t(`statistics.period${period.charAt(0).toUpperCase() + period.slice(1)}`)}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("statistics.weightTrend")}</Text>
+            <View style={[styles.filterButtons, { marginBottom: 16 }]}>
+              {(["day", "week", "month", "year"] as TrendPeriod[]).map((period) => (
+                <TouchableOpacity
+                  key={period}
+                  style={[styles.filterButton, { borderColor: colors.border }, weightTrendPeriod === period && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                  onPress={() => setWeightTrendPeriod(period)}
+                >
+                  <Text style={[styles.filterButtonText, { color: weightTrendPeriod === period ? (theme === "dark" ? colors.buttonText : "#fff") : colors.text }]}>
+                    {t(`statistics.period${period.charAt(0).toUpperCase() + period.slice(1)}`)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
 
             {weightTrendData.length === 0 ? (
@@ -560,25 +558,23 @@ export default function StatisticsScreen() {
                 if (sortedPeriods.length === 0) {
                   return (
                     <>
-                      <View style={[styles.sectionHeader, { marginTop: 24, marginBottom: 0 }]}>
-                        <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0 }]}>{t("statistics.setsTrend")}</Text>
-                        <View style={styles.filterButtons}>
-                          {(["day", "week", "month", "year"] as TrendPeriod[]).map((period) => (
-                            <TouchableOpacity
-                              key={period}
-                              style={[
-                                styles.filterButton,
-                                { borderColor: colors.border },
-                                trendPeriod === period && { backgroundColor: colors.primary, borderColor: colors.primary },
-                              ]}
-                              onPress={() => setTrendPeriod(period)}
-                            >
-                              <Text style={[styles.filterButtonText, { color: trendPeriod === period ? (theme === "dark" ? colors.buttonText : "#fff") : colors.text }]}>
-                                {t(`statistics.period${period.charAt(0).toUpperCase() + period.slice(1)}`)}
-                              </Text>
-                            </TouchableOpacity>
-                          ))}
-                        </View>
+                      <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 24 }]}>{t("statistics.setsTrend")}</Text>
+                      <View style={[styles.filterButtons, { marginBottom: 16 }]}>
+                        {(["day", "week", "month", "year"] as TrendPeriod[]).map((period) => (
+                          <TouchableOpacity
+                            key={period}
+                            style={[
+                              styles.filterButton,
+                              { borderColor: colors.border },
+                              trendPeriod === period && { backgroundColor: colors.primary, borderColor: colors.primary },
+                            ]}
+                            onPress={() => setTrendPeriod(period)}
+                          >
+                            <Text style={[styles.filterButtonText, { color: trendPeriod === period ? (theme === "dark" ? colors.buttonText : "#fff") : colors.text }]}>
+                              {t(`statistics.period${period.charAt(0).toUpperCase() + period.slice(1)}`)}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
                       </View>
                       <View style={[styles.chartContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                         <View style={styles.emptyChartContainer}>
@@ -608,25 +604,23 @@ export default function StatisticsScreen() {
 
                 return (
                   <>
-                    <View style={[styles.sectionHeader, { marginTop: 24, marginBottom: 0 }]}>
-                      <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0 }]}>{t("statistics.setsTrend")}</Text>
-                      <View style={styles.filterButtons}>
-                        {(["week", "month", "year"] as TrendPeriod[]).map((period) => (
-                          <TouchableOpacity
-                            key={period}
-                            style={[
-                              styles.filterButton,
-                              { borderColor: colors.border },
-                              trendPeriod === period && { backgroundColor: colors.primary, borderColor: colors.primary },
-                            ]}
-                            onPress={() => setTrendPeriod(period)}
-                          >
-                            <Text style={[styles.filterButtonText, { color: trendPeriod === period ? (theme === "dark" ? colors.buttonText : "#fff") : colors.text }]}>
-                              {t(`statistics.period${period.charAt(0).toUpperCase() + period.slice(1)}`)}
-                            </Text>
-                          </TouchableOpacity>
-                        ))}
-                      </View>
+                    <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 24 }]}>{t("statistics.setsTrend")}</Text>
+                    <View style={[styles.filterButtons, { marginBottom: 16 }]}>
+                      {(["week", "month", "year"] as TrendPeriod[]).map((period) => (
+                        <TouchableOpacity
+                          key={period}
+                          style={[
+                            styles.filterButton,
+                            { borderColor: colors.border },
+                            trendPeriod === period && { backgroundColor: colors.primary, borderColor: colors.primary },
+                          ]}
+                          onPress={() => setTrendPeriod(period)}
+                        >
+                          <Text style={[styles.filterButtonText, { color: trendPeriod === period ? (theme === "dark" ? colors.buttonText : "#fff") : colors.text }]}>
+                            {t(`statistics.period${period.charAt(0).toUpperCase() + period.slice(1)}`)}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
                     </View>
 
                     <View style={[styles.chartContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>

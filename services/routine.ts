@@ -270,22 +270,7 @@ export const routineService = {
     }));
   },
 
-  // 추천 루틴을 복사해서 사용자 루틴으로 생성
-  async copyToUserRoutine(userId: string, id: string): Promise<Routine> {
-    const routine = await this.getRoutineById(id);
-    if (!routine) {
-      throw new Error(`Routine with id ${id} not found`);
-    }
-
-    const userCopy: CreateRoutineData = {
-      name: `${routine.name} (사본)`,
-      description: routine.description,
-      exercises: routine.exercises,
-      isRecommended: false,
-    };
-
-    return await this.createRoutine(userId, userCopy);
-  },
+  
 
   // 루틴 마지막 사용 시간 업데이트
   async updateLastUsed(id: string): Promise<void> {

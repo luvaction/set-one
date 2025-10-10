@@ -4,7 +4,7 @@ import { routineService } from "@/services/routine";
 import { getOrCreateUserId } from "@/utils/userIdHelper";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from "react-native-draggable-flatlist";
@@ -251,7 +251,8 @@ export default function RoutineBuilderScreen() {
   const params = useLocalSearchParams();
   const isEditing = !!params.routineId;
 
-  const [routineName, setRoutineName] = useState((params.name as string) || "");
+  const routineNameRef = useRef((params.name as string) || "");
+  const routineDescriptionRef = useRef("");
   const [selectedExercises, setSelectedExercises] = useState<Exercise[]>([]);
   const [showExerciseLibrary, setShowExerciseLibrary] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -275,7 +276,8 @@ export default function RoutineBuilderScreen() {
     try {
       const routine = await routineService.getRoutineById(params.routineId as string);
       if (routine) {
-        setRoutineName(routine.name);
+        routineNameRef.current = routine.name;
+        routineDescriptionRef.current = routine.description || "";
         setSelectedExercises(
           routine.exercises.map((ex) => ({
             id: ex.id,
@@ -413,7 +415,7 @@ export default function RoutineBuilderScreen() {
   };
 
   const saveRoutine = async () => {
-    if (!routineName.trim()) {
+    if (!routineNameRef.current.trim()) {
       Alert.alert(t("workoutSession.error"), t("routineBuilder.enterRoutineName"));
       return;
     }
@@ -426,7 +428,8 @@ export default function RoutineBuilderScreen() {
       const userId = await getOrCreateUserId();
 
       const routineData: CreateRoutineData = {
-        name: routineName,
+        name: routineNameRef.current,
+        description: routineDescriptionRef.current,
         exercises: selectedExercises.map((ex) => {
           const routineExercise: RoutineExercise = {
             id: ex.id,
@@ -534,8 +537,21 @@ export default function RoutineBuilderScreen() {
           style={[styles.nameInput, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
           placeholder={t("routines.routineNamePlaceholder")}
           placeholderTextColor={colors.textSecondary}
-          value={routineName}
-          onChangeText={setRoutineName}
+          defaultValue={routineNameRef.current}
+          onChangeText={(text) => (routineNameRef.current = text)}
+        />
+      </View>
+
+      {/* 루틴 설명 입력 */}
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("routineBuilder.routineDescription")}</Text>
+        <TextInput
+          style={[styles.descriptionInput, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
+          placeholder={t("routineBuilder.routineDescriptionPlaceholder")}
+          placeholderTextColor={colors.textSecondary}
+          defaultValue={routineDescriptionRef.current}
+          onChangeText={(text) => (routineDescriptionRef.current = text)}
+          multiline
         />
       </View>
 
@@ -643,6 +659,14 @@ const styles = StyleSheet.create({
     padding: 16,
     fontSize: 16,
     borderWidth: 1,
+  },
+  descriptionInput: {
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    borderWidth: 1,
+    minHeight: 100,
+    textAlignVertical: 'top',
   },
   addExerciseButton: {
     flexDirection: "row",
