@@ -12,6 +12,7 @@ export interface CompletedSet {
   weight: number; // 무게 (kg)
   isCompleted: boolean; // 완료 여부
   completedAt?: string; // 완료 시간
+  elapsedTimeSeconds?: number; // 이 세트를 완료하는 데 걸린 시간 (초)
   restDurationSeconds?: number; // 이 세트 후 휴식 시간 (초)
 }
 

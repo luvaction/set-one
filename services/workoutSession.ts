@@ -223,7 +223,8 @@ export const workoutSessionService = {
     actualReps: number | undefined,
     actualDurationSeconds: number | undefined,
     weight: number,
-    restDurationSeconds: number | undefined // Add rest duration
+    restDurationSeconds: number | undefined,
+    elapsedTimeSeconds: number | undefined // Add elapsed time for the set
   ): Promise<WorkoutSession> {
     const session = await this.getActiveSession();
     if (!session || session.id !== sessionId) {
@@ -239,6 +240,7 @@ export const workoutSessionService = {
       isCompleted: true,
       completedAt: now(),
       restDurationSeconds: restDurationSeconds, // Store rest duration
+      elapsedTimeSeconds: elapsedTimeSeconds, // Store elapsed time for the set
     };
 
     // 운동 완료 여부 확인

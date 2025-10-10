@@ -256,6 +256,8 @@ export default function WorkoutScreen() {
     return `${minutes}:${secs.toString().padStart(2, "0")}`;
   };
 
+  
+
   // 세트 타이머 시작
   const startSetTimer = (exerciseIndex: number, setIndex: number) => {
     // 휴식 타이머가 실행 중이면 중지
@@ -482,6 +484,7 @@ export default function WorkoutScreen() {
     const duration = parseInt(actualDurationSeconds) || 0; // New
     const weightValue = parseFloat(weight) || 0;
     const restDuration = restTimer?.elapsedTime || 0; // Get rest duration
+    const setElapsedTime = activeSetTimer?.elapsedTime || 0; // Get elapsed time for the current set
 
     if (reps <= 0 && duration <= 0) {
       Alert.alert(t('workoutSession.error'), t('workoutSession.repsMinimum'));
@@ -500,7 +503,8 @@ export default function WorkoutScreen() {
         reps,
         duration, // Pass duration
         weightValue,
-        restDuration // Pass rest duration
+        restDuration, // Pass rest duration
+        setElapsedTime // Pass set elapsed time
       );
       setActiveSession(updated);
 
@@ -622,7 +626,18 @@ export default function WorkoutScreen() {
 
                       {set.isCompleted ? (
                         <View style={styles.completedInfo}>
-                          <Text style={[styles.completedText, { color: colors.primary }]}>✓ {set.actualReps}회</Text>
+                          <Text style={[styles.completedText, { color: colors.primary }]}>
+                            ✓ {set.actualDurationSeconds !== undefined && set.actualDurationSeconds > 0
+                              ? `${formatTime(set.actualDurationSeconds)}`
+                              : `${set.actualReps}회`}
+                            {set.weight > 0 && ` (${set.weight}kg)`}
+                            {set.elapsedTimeSeconds !== undefined && set.elapsedTimeSeconds > 0 && ` (${formatTime(set.elapsedTimeSeconds)})`}
+                          </Text>
+                          {set.restDurationSeconds !== undefined && set.restDurationSeconds > 0 && (
+                            <Text style={[styles.restTimeText, { color: colors.textSecondary }]}>
+                              {t('workoutSession.rest')} {formatTime(set.restDurationSeconds)}
+                            </Text>
+                          )}
                           <TouchableOpacity
                             onPress={async () => {
                               try {
@@ -1051,6 +1066,10 @@ const styles = StyleSheet.create({
   completedText: {
     fontSize: 14,
     fontWeight: "600",
+  },
+  restTimeText: {
+    fontSize: 12,
+    marginTop: 4,
   },
   checkButton: {
     paddingHorizontal: 16,
