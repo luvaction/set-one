@@ -9,6 +9,7 @@ import {
 import { storage } from "./storage/asyncStorage";
 import { Routine } from "@/models";
 import { routineService } from "./routine";
+import { profileService } from "./profile";
 
 const generateId = (): string => {
   return `session_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
@@ -81,6 +82,7 @@ export const workoutSessionService = {
 
   // 새 운동 세션 시작
   async startSession(userId: string, routine: Routine): Promise<WorkoutSession> {
+    console.log("workoutSessionService.startSession received routine:", routine);
     // 기존 활성 세션이 있으면 중단 처리
     const existingSession = await this.getActiveSession();
     if (existingSession) {
@@ -104,6 +106,7 @@ export const workoutSessionService = {
       updatedAt: now(),
     };
 
+    console.log("Attempting to save new session:", newSession);
     await storage.setItem(STORAGE_KEYS.ACTIVE_WORKOUT_SESSION, newSession);
 
     // 루틴의 lastUsed 업데이트
@@ -175,7 +178,7 @@ export const workoutSessionService = {
   },
 
   // 운동 완료
-  async completeSession(sessionId: string): Promise<WorkoutRecord> {
+  async completeSession(sessionId: string, bodyWeight?: number): Promise<WorkoutRecord> {
     const session = await this.getActiveSession();
     if (!session || session.id !== sessionId) {
       throw new Error("Active session not found");
@@ -198,12 +201,21 @@ export const workoutSessionService = {
       duration,
       totalVolume: calculateTotalVolume(session.exercises),
       completionRate: calculateCompletionRate(session.exercises),
+      bodyWeight, // Add bodyWeight here
       createdAt: session.createdAt,
       updatedAt: now(),
     };
 
     // 기록 저장
     await storage.addToArray(STORAGE_KEYS.WORKOUT_RECORDS, record);
+
+    // 프로필 체중 업데이트 (선택 사항)
+    if (bodyWeight !== undefined && bodyWeight > 0) {
+      const userProfile = await profileService.getProfile();
+      if (userProfile) {
+        await profileService.saveProfile({ ...userProfile, weight: bodyWeight });
+      }
+    }
 
     // 활성 세션 삭제
     await storage.removeItem(STORAGE_KEYS.ACTIVE_WORKOUT_SESSION);

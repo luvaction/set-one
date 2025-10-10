@@ -148,7 +148,8 @@
     "routine": "루틴",
     "time": "시간",
     "totalVolume": "총 볼륨",
-    "deleteFailed": "기록 삭제에 실패했습니다."
+    "deleteFailed": "기록 삭제에 실패했습니다.",
+    "bodyWeight": "체중: {{weight}}kg"
   },
   "statistics": {
     "title": "통계",
@@ -187,12 +188,18 @@
     "setsTrend": "세트 수 추이",
     "periodWeek": "주별",
     "periodMonth": "월별",
+    "periodDay": "일별",
+    "periodWeek": "주별",
+    "periodMonth": "월별",
     "periodYear": "연별",
     "noTrendData": "추이를 표시할 데이터가 부족합니다",
+    "weightTrend": "체중 추이",
     "periodLabel": {
       "week": "{{month}}월 {{weekOfMonth}}주",
       "month": "{{year}}.{{month}}",
-      "year": "{{year}}년"
+      "year": "{{year}}년",
+      "monthOnly": "{{month}}월",
+      "day": "{{month}}월 {{day}}일"
     }
   },
   "profile": {
@@ -326,7 +333,11 @@
     "completeSetFailed": "세트 완료 처리에 실패했습니다.",
     "setInfo": "세트 {{number}} (목표: {{target}}회)",
     "actualDuration": "실제 시간",
-    "durationRequired": "시간 입력 (필수)"
+    "durationRequired": "시간 입력 (필수)",
+    "recordBodyWeight": "체중 기록",
+    "recordBodyWeightOptional": "운동 후 현재 체중을 선택적으로 기록합니다.",
+    "bodyWeightKg": "체중 (kg)",
+    "bodyWeightPlaceholder": "예: 70"
   },
   "category": {
     "all": "전체",

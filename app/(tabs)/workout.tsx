@@ -172,6 +172,8 @@ export default function WorkoutScreen() {
   const [actualReps, setActualReps] = useState("");
   const [actualDurationSeconds, setActualDurationSeconds] = useState(""); // New state for actual duration
   const [weight, setWeight] = useState("");
+  const [showBodyWeightInputModal, setShowBodyWeightInputModal] = useState(false);
+  const [bodyWeightInput, setBodyWeightInput] = useState("");
 
   const totalTimerRef = useRef<number | null>(null);
   const setTimerRef = useRef<number | null>(null);
@@ -351,6 +353,7 @@ export default function WorkoutScreen() {
   const startWorkout = async (routine: Routine) => {
     try {
       const userId = await getOrCreateUserId();
+      console.log("Starting workout with routine:", routine);
 
       const session = await workoutSessionService.startSession(userId, routine);
       setActiveSession(session);
@@ -399,16 +402,27 @@ export default function WorkoutScreen() {
   const handleCompleteWorkout = async () => {
     if (!activeSession) return;
 
-    try {
-      await workoutSessionService.completeSession(activeSession.id);
-      setActiveSession(null);
+    // 모든 타이머 정지 및 초기화
+    stopTotalTimer();
+    stopSetTimer();
+    stopRestTimer();
+    workoutStartTimeRef.current = 0;
+    setTotalElapsedTime(0);
 
-      // 모든 타이머 정지 및 초기화
-      stopTotalTimer();
-      stopSetTimer();
-      stopRestTimer();
-      workoutStartTimeRef.current = 0;
-      setTotalElapsedTime(0);
+    // 체중 입력 모달 표시
+    setShowBodyWeightInputModal(true);
+  };
+
+  const handleSaveCompletedWorkout = async () => {
+    if (!activeSession) return;
+
+    try {
+      const bodyWeight = parseFloat(bodyWeightInput) || undefined;
+
+      await workoutSessionService.completeSession(activeSession.id, bodyWeight);
+      setActiveSession(null);
+      setShowBodyWeightInputModal(false);
+      setBodyWeightInput("");
 
       Alert.alert(t('workoutSession.congratulations'), t('workoutSession.workoutCompletedMessage'));
     } catch (error) {
@@ -716,6 +730,36 @@ export default function WorkoutScreen() {
                   <Text style={[styles.modalCancelButtonText, { color: colors.text }]}>{t('common.cancel')}</Text>
                 </Pressable>
                 <Pressable style={[styles.modalSaveButton, { backgroundColor: colors.primary }]} onPress={handleSaveSetComplete}>
+                  <Text style={[styles.modalSaveButtonText, { color: colors.buttonText }]}>{t('common.save')}</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        {/* 운동 완료 시 체중 입력 모달 */}
+        <Modal visible={showBodyWeightInputModal} animationType="fade" transparent={true} onRequestClose={() => setShowBodyWeightInputModal(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={[styles.setCompleteModal, { backgroundColor: colors.surface }]}>
+              <Text style={[styles.modalTitleSmall, { color: colors.text }]}>{t('workoutSession.recordBodyWeight')}</Text>
+              <Text style={[styles.modalSubtitle, { color: colors.textSecondary, marginBottom: 15 }]}>{t('workoutSession.recordBodyWeightOptional')}</Text>
+
+              <Text style={[styles.inputLabel, { color: colors.text }]}>{t('workoutSession.bodyWeightKg')}</Text>
+              <TextInput
+                style={[styles.modalInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                value={bodyWeightInput}
+                onChangeText={setBodyWeightInput}
+                keyboardType="numeric"
+                placeholder={t('workoutSession.bodyWeightPlaceholder')}
+                placeholderTextColor={colors.textSecondary}
+                maxLength={6}
+              />
+
+              <View style={styles.modalActions}>
+                <Pressable style={[styles.modalCancelButton, { borderColor: colors.border }]} onPress={() => setShowBodyWeightInputModal(false)}>
+                  <Text style={[styles.modalCancelButtonText, { color: colors.text }]}>{t('common.cancel')}</Text>
+                </Pressable>
+                <Pressable style={[styles.modalSaveButton, { backgroundColor: colors.primary }]} onPress={handleSaveCompletedWorkout}>
                   <Text style={[styles.modalSaveButtonText, { color: colors.buttonText }]}>{t('common.save')}</Text>
                 </Pressable>
               </View>

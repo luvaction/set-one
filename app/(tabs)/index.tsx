@@ -2,6 +2,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { Routine, WorkoutRecord } from "@/models";
 import { profileService, routineService, workoutRecordService, workoutSessionService } from "@/services";
 import { Insight, statisticsService } from "@/services/statistics";
+import { getOrCreateUserId } from "@/utils/userIdHelper";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
@@ -186,7 +187,8 @@ export default function HomeScreen() {
 
   const handlePlayRoutine = async (routine: Routine) => {
     try {
-      await workoutSessionService.startSession(routine);
+      const userId = await getOrCreateUserId();
+      await workoutSessionService.startSession(userId, routine);
       router.push("/(tabs)/workout");
     } catch (error) {
       console.error("Failed to start workout:", error);

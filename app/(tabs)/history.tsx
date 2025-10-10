@@ -283,6 +283,12 @@ export default function HistoryScreen() {
                           <Text style={[styles.statText, { color: colors.textSecondary }]}>{t("history.volume", { volume: record.totalVolume })}</Text>
                         </View>
                       )}
+                      {record.bodyWeight !== undefined && record.bodyWeight > 0 && (
+                        <View style={styles.statItem}>
+                          <Ionicons name="body-outline" size={16} color={colors.textSecondary} />
+                          <Text style={[styles.statText, { color: colors.textSecondary }]}>{t("history.bodyWeight", { weight: record.bodyWeight })}</Text>
+                        </View>
+                      )}
                     </View>
 
                     {record.exercises.map((ex, exIdx) => (

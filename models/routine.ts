@@ -41,7 +41,7 @@ export interface Routine extends BaseEntity {
 
 export type CreateRoutineData = Omit<
   Routine,
-  "id" | "createdAt" | "updatedAt"
+  "id" | "createdAt" | "updatedAt" | "userId"
 >;
 
 export type UpdateRoutineData = Partial<CreateRoutineData>;

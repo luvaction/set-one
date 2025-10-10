@@ -1,6 +1,17 @@
 import { useTheme } from "@/contexts/ThemeContext";
 import { profileService } from "@/services/profile";
-import { CoreStats, ExerciseStats, ExerciseTypeDistribution, Insight, PersonalRecord, SetsTrendData, statisticsService, TrendPeriod, WeekComparison } from "@/services/statistics";
+import {
+  CoreStats,
+  ExerciseStats,
+  ExerciseTypeDistribution,
+  Insight,
+  PersonalRecord,
+  SetsTrendData,
+  statisticsService,
+  TrendPeriod,
+  WeekComparison,
+  WeightTrendData,
+} from "@/services/statistics";
 import { generateMockWorkoutData } from "@/utils/generateMockData";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
@@ -113,10 +124,12 @@ export default function StatisticsScreen() {
   const [weeklyGoal, setWeeklyGoal] = useState<number | null>(null);
   const [trendPeriod, setTrendPeriod] = useState<TrendPeriod>("month");
   const [setsTrends, setSetsTrends] = useState<Map<string, SetsTrendData[]>>(new Map());
+  const [weightTrendData, setWeightTrendData] = useState<WeightTrendData[]>([]);
+  const [weightTrendPeriod, setWeightTrendPeriod] = useState<TrendPeriod>("month");
 
   const loadStatistics = useCallback(async () => {
     try {
-      const [stats, weekComp, prs, exStats, exerciseTypes, insightsData, profileData] = await Promise.all([
+      const [stats, weekComp, prs, exStats, exerciseTypes, insightsData, profileData, weightTrends] = await Promise.all([
         statisticsService.getCoreStats(),
         statisticsService.getWeekComparison(),
         statisticsService.getPersonalRecords(),
@@ -124,6 +137,7 @@ export default function StatisticsScreen() {
         statisticsService.getExerciseTypeDistribution(),
         statisticsService.getInsights(),
         profileService.getProfile(),
+        statisticsService.getWeightTrendData(t, weightTrendPeriod),
       ]);
 
       setCoreStats(stats);
@@ -133,6 +147,7 @@ export default function StatisticsScreen() {
       setExerciseTypeDistribution(exerciseTypes);
       setInsights(insightsData);
       setWeeklyGoal(profileData?.weeklyGoal || null);
+      setWeightTrendData(weightTrends);
 
       // 처음에는 모든 운동 선택
       if (selectedExercises.size === 0 && exStats.length > 0) {
@@ -144,7 +159,7 @@ export default function StatisticsScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [t, weightTrendPeriod]);
 
   // 세트 수 추이 데이터 로드
   useEffect(() => {
@@ -169,6 +184,16 @@ export default function StatisticsScreen() {
 
     loadSetsTrends();
   }, [t, trendPeriod, selectedExercises, exerciseStats]);
+
+  // 체중 추이 데이터 로드
+  useEffect(() => {
+    const loadWeightTrends = async () => {
+      const trends = await statisticsService.getWeightTrendData(t, weightTrendPeriod);
+      setWeightTrendData(trends);
+    };
+
+    loadWeightTrends();
+  }, [t, weightTrendPeriod]);
 
   useFocusEffect(
     useCallback(() => {
@@ -352,6 +377,83 @@ export default function StatisticsScreen() {
           </View>
         )}
 
+        {/* 체중 추이 차트 */}
+        {weightTrendData.length > 0 && (
+          <View style={styles.section}>
+            <View style={[styles.sectionHeader, { marginBottom: 0 }]}>
+              <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0 }]}>{t("statistics.weightTrend")}</Text>
+              <View style={styles.filterButtons}>
+                {(["day", "week", "month", "year"] as TrendPeriod[]).map((period) => (
+                  <TouchableOpacity
+                    key={period}
+                    style={[styles.filterButton, { borderColor: colors.border }, weightTrendPeriod === period && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                    onPress={() => setWeightTrendPeriod(period)}
+                  >
+                    <Text style={[styles.filterButtonText, { color: weightTrendPeriod === period ? (theme === "dark" ? colors.buttonText : "#fff") : colors.text }]}>
+                      {t(`statistics.period${period.charAt(0).toUpperCase() + period.slice(1)}`)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {weightTrendData.length === 0 ? (
+              <View style={[styles.chartContainer, { backgroundColor: colors.surface }]}>
+                <View style={styles.emptyChartContainer}>
+                  <Ionicons name="body-outline" size={48} color={colors.textSecondary} />
+                  <Text style={[styles.emptyChartText, { color: colors.textSecondary }]}>{t("statistics.noTrendData")}</Text>
+                </View>
+              </View>
+            ) : (
+              <View style={[styles.chartContainer, { backgroundColor: colors.surface }]}>
+                <LineChart
+                  data={{
+                    labels: weightTrendData.map((data) => data.periodLabel),
+                    datasets: [
+                      {
+                        data: weightTrendData.map((data) => data.averageWeight),
+                        color: (_opacity = 1) => colors.primary,
+                        strokeWidth: 2,
+                      },
+                    ],
+                  }}
+                  width={Dimensions.get("window").width - 80}
+                  height={220}
+                  chartConfig={{
+                    backgroundColor: colors.surface,
+                    backgroundGradientFrom: colors.surface,
+                    backgroundGradientTo: colors.surface,
+                    decimalPlaces: 1,
+                    color: (_opacity = 1) => colors.primary,
+                    labelColor: (_opacity = 1) => colors.text,
+                    style: {
+                      borderRadius: 16,
+                    },
+                    propsForDots: {
+                      r: "4",
+                      strokeWidth: "2",
+                      stroke: colors.surface,
+                    },
+                  }}
+                  bezier
+                  style={{
+                    marginVertical: 8,
+                    borderRadius: 16,
+                  }}
+                  withVerticalLabels={true}
+                  withHorizontalLabels={true}
+                  withDots={true}
+                  withInnerLines={true}
+                  withOuterLines={true}
+                  withVerticalLines={false}
+                  withHorizontalLines={true}
+                  fromZero={false}
+                />
+              </View>
+            )}
+          </View>
+        )}
+
         {/* 개인 기록 */}
         {personalRecords.length > 0 && (
           <View style={styles.section}>
@@ -448,13 +550,13 @@ export default function StatisticsScreen() {
                 const sortedPeriods = Array.from(periodSet).sort();
 
                 // 데이터가 부족한 경우
-                if (sortedPeriods.length < 2) {
+                if (sortedPeriods.length === 0) {
                   return (
                     <>
                       <View style={[styles.sectionHeader, { marginTop: 24, marginBottom: 0 }]}>
                         <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0 }]}>{t("statistics.setsTrend")}</Text>
                         <View style={styles.filterButtons}>
-                          {(["week", "month", "year"] as TrendPeriod[]).map((period) => (
+                          {(["day", "week", "month", "year"] as TrendPeriod[]).map((period) => (
                             <TouchableOpacity
                               key={period}
                               style={[
@@ -464,7 +566,7 @@ export default function StatisticsScreen() {
                               ]}
                               onPress={() => setTrendPeriod(period)}
                             >
-                              <Text style={[styles.filterButtonText, { color: trendPeriod === period ? (theme === 'dark' ? colors.buttonText : "#fff") : colors.text }]}>
+                              <Text style={[styles.filterButtonText, { color: trendPeriod === period ? (theme === "dark" ? colors.buttonText : "#fff") : colors.text }]}>
                                 {t(`statistics.period${period.charAt(0).toUpperCase() + period.slice(1)}`)}
                               </Text>
                             </TouchableOpacity>
@@ -512,7 +614,7 @@ export default function StatisticsScreen() {
                             ]}
                             onPress={() => setTrendPeriod(period)}
                           >
-                            <Text style={[styles.filterButtonText, { color: trendPeriod === period ? (theme === 'dark' ? colors.buttonText : "#fff") : colors.text }]}>
+                            <Text style={[styles.filterButtonText, { color: trendPeriod === period ? (theme === "dark" ? colors.buttonText : "#fff") : colors.text }]}>
                               {t(`statistics.period${period.charAt(0).toUpperCase() + period.slice(1)}`)}
                             </Text>
                           </TouchableOpacity>

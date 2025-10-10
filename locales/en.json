@@ -148,7 +148,8 @@
     "routine": "Routine",
     "time": "Time",
     "totalVolume": "Total Volume",
-    "deleteFailed": "Failed to delete record."
+    "deleteFailed": "Failed to delete record.",
+    "bodyWeight": "Body Weight: {{weight}}kg"
   },
   "statistics": {
     "title": "Statistics",
@@ -187,12 +188,18 @@
     "setsTrend": "Sets Trend",
     "periodWeek": "Weekly",
     "periodMonth": "Monthly",
+    "periodDay": "Daily",
+    "periodWeek": "Weekly",
+    "periodMonth": "Monthly",
     "periodYear": "Yearly",
     "noTrendData": "Not enough data to show trend",
+    "weightTrend": "Weight Trend",
     "periodLabel": {
       "week": "{{month}}W{{weekOfMonth}}",
       "month": "{{year}}.{{month}}",
-      "year": "{{year}}"
+      "year": "{{year}}",
+      "monthOnly": "{{month}}",
+      "day": "{{month}}/{{day}}"
     }
   },
   "profile": {
@@ -326,7 +333,11 @@
     "completeSetFailed": "Failed to complete set.",
     "setInfo": "Set {{number}} (target: {{target}} reps)",
     "actualDuration": "Actual Duration",
-    "durationRequired": "Enter duration (required)"
+    "durationRequired": "Enter duration (required)",
+    "recordBodyWeight": "Record Body Weight",
+    "recordBodyWeightOptional": "Optionally record your body weight after the workout.",
+    "bodyWeightKg": "Body Weight (kg)",
+    "bodyWeightPlaceholder": "e.g. 70"
   },
   "category": {
     "all": "All",

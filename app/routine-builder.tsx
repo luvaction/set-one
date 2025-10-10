@@ -427,7 +427,6 @@ export default function RoutineBuilderScreen() {
 
       const routineData: CreateRoutineData = {
         name: routineName,
-        userId,
         exercises: selectedExercises.map((ex) => {
           const routineExercise: RoutineExercise = {
             id: ex.id,

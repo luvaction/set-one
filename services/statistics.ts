@@ -97,7 +97,14 @@ export interface SetsTrendData {
   workoutCount: number;
 }
 
-export type TrendPeriod = "week" | "month" | "year";
+export interface WeightTrendData {
+  period: string; // "2025-W40" (주차) or "2025-10" (월) or "2025" (년)
+  periodLabel: string; // "10월 1주" or "10월" or "2025년"
+  averageWeight: number; // 평균 체중
+  recordCount: number; // 기록된 체중 횟수
+}
+
+export type TrendPeriod = "week" | "month" | "year" | "day";
 
 const getDayOfWeek = (dateString: string): string => {
   const days = ["일", "월", "화", "수", "목", "금", "토"];
@@ -668,9 +675,11 @@ export const statisticsService = {
           periodKey = `${date.getFullYear()}-W${weekNumber}`;
         } else if (period === "month") {
           periodKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+        } else if (period === "day") {
+          periodKey = date.toISOString().split("T")[0];
         } else {
-          // year
-          periodKey = `${date.getFullYear()}`;
+          // year: aggregate by month
+          periodKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
         }
 
         if (!periodData[periodKey]) {
@@ -700,6 +709,10 @@ export const statisticsService = {
         recentTrends = trendArray.slice(-8); // 최근 8주
       } else if (period === "month") {
         recentTrends = trendArray.slice(-6); // 최근 6개월
+      } else if (period === "year") {
+        recentTrends = trendArray.slice(-12); // 최근 12개월
+      } else if (period === "day") {
+        recentTrends = trendArray.slice(-7); // 최근 7일
       }
 
       trendMap.set(exerciseId, recentTrends);
@@ -731,9 +744,13 @@ export const statisticsService = {
     } else if (period === "month") {
       const [year, month] = periodKey.split("-");
       return t('statistics.periodLabel.month', { year, month });
+    } else if (period === "day") {
+      const [year, month, day] = periodKey.split("-");
+      return t('statistics.periodLabel.day', { month: parseInt(month), day: parseInt(day) });
     } else {
-      // year
-      return t('statistics.periodLabel.year', { year: periodKey });
+      // year (now YYYY-MM format)
+      const [year, month] = periodKey.split("-");
+      return t('statistics.periodLabel.monthOnly', { month: parseInt(month) }); // Assuming a new translation key for month only
     }
   },
 
@@ -748,5 +765,62 @@ export const statisticsService = {
       ISOweekStart.setDate(simple.getDate() + 8 - simple.getDay());
     }
     return ISOweekStart;
+  },
+
+  // 체중 추이 데이터
+  async getWeightTrendData(t: (key: string, params?: any) => string, period: TrendPeriod): Promise<WeightTrendData[]> {
+    const records = await storage.getArray<WorkoutRecord>(STORAGE_KEYS.WORKOUT_RECORDS);
+    const completedRecordsWithWeight = records.filter((r) => r.status === "completed" && r.bodyWeight !== undefined && r.bodyWeight > 0);
+
+    const periodData: Record<string, { totalWeight: number; count: number }> = {};
+
+    completedRecordsWithWeight.forEach((record) => {
+      const date = new Date(record.date);
+      let periodKey = "";
+
+      if (period === "week") {
+        const weekNumber = this.getWeekNumber(date);
+        periodKey = `${date.getFullYear()}-W${weekNumber}`;
+      } else if (period === "month") {
+        periodKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      } else if (period === "day") {
+        periodKey = date.toISOString().split("T")[0];
+      } else {
+        periodKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      }
+
+      if (!periodData[periodKey]) {
+        periodData[periodKey] = { totalWeight: 0, count: 0 };
+      }
+
+      periodData[periodKey].totalWeight += record.bodyWeight!;
+      periodData[periodKey].count++;
+    });
+
+    const trendArray: WeightTrendData[] = Object.entries(periodData)
+      .map(([periodKey, data]) => {
+        const avgWeight = data.totalWeight / data.count;
+        return {
+          period: periodKey,
+          periodLabel: this.formatPeriodLabel(t, periodKey, period),
+          averageWeight: Math.round(avgWeight * 10) / 10,
+          recordCount: data.count,
+        };
+      })
+      .sort((a, b) => a.period.localeCompare(b.period));
+
+    // 기간별로 최근 N개만 표시
+    let recentTrends = trendArray;
+    if (period === "week") {
+      recentTrends = trendArray.slice(-8); // 최근 8주
+    } else if (period === "month") {
+      recentTrends = trendArray.slice(-6); // 최근 6개월
+    } else if (period === "year") {
+      recentTrends = trendArray.slice(-12); // 최근 12개월
+    } else if (period === "day") {
+      recentTrends = trendArray.slice(-7); // 최근 7일
+    }
+
+    return recentTrends;
   },
 };

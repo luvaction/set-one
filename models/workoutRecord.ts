@@ -52,6 +52,7 @@ export interface WorkoutRecord extends BaseEntity {
   duration: number; // 분 단위
   totalVolume?: number; // 총 볼륨 (kg)
   completionRate: number; // 완료율 (0-100)
+  bodyWeight?: number; // 운동 완료 시점의 체중 (kg) - 선택 사항
   memo?: string;
 }
 
@@ -64,7 +65,7 @@ export type UpdateWorkoutSessionData = Partial<CreateWorkoutSessionData>;
 
 export type CreateWorkoutRecordData = Omit<
   WorkoutRecord,
-  "id" | "createdAt" | "updatedAt"
+  "id" | "createdAt" | "updatedAt" | "userId"
 >;
 
 export type UpdateWorkoutRecordData = Partial<CreateWorkoutRecordData>;

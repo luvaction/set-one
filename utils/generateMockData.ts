@@ -28,17 +28,18 @@ export async function generateMockWorkoutData() {
         .slice(0, Math.floor(Math.random() * 3) + 3); // 3-5개 운동
 
       const workoutExercises = selectedExercises.map((ex, idx) => ({
-        id: `${dateString}-ex-${idx}`,
+        exerciseId: `${dateString}-ex-${idx}`,
         exerciseName: ex.name,
+        targetSets: 3,
         sets: Array.from({ length: 3 }, (_, setIdx) => ({
-          id: `${dateString}-ex-${idx}-set-${setIdx}`,
+          setNumber: setIdx + 1,
           targetReps: ex.reps,
           targetWeight: ex.weight,
           actualReps: ex.reps + Math.floor(Math.random() * 3) - 1,
           weight: ex.weight + Math.floor(Math.random() * 10) - 5,
           isCompleted: true,
         })),
-        restTime: 60,
+        isCompleted: true,
       }));
 
       const totalVolume = workoutExercises.reduce(
@@ -56,17 +57,18 @@ export async function generateMockWorkoutData() {
 
       mockRecords.push({
         id: `mock-${dateString}`,
+        userId: "mock-user-id",
         routineId: "mock-routine",
         routineName: "임시 루틴",
         date: dateString,
-        startTime: `${9 + Math.floor(Math.random() * 3)}:00`,
-        endTime: `${10 + Math.floor(Math.random() * 3)}:30`,
         duration: 60 + Math.floor(Math.random() * 60),
         exercises: workoutExercises,
         totalVolume,
         completionRate: Math.round((completedSets / totalSets) * 100),
         status: "completed",
-        notes: "",
+        memo: "",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       });
     }
   }
