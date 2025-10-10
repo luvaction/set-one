@@ -43,6 +43,7 @@ export default function ProfileScreen() {
       const savedProfile = await profileService.getProfile();
       if (savedProfile) {
         setProfile(savedProfile);
+        console.log("Loaded profile weeklyGoal:", savedProfile.weeklyGoal);
       }
     } catch (error) {
       console.error("Failed to load profile:", error);
@@ -59,11 +60,13 @@ export default function ProfileScreen() {
   const handleSave = async () => {
     try {
       // Ensure userId is set before saving
-      const userId = editingProfile.userId || await getOrCreateUserId();
+      const userId = editingProfile.userId || (await getOrCreateUserId());
       const profileToSave = { ...editingProfile, userId };
+      console.log("Saving profile with weeklyGoal:", profileToSave.weeklyGoal);
 
       const savedProfile = await profileService.saveProfile(profileToSave);
       setProfile(savedProfile);
+      console.log("Saved profile weeklyGoal:", savedProfile.weeklyGoal);
       setShowEditModal(false);
     } catch (error) {
       console.error("Failed to save profile:", error);
@@ -447,7 +450,7 @@ export default function ProfileScreen() {
                 </Text>
                 <TextInput
                   style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-                  value={editingProfile.height > 0 ? String(editingProfile.height) : ""}
+                  value={String(editingProfile.height)}
                   onChangeText={(text) => setEditingProfile({ ...editingProfile, height: Number(text) || 0 })}
                   placeholder={t("profile.heightPlaceholder")}
                   placeholderTextColor={colors.textSecondary}
@@ -460,7 +463,7 @@ export default function ProfileScreen() {
                 </Text>
                 <TextInput
                   style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-                  value={editingProfile.weight > 0 ? String(editingProfile.weight) : ""}
+                  value={String(editingProfile.weight)}
                   onChangeText={(text) => setEditingProfile({ ...editingProfile, weight: Number(text) || 0 })}
                   placeholder={t("profile.weightPlaceholder")}
                   placeholderTextColor={colors.textSecondary}
@@ -473,7 +476,7 @@ export default function ProfileScreen() {
                 </Text>
                 <TextInput
                   style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-                  value={editingProfile.targetWeight > 0 ? String(editingProfile.targetWeight) : ""}
+                  value={String(editingProfile.targetWeight)}
                   onChangeText={(text) => setEditingProfile({ ...editingProfile, targetWeight: Number(text) || 0 })}
                   placeholder={t("profile.targetWeightPlaceholder")}
                   placeholderTextColor={colors.textSecondary}
@@ -566,7 +569,7 @@ export default function ProfileScreen() {
                 <Text style={[styles.inputLabel, { color: colors.text }]}>{t("profile.weeklyGoalLabel")}</Text>
                 <TextInput
                   style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-                  value={editingProfile.weeklyGoal > 0 ? String(editingProfile.weeklyGoal) : ""}
+                  value={String(editingProfile.weeklyGoal)}
                   onChangeText={(text) => setEditingProfile({ ...editingProfile, weeklyGoal: Number(text) || 0 })}
                   placeholder={t("profile.weeklyGoalPlaceholder")}
                   placeholderTextColor={colors.textSecondary}
@@ -714,7 +717,7 @@ const styles = StyleSheet.create({
   modalContent: {
     borderRadius: 16,
     padding: 24,
-    maxHeight: "75%",
+    maxHeight: "90%",
   },
   modalTitle: {
     fontSize: 20,
