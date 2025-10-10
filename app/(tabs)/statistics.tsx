@@ -109,6 +109,7 @@ const formatDate = (dateString: string, language: string) => {
 
 export default function StatisticsScreen() {
   const { colors, theme } = useTheme();
+  const styles = getStyles(colors);
   const { t, i18n, ready } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -119,6 +120,7 @@ export default function StatisticsScreen() {
   const [personalRecords, setPersonalRecords] = useState<PersonalRecord[]>([]);
   const [exerciseStats, setExerciseStats] = useState<ExerciseStats[]>([]);
   const [selectedExercises, setSelectedExercises] = useState<Set<string>>(new Set());
+  const [chartVisibleExercises, setChartVisibleExercises] = useState<Set<string>>(new Set());
   const [exerciseTypeDistribution, setExerciseTypeDistribution] = useState<ExerciseTypeDistribution[]>([]);
   const [insights, setInsights] = useState<Insight[]>([]);
   const [weeklyGoal, setWeeklyGoal] = useState<number | null>(null);
@@ -188,6 +190,8 @@ export default function StatisticsScreen() {
 
       const trends = await statisticsService.getSetsTrend(t, trendPeriod, selectedExerciseIds);
       setSetsTrends(trends);
+      // Initialize chartVisibleExercises with all selectedExercises
+      setChartVisibleExercises(new Set(selectedExercises));
     };
 
     loadSetsTrends();
@@ -231,6 +235,18 @@ export default function StatisticsScreen() {
       newSelected.add(exerciseName);
     }
     setSelectedExercises(newSelected);
+  };
+
+  const toggleChartExerciseVisibility = (exerciseName: string) => {
+    setChartVisibleExercises((prev) => {
+      const newVisible = new Set(prev);
+      if (newVisible.has(exerciseName)) {
+        newVisible.delete(exerciseName);
+      } else {
+        newVisible.add(exerciseName);
+      }
+      return newVisible;
+    });
   };
 
   if (loading || !ready) {
@@ -422,7 +438,7 @@ export default function StatisticsScreen() {
                       },
                     ],
                   }}
-                  width={Dimensions.get("window").width - 80}
+                  width={Dimensions.get("window").width - 40}
                   height={220}
                   chartConfig={{
                     backgroundColor: colors.surface,
@@ -437,7 +453,12 @@ export default function StatisticsScreen() {
                     propsForDots: {
                       r: "4",
                       strokeWidth: "2",
-                      stroke: colors.surface,
+                      stroke: colors.primary,
+                    },
+                    propsForBackgroundLines: {
+                      strokeDasharray: "0", // Solid line
+                      stroke: colors.border + "50", // Lighter border color
+                      strokeWidth: 1,
                     },
                   }}
                   bezier
@@ -590,6 +611,7 @@ export default function StatisticsScreen() {
                 const chartColors = ["#4F46E5", "#059669", "#D97706", "#DC2626", "#7C3AED"];
                 const datasets = selectedData
                   .filter((ex) => setsTrends.get(ex.exerciseId) && setsTrends.get(ex.exerciseId)!.length > 0)
+                  .filter((ex) => chartVisibleExercises.has(ex.exerciseName))
                   .map((ex, idx) => {
                     const trends = setsTrends.get(ex.exerciseId) || [];
                     return {
@@ -606,7 +628,7 @@ export default function StatisticsScreen() {
                   <>
                     <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 24 }]}>{t("statistics.setsTrend")}</Text>
                     <View style={[styles.filterButtons, { marginBottom: 16 }]}>
-                      {(["week", "month", "year"] as TrendPeriod[]).map((period) => (
+                      {(["day", "week", "month", "year"] as TrendPeriod[]).map((period) => (
                         <TouchableOpacity
                           key={period}
                           style={[
@@ -629,10 +651,14 @@ export default function StatisticsScreen() {
                         {selectedData
                           .filter((ex) => setsTrends.get(ex.exerciseId) && setsTrends.get(ex.exerciseId)!.length > 0)
                           .map((ex, idx) => (
-                            <View key={ex.exerciseName} style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                            <TouchableOpacity
+                              key={ex.exerciseName}
+                              onPress={() => toggleChartExerciseVisibility(ex.exerciseName)}
+                              style={{ flexDirection: "row", alignItems: "center", gap: 6, opacity: chartVisibleExercises.has(ex.exerciseName) ? 1 : 0.5 }} // Add opacity for visual feedback
+                            >
                               <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: chartColors[idx % chartColors.length] }} />
-                              <Text style={{ fontSize: 12, color: colors.text }}>{getExerciseName(t, ex.exerciseId, ex.exerciseName)}</Text>
-                            </View>
+                              <Text style={{ fontSize: 12, color: colors.text, textDecorationLine: chartVisibleExercises.has(ex.exerciseName) ? "none" : "line-through" }}>{getExerciseName(t, ex.exerciseId, ex.exerciseName)}</Text>
+                            </TouchableOpacity>
                           ))}
                       </View>
 
@@ -642,7 +668,7 @@ export default function StatisticsScreen() {
                           datasets,
                           legend: [], // 커스텀 범례 사용
                         }}
-                        width={Dimensions.get("window").width - 80}
+                        width={Dimensions.get("window").width - 40}
                         height={220}
                         chartConfig={{
                           backgroundColor: colors.surface,
@@ -657,7 +683,12 @@ export default function StatisticsScreen() {
                           propsForDots: {
                             r: "4",
                             strokeWidth: "2",
-                            stroke: colors.surface,
+                            stroke: colors.primary,
+                          },
+                          propsForBackgroundLines: {
+                            strokeDasharray: "0", // Solid line
+                            stroke: colors.border + "50", // Lighter border color
+                            strokeWidth: 1,
                           },
                         }}
                         bezier
@@ -745,7 +776,7 @@ export default function StatisticsScreen() {
                     legendFontSize: 13,
                   };
                 })}
-                width={Dimensions.get("window").width - 80}
+                width={Dimensions.get("window").width - 40}
                 height={220}
                 chartConfig={{
                   color: (_opacity = 1) => colors.primary,
@@ -753,7 +784,6 @@ export default function StatisticsScreen() {
                 }}
                 accessor="population"
                 backgroundColor="transparent"
-                paddingLeft="15"
                 absolute
                 hasLegend={true}
               />
@@ -767,7 +797,7 @@ export default function StatisticsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -804,17 +834,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     borderWidth: 1,
-    borderColor: "transparent", // Will be overridden by inline style
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 4, // For Android
   },
   statIcon: {
     fontSize: 32,
   },
   statValue: {
-    fontSize: 18,
-    fontWeight: "700",
+    fontSize: 20,
+    fontWeight: "800",
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 13,
+    fontWeight: "500",
   },
   section: {
     paddingHorizontal: 20,
@@ -863,7 +898,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: "transparent", // Will be overridden by inline style
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 4, // For Android
   },
   filterTitle: {
     fontSize: 14,
@@ -882,7 +921,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 20,
-    backgroundColor: "rgba(99, 102, 241, 0.08)",
+    backgroundColor: colors.primary + "10",
     borderWidth: 1.5,
     borderColor: "transparent",
   },
@@ -903,7 +942,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginTop: 20,
     borderWidth: 1,
-    borderColor: "transparent", // Will be overridden by inline style
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 4, // For Android
   },
   exerciseStatItem: {
     paddingVertical: 16,
@@ -956,7 +999,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginTop: 12,
     borderWidth: 1,
-    borderColor: "transparent", // Will be overridden by inline style
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 4, // For Android
   },
   chartContainer: {
     padding: 20,
@@ -964,7 +1011,11 @@ const styles = StyleSheet.create({
     marginTop: 12,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "transparent", // Will be overridden by inline style
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 4, // For Android
   },
   chartTitle: {
     fontSize: 15,
@@ -991,7 +1042,11 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "transparent", // Will be overridden by inline style
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 4, // For Android
   },
   comparisonRow: {
     flexDirection: "row",
@@ -1004,10 +1059,11 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   comparisonLabel: {
-    fontSize: 12,
+    fontSize: 13,
+    fontWeight: "500",
   },
   comparisonValue: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: "700",
   },
   changeContainer: {
@@ -1027,7 +1083,11 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "transparent", // Will be overridden by inline style
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 4, // For Android
   },
   yearStatRow: {
     flexDirection: "row",
@@ -1041,7 +1101,7 @@ const styles = StyleSheet.create({
   yearStatDivider: {
     width: 1,
     height: 40,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: colors.border,
   },
   yearStatValue: {
     fontSize: 24,
@@ -1049,6 +1109,7 @@ const styles = StyleSheet.create({
   },
   yearStatLabel: {
     fontSize: 13,
+    fontWeight: "500",
   },
   insightCard: {
     flexDirection: "row",
@@ -1056,7 +1117,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: "transparent", // Will be overridden by inline style
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 4, // For Android
     alignItems: "center",
     gap: 12,
   },
@@ -1073,7 +1138,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     gap: 12,
     borderWidth: 1,
-    borderColor: "transparent", // Will be overridden by inline style
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 4, // For Android
   },
   prItem: {
     flexDirection: "row",
@@ -1084,7 +1153,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "rgba(99, 102, 241, 0.1)",
+    backgroundColor: colors.primary + "10",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1112,6 +1181,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   prTotal: {
-    fontSize: 11,
+    fontSize: 12,
+    fontWeight: "500",
   },
 });
