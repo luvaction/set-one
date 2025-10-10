@@ -7,7 +7,7 @@ import { getOrCreateUserId } from "@/utils/userIdHelper";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableWithoutFeedback, View } from "react-native";
 
 const emptyProfile: CreateProfileData = {
   name: "",
@@ -370,10 +370,12 @@ export default function ProfileScreen() {
 
       {/* 편집 모달 */}
       <Modal visible={showEditModal} transparent animationType="slide" onRequestClose={() => setShowEditModal(false)}>
-        <View style={styles.modalOverlay}>
-          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.keyboardAvoidingView}>
-            <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
-              <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={styles.modalOverlay}>
+            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.keyboardAvoidingView}>
+              <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+                <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+                  <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                 <Text style={[styles.modalTitle, { color: colors.text }]}>{t("profile.editProfile")}</Text>
 
                 {/* 이름 */}
@@ -590,9 +592,11 @@ export default function ProfileScreen() {
                 </View>
               </ScrollView>
             </View>
-          </KeyboardAvoidingView>
-        </View>
-      </Modal>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
+      </View>
+    </TouchableWithoutFeedback>
+  </Modal>
 
       {/* 언어 선택 모달 */}
       <Modal visible={showLanguageModal} transparent animationType="fade" onRequestClose={() => setShowLanguageModal(false)}>
