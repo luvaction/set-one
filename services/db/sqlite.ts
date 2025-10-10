@@ -1,4 +1,4 @@
-import { openDatabaseAsync, SQLiteDatabase, SQLTransaction, SQLError, SQLResultSet } from 'expo-sqlite';
+import { openDatabaseAsync, SQLiteDatabase } from 'expo-sqlite';
 
 const DATABASE_NAME = 'set1.db';
 let db: SQLiteDatabase | null = null;
@@ -18,6 +18,9 @@ export const initDb = async () => {
     }
     await db.execAsync(`
       PRAGMA journal_mode = WAL;
+
+      -- 기존 active_session 데이터 정리 (잘못된 데이터 방지)
+      DELETE FROM active_session;
       CREATE TABLE IF NOT EXISTS profiles (
         id TEXT PRIMARY KEY NOT NULL,
         user_id TEXT UNIQUE NOT NULL,
@@ -33,6 +36,21 @@ export const initDb = async () => {
         unit_system TEXT,
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS custom_exercises (
+        id TEXT PRIMARY KEY NOT NULL,
+        name TEXT NOT NULL,
+        category TEXT,
+        subcategory TEXT,
+        description TEXT,
+        equipment TEXT, -- JSON array as string
+        muscle_groups TEXT, -- JSON array as string
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS hidden_exercises (
+        exercise_id TEXT PRIMARY KEY NOT NULL,
+        created_at INTEGER NOT NULL
       );
       CREATE TABLE IF NOT EXISTS routines (
         id TEXT PRIMARY KEY NOT NULL,
@@ -109,6 +127,20 @@ export const initDb = async () => {
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL,
         FOREIGN KEY (recorded_exercise_id) REFERENCES recorded_exercises (id) ON DELETE CASCADE
+      );
+      CREATE TABLE IF NOT EXISTS active_session (
+        id TEXT PRIMARY KEY NOT NULL,
+        user_id TEXT NOT NULL,
+        routine_id TEXT,
+        routine_name TEXT NOT NULL,
+        status TEXT NOT NULL,
+        start_time TEXT NOT NULL,
+        exercises_data TEXT NOT NULL, -- JSON as string
+        current_exercise_index INTEGER NOT NULL,
+        total_duration REAL NOT NULL,
+        paused_duration REAL NOT NULL,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
       );
     `);
     console.log('Database schema created or already exists.');

@@ -1,5 +1,5 @@
-import { STORAGE_KEYS, WorkoutRecord } from "@/models";
-import { storage } from "./storage/asyncStorage";
+import { WorkoutRecord } from "@/models";
+import { workoutRecordService } from "./workoutRecord";
 
 export interface CoreStats {
   currentStreak: number; // 연속 운동 일수
@@ -140,7 +140,7 @@ const getLocalDateString = (date: Date): string => {
 export const statisticsService = {
   // 핵심 지표 계산
   async getCoreStats(): Promise<CoreStats> {
-    const records = await storage.getArray<WorkoutRecord>(STORAGE_KEYS.WORKOUT_RECORDS);
+    const records = await workoutRecordService.getAllRecords();
     const completedRecords = records.filter((r) => r.status === "completed");
 
     // 총 볼륨, 총 시간
@@ -217,7 +217,7 @@ export const statisticsService = {
 
   // 주간 볼륨 추이 (최근 7일)
   async getWeeklyVolumeData(): Promise<VolumeData[]> {
-    const records = await storage.getArray<WorkoutRecord>(STORAGE_KEYS.WORKOUT_RECORDS);
+    const records = await workoutRecordService.getAllRecords();
     const completedRecords = records.filter((r) => r.status === "completed");
 
     const last7Days: VolumeData[] = [];
@@ -239,7 +239,7 @@ export const statisticsService = {
 
   // 월간 볼륨 추이 (최근 30일)
   async getMonthlyVolumeData(): Promise<VolumeData[]> {
-    const records = await storage.getArray<WorkoutRecord>(STORAGE_KEYS.WORKOUT_RECORDS);
+    const records = await workoutRecordService.getAllRecords();
     const completedRecords = records.filter((r) => r.status === "completed");
 
     const last30Days: VolumeData[] = [];
@@ -261,7 +261,7 @@ export const statisticsService = {
 
   // 완료율 추이 (최근 7일)
   async getWeeklyCompletionRate(): Promise<CompletionRateData[]> {
-    const records = await storage.getArray<WorkoutRecord>(STORAGE_KEYS.WORKOUT_RECORDS);
+    const records = await workoutRecordService.getAllRecords();
 
     const last7Days: CompletionRateData[] = [];
     for (let i = 6; i >= 0; i--) {
@@ -283,7 +283,7 @@ export const statisticsService = {
 
   // 요일별 운동 횟수
   async getDayOfWeekDistribution(): Promise<DayOfWeekData[]> {
-    const records = await storage.getArray<WorkoutRecord>(STORAGE_KEYS.WORKOUT_RECORDS);
+    const records = await workoutRecordService.getAllRecords();
     const completedRecords = records.filter((r) => r.status === "completed");
 
     const dayCount: Record<string, number> = {
@@ -306,7 +306,7 @@ export const statisticsService = {
 
   // 운동 유형별 분포
   async getExerciseTypeDistribution(): Promise<ExerciseTypeDistribution[]> {
-    const records = await storage.getArray<WorkoutRecord>(STORAGE_KEYS.WORKOUT_RECORDS);
+    const records = await workoutRecordService.getAllRecords();
     const completedRecords = records.filter((r) => r.status === "completed");
 
     const typeCount: Record<string, number> = {};
@@ -332,7 +332,7 @@ export const statisticsService = {
 
   // 카테고리별 시간 분포
   async getCategoryDistribution(): Promise<CategoryDistribution[]> {
-    const records = await storage.getArray<WorkoutRecord>(STORAGE_KEYS.WORKOUT_RECORDS);
+    const records = await workoutRecordService.getAllRecords();
     const completedRecords = records.filter((r) => r.status === "completed");
 
     // 간단한 분류 (실제로는 루틴/운동 데이터에서 가져와야 함)
@@ -364,7 +364,7 @@ export const statisticsService = {
 
   // 개인 기록 추적 (운동별 최고 무게×횟수)
   async getPersonalRecords(): Promise<PersonalRecord[]> {
-    const records = await storage.getArray<WorkoutRecord>(STORAGE_KEYS.WORKOUT_RECORDS);
+    const records = await workoutRecordService.getAllRecords();
     const completedRecords = records.filter((r) => r.status === "completed");
 
     const prMap: Record<string, PersonalRecord> = {};
@@ -463,7 +463,7 @@ export const statisticsService = {
       lastDate.setDate(lastDate.getDate() - 7);
       const lastWeekStartDate = lastDate.toISOString().split("T")[0];
 
-      const records = await storage.getArray<WorkoutRecord>(STORAGE_KEYS.WORKOUT_RECORDS);
+      const records = await workoutRecordService.getAllRecords();
       const lastWeekRecords = records.filter(r => r.date >= lastWeekStartDate && r.date < weeklyData[0].date);
       const lastWeekTotal = lastWeekRecords.reduce((sum, r) => sum + (r.totalVolume || 0), 0);
 
@@ -483,7 +483,7 @@ export const statisticsService = {
 
   // 주간 비교 (이번 주 vs 지난 주)
   async getWeekComparison(): Promise<WeekComparison> {
-    const records = await storage.getArray<WorkoutRecord>(STORAGE_KEYS.WORKOUT_RECORDS);
+    const records = await workoutRecordService.getAllRecords();
     const completedRecords = records.filter((r) => r.status === "completed");
 
     const now = new Date();
@@ -530,7 +530,7 @@ export const statisticsService = {
 
   // 월간 캘린더 (현재 달)
   async getMonthlyCalendar(): Promise<MonthlyCalendar[]> {
-    const records = await storage.getArray<WorkoutRecord>(STORAGE_KEYS.WORKOUT_RECORDS);
+    const records = await workoutRecordService.getAllRecords();
     const completedRecords = records.filter((r) => r.status === "completed");
 
     const now = new Date();
@@ -557,7 +557,7 @@ export const statisticsService = {
 
   // 운동별 통계
   async getExerciseStats(): Promise<ExerciseStats[]> {
-    const records = await storage.getArray<WorkoutRecord>(STORAGE_KEYS.WORKOUT_RECORDS);
+    const records = await workoutRecordService.getAllRecords();
     const completedRecords = records.filter((r) => r.status === "completed");
 
     const exerciseMap: Record<
@@ -650,7 +650,7 @@ export const statisticsService = {
 
   // 운동별 세트 수 추이 (선택한 운동들의 기간별 평균 세트 수)
   async getSetsTrend(t: (key: string, params?: any) => string, period: TrendPeriod, exerciseIds: string[]): Promise<Map<string, SetsTrendData[]>> {
-    const records = await storage.getArray<WorkoutRecord>(STORAGE_KEYS.WORKOUT_RECORDS);
+    const records = await workoutRecordService.getAllRecords();
     const completedRecords = records.filter((r) => r.status === "completed");
 
     const trendMap = new Map<string, SetsTrendData[]>();
@@ -769,7 +769,7 @@ export const statisticsService = {
 
   // 체중 추이 데이터
   async getWeightTrendData(t: (key: string, params?: any) => string, period: TrendPeriod): Promise<WeightTrendData[]> {
-    const records = await storage.getArray<WorkoutRecord>(STORAGE_KEYS.WORKOUT_RECORDS);
+    const records = await workoutRecordService.getAllRecords();
     const completedRecordsWithWeight = records.filter((r) => r.status === "completed" && r.bodyWeight !== undefined && r.bodyWeight > 0);
 
     const periodData: Record<string, { totalWeight: number; count: number }> = {};

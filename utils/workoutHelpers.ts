@@ -16,6 +16,11 @@ export const convertExerciseToRoutine = async (exercise: {
   const now = new Date().toISOString();
   const userId = await getOrCreateUserId();
 
+  // reps 정보가 전혀 없으면 기본값 사용
+  const hasRepsInfo = exercise.defaultRepsMin !== undefined ||
+                       exercise.defaultRepsMax !== undefined ||
+                       exercise.defaultDurationSeconds !== undefined;
+
   return {
     id: `temp_routine_${Date.now()}`,
     userId,
@@ -24,13 +29,13 @@ export const convertExerciseToRoutine = async (exercise: {
       {
         id: exercise.id,
         name: exercise.name,
-        sets: exercise.defaultSets,
-        repsMin: exercise.defaultRepsMin, // New
-        repsMax: exercise.defaultRepsMax, // New
-        durationSeconds: exercise.defaultDurationSeconds, // New
+        sets: exercise.defaultSets || 3, // 기본값 추가
+        repsMin: exercise.defaultRepsMin || (hasRepsInfo ? undefined : 10),
+        repsMax: exercise.defaultRepsMax || (hasRepsInfo ? undefined : 12),
+        durationSeconds: exercise.defaultDurationSeconds,
         targetMuscle: exercise.targetMuscle,
         difficulty: exercise.difficulty,
-        restTime: exercise.restTime, // New
+        restTime: exercise.restTime,
       },
     ],
     isRecommended: false,
@@ -52,17 +57,27 @@ export const convertTemplateToRoutine = async (template: {
   const now = new Date().toISOString();
   const userId = await getOrCreateUserId();
 
-  const exercises: RoutineExercise[] = template.exercises.map((ex) => ({
-    id: ex.id,
-    name: ex.name,
-    sets: ex.sets || ex.defaultSets || 3,
-    repsMin: ex.repsMin || ex.defaultRepsMin, // New
-    repsMax: ex.repsMax || ex.defaultRepsMax, // New
-    durationSeconds: ex.durationSeconds || ex.defaultDurationSeconds, // New
-    targetMuscle: ex.targetMuscle,
-    difficulty: ex.difficulty,
-    restTime: ex.restTime,
-  }));
+  const exercises: RoutineExercise[] = template.exercises.map((ex) => {
+    // reps 정보가 전혀 없으면 기본값 사용
+    const hasRepsInfo = ex.repsMin !== undefined ||
+                         ex.repsMax !== undefined ||
+                         ex.defaultRepsMin !== undefined ||
+                         ex.defaultRepsMax !== undefined ||
+                         ex.durationSeconds !== undefined ||
+                         ex.defaultDurationSeconds !== undefined;
+
+    return {
+      id: ex.id,
+      name: ex.name,
+      sets: ex.sets || ex.defaultSets || 3,
+      repsMin: ex.repsMin || ex.defaultRepsMin || (hasRepsInfo ? undefined : 10),
+      repsMax: ex.repsMax || ex.defaultRepsMax || (hasRepsInfo ? undefined : 12),
+      durationSeconds: ex.durationSeconds || ex.defaultDurationSeconds,
+      targetMuscle: ex.targetMuscle,
+      difficulty: ex.difficulty,
+      restTime: ex.restTime,
+    };
+  });
 
   return {
     id: `temp_routine_${Date.now()}_${template.id}`,
