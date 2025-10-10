@@ -18,6 +18,7 @@ export interface RoutineExercise {
   targetMuscle?: string; // 타겟 근육
   difficulty?: string; // 난이도
   restTime?: number; // 휴식 시간 (초)
+  restTimeAfterExercise?: number; // 이 운동 후 휴식 시간 (초)
 }
 
 // 루틴에 포함된 운동 (상세 형태 - 나중에 사용)

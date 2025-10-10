@@ -337,7 +337,8 @@
     "recordBodyWeight": "Record Body Weight",
     "recordBodyWeightOptional": "Optionally record your body weight after the workout.",
     "bodyWeightKg": "Body Weight (kg)",
-    "bodyWeightPlaceholder": "e.g. 70"
+    "bodyWeightPlaceholder": "e.g. 70",
+    "restBetweenExercises": "Rest Between Exercises"
   },
   "category": {
     "all": "All",

@@ -25,6 +25,7 @@ export interface WorkoutExercise {
   sets: CompletedSet[];
   isCompleted: boolean; // 이 운동을 모두 완료했는지
   exerciseDurationSeconds?: number; // 이 운동에 소요된 총 활동 시간 (초)
+  restTimeAfterExercise?: number; // 이 운동 후 휴식 시간 (초)
 }
 
 // 운동 세션 상태

@@ -6,6 +6,7 @@ import { getOrCreateUserId } from "@/utils/userIdHelper";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
+import React from "react";
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useTranslation } from "react-i18next";
 
@@ -158,6 +159,7 @@ export default function WorkoutScreen() {
   const [totalElapsedTime, setTotalElapsedTime] = useState(0); // 전체 운동 시간 (초)
   const [activeSetTimer, setActiveSetTimer] = useState<SetTimerState | null>(null); // 현재 진행 중인 세트 타이머
   const [restTimer, setRestTimer] = useState<RestTimerState | null>(null); // 휴식 타이머
+  const [exerciseRestTimer, setExerciseRestTimer] = useState<RestTimerState | null>(null); // 운동 간 휴식 타이머
 
   // 세트 완료 입력 모달 상태
   const [showSetCompleteModal, setShowSetCompleteModal] = useState(false);
@@ -178,6 +180,7 @@ export default function WorkoutScreen() {
   const totalTimerRef = useRef<number | null>(null);
   const setTimerRef = useRef<number | null>(null);
   const restTimerRef = useRef<number | null>(null);
+  const exerciseRestTimerRef = useRef<number | null>(null); // New ref for exercise rest timer
   const workoutStartTimeRef = useRef<number>(0);
   const exerciseStartTimeRef = useRef<number>(0); // New ref for exercise start time
 
@@ -215,9 +218,9 @@ export default function WorkoutScreen() {
   // 컴포넌트 언마운트 시 타이머 정리
   useEffect(() => {
     return () => {
-      if (totalTimerRef.current) clearInterval(totalTimerRef.current);
       if (setTimerRef.current) clearInterval(setTimerRef.current);
-      if (restTimerRef.current) clearInterval(restTimerRef.current);
+    if (restTimerRef.current) clearInterval(restTimerRef.current);
+    if (exerciseRestTimerRef.current) clearInterval(exerciseRestTimerRef.current);
     };
   }, []);
 
@@ -263,6 +266,10 @@ export default function WorkoutScreen() {
     // 휴식 타이머가 실행 중이면 중지
     if (restTimer) {
       stopRestTimer();
+    }
+    // 운동 간 휴식 타이머가 실행 중이면 중지
+    if (exerciseRestTimer) {
+      stopExerciseRestTimer();
     }
 
     setActiveSetTimer({
@@ -351,6 +358,39 @@ export default function WorkoutScreen() {
       restTimerRef.current = null;
     }
     setRestTimer(null);
+  };
+
+  // 운동 간 휴식 타이머 시작 (0초부터 카운트업)
+  const startExerciseRestTimer = (exerciseIndex: number) => {
+    // 다른 타이머 중지
+    stopSetTimer();
+    stopRestTimer();
+
+    setExerciseRestTimer({
+      exerciseIndex,
+      setIndex: -1, // 운동 간 휴식은 특정 세트에 속하지 않으므로 -1
+      startTime: Date.now(),
+      elapsedTime: 0,
+      isRunning: true,
+    });
+
+    if (exerciseRestTimerRef.current) clearInterval(exerciseRestTimerRef.current); // 기존 exerciseRestTimerRef 재사용
+    exerciseRestTimerRef.current = setInterval(() => {
+      setExerciseRestTimer((prev) => {
+        if (!prev || !prev.isRunning) return prev;
+        const elapsed = Math.floor((Date.now() - prev.startTime) / 1000);
+        return { ...prev, elapsedTime: elapsed };
+      });
+    }, 1000);
+  };
+
+  // 운동 간 휴식 타이머 중지
+  const stopExerciseRestTimer = () => {
+    if (exerciseRestTimerRef.current) {
+      clearInterval(exerciseRestTimerRef.current);
+      exerciseRestTimerRef.current = null;
+    }
+    setExerciseRestTimer(null);
   };
 
   const startWorkout = async (routine: Routine) => {
@@ -537,9 +577,14 @@ export default function WorkoutScreen() {
       }
 
       // 현재 운동의 모든 세트가 완료되었고, 다음 운동이 있다면,
-      // 다음 운동을 위해 exerciseStartTimeRef를 설정합니다.
+      // 다음 운동을 위해 exerciseStartTimeRef를 설정하고 운동 간 휴식 타이머 시작
       if (allSetsCompleted && exerciseIndex < activeSession.exercises.length - 1) {
         exerciseStartTimeRef.current = Date.now();
+        const nextExercise = activeSession.exercises[exerciseIndex + 1];
+        // 다음 운동의 첫 번째 세트가 완료되지 않았다면 운동 간 휴식 타이머 시작
+        if (!nextExercise.sets[0].isCompleted) {
+          startExerciseRestTimer(exerciseIndex + 1);
+        }
       }
 
       // 모달 닫기
@@ -586,6 +631,20 @@ export default function WorkoutScreen() {
           </View>
         )}
 
+        {/* 운동 간 휴식 타이머 표시 */}
+        {exerciseRestTimer && (
+          <View style={[styles.restTimerBanner, { backgroundColor: colors.accent }]}>
+            <Ionicons name="walk-outline" size={24} color={colors.buttonText} />
+            <View style={styles.restTimerContent}>
+              <Text style={[styles.restTimerTitle, { color: colors.buttonText }]}>{t('workoutSession.restBetweenExercises')}</Text>
+              <Text style={[styles.restTimerValue, { color: colors.buttonText }]}>{formatTime(exerciseRestTimer.elapsedTime)}</Text>
+            </View>
+            <TouchableOpacity onPress={stopExerciseRestTimer}>
+              <Ionicons name="close-circle" size={24} color={colors.buttonText} />
+            </TouchableOpacity>
+          </View>
+        )}
+
         <ScrollView style={styles.contentScroll}>
           {activeSession.exercises.map((exercise, exerciseIndex) => (
             <View key={exercise.exerciseId} style={[styles.exerciseCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -599,6 +658,7 @@ export default function WorkoutScreen() {
                   const isActiveSet = activeSetTimer?.exerciseIndex === exerciseIndex && activeSetTimer?.setIndex === setIndex;
 
                   return (
+                    <React.Fragment key={set.setNumber}>
                     <View
                       key={set.setNumber}
                       style={[
@@ -684,7 +744,15 @@ export default function WorkoutScreen() {
                         </View>
                       )}
                     </View>
-                  );
+                    {set.isCompleted && set.restDurationSeconds !== undefined && set.restDurationSeconds > 0 && setIndex < exercise.sets.length - 1 && (
+                      <View style={[styles.restBetweenSets, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                        <Ionicons name="timer-outline" size={16} color={colors.textSecondary} />
+                        <Text style={[styles.restBetweenSetsText, { color: colors.textSecondary }]}>
+                          {t('workoutSession.rest')} {formatTime(set.restDurationSeconds)}
+                        </Text>
+                      </View>
+                    )}
+                  </React.Fragment>);
                 })}
               </View>
             </View>
@@ -1071,6 +1139,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 4,
   },
+  restBetweenSets: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    marginVertical: 4,
+    gap: 8,
+  },
+  restBetweenSetsText: {
+    fontSize: 14,
+    fontWeight: "500",
+  },
   checkButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -1194,6 +1277,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "flex-end",
     gap: 10,
+    marginTop: 20, // Add margin to separate from input
   },
   modalCancelButton: {
     paddingHorizontal: 15,

@@ -54,6 +54,7 @@ const convertRoutineToWorkoutExercises = (routine: Routine): WorkoutExercise[] =
         isCompleted: false,
       })),
       isCompleted: false,
+      restTimeAfterExercise: exercise.restTimeAfterExercise, // Add rest time after exercise
     };
   });
 };

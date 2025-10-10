@@ -337,7 +337,8 @@
     "recordBodyWeight": "체중 기록",
     "recordBodyWeightOptional": "운동 후 현재 체중을 선택적으로 기록합니다.",
     "bodyWeightKg": "체중 (kg)",
-    "bodyWeightPlaceholder": "예: 70"
+    "bodyWeightPlaceholder": "예: 70",
+    "restBetweenExercises": "운동 간 휴식"
   },
   "category": {
     "all": "전체",
