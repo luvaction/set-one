@@ -1,4 +1,4 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { storage } from "@/services";
 
 const USER_ID_KEY = '@user_id';
 
@@ -13,11 +13,11 @@ const USER_ID_KEY = '@user_id';
  */
 export const getOrCreateUserId = async (): Promise<string> => {
   try {
-    let userId = await AsyncStorage.getItem(USER_ID_KEY);
+    let userId = await storage.getItem<string>(USER_ID_KEY);
     if (userId === null) {
       // 새로운 고유 ID 생성
       userId = `user_${Math.random().toString(36).substring(2, 15)}`;
-      await AsyncStorage.setItem(USER_ID_KEY, userId);
+      await storage.setItem(USER_ID_KEY, userId);
       console.log('Created new user ID:', userId);
     }
     return userId;
@@ -35,7 +35,7 @@ export const getOrCreateUserId = async (): Promise<string> => {
  */
 export const getUserId = async (): Promise<string | null> => {
   try {
-    return await AsyncStorage.getItem(USER_ID_KEY);
+    return await storage.getItem<string>(USER_ID_KEY);
   } catch (e) {
     console.error("Failed to get user ID:", e);
     return null;
@@ -50,7 +50,7 @@ export const getUserId = async (): Promise<string | null> => {
  */
 export const setUserId = async (userId: string): Promise<void> => {
   try {
-    await AsyncStorage.setItem(USER_ID_KEY, userId);
+    await storage.setItem(USER_ID_KEY, userId);
     console.log('User ID set to:', userId);
   } catch (e) {
     console.error("Failed to set user ID:", e);
@@ -64,7 +64,7 @@ export const setUserId = async (userId: string): Promise<void> => {
  */
 export const clearUserId = async (): Promise<void> => {
   try {
-    await AsyncStorage.removeItem(USER_ID_KEY);
+    await storage.removeItem(USER_ID_KEY);
     console.log('User ID cleared');
   } catch (e) {
     console.error("Failed to clear user ID:", e);

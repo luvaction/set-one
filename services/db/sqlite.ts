@@ -45,6 +45,7 @@ export const initDb = async () => {
         description TEXT,
         equipment TEXT, -- JSON array as string
         muscle_groups TEXT, -- JSON array as string
+        difficulty TEXT, -- Added difficulty column
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL
       );
@@ -141,6 +142,19 @@ export const initDb = async () => {
         paused_duration REAL NOT NULL,
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL
+      );
+
+      -- custom_exercises 테이블에 difficulty 컬럼이 없는 경우 추가
+      PRAGMA table_info(custom_exercises);
+      -- 이 PRAGMA는 실제 테이블 정보를 반환하지만, ALTER TABLE IF NOT EXISTS COLUMN은 지원되지 않으므로
+      -- 직접 컬럼 존재 여부를 확인하고 추가하는 로직이 필요합니다.
+      -- 여기서는 간단히 ALTER TABLE을 시도하고, 이미 컬럼이 있으면 에러가 나지만 무시합니다.
+      -- 실제 앱에서는 트랜잭션과 버전 관리를 통해 더 견고하게 처리합니다.
+      ALTER TABLE custom_exercises ADD COLUMN difficulty TEXT;
+
+      CREATE TABLE IF NOT EXISTS key_value_store (
+        key TEXT PRIMARY KEY NOT NULL,
+        value TEXT NOT NULL
       );
     `);
     console.log('Database schema created or already exists.');

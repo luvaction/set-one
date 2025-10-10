@@ -633,7 +633,7 @@ export default function WorkoutScreen() {
 
         {/* 운동 간 휴식 타이머 표시 */}
         {exerciseRestTimer && (
-          <View style={[styles.restTimerBanner, { backgroundColor: colors.accent }]}>
+          <View style={[styles.restTimerBanner, { backgroundColor: colors.primary }]}>
             <Ionicons name="walk-outline" size={24} color={colors.buttonText} />
             <View style={styles.restTimerContent}>
               <Text style={[styles.restTimerTitle, { color: colors.buttonText }]}>{t('workoutSession.restBetweenExercises')}</Text>

@@ -6,7 +6,7 @@ import { View, Text } from 'react-native';
 import 'react-native-reanimated';
 
 import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
-import '../i18n/config'; // i18n 초기화
+import { initializeI18n } from '../i18n/config';
 import { initDb } from '@/services/db/sqlite';
 
 export const unstable_settings = {
@@ -30,20 +30,23 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   const [dbInitialized, setDbInitialized] = useState(false);
+  const [i18nInitialized, setI18nInitialized] = useState(false);
   const [dbError, setDbError] = useState<string | null>(null);
 
   useEffect(() => {
-    const initializeDb = async () => {
+    const initializeApp = async () => {
       try {
         await initDb();
         setDbInitialized(true);
+        await initializeI18n();
+        setI18nInitialized(true);
       } catch (error) {
-        console.error('Failed to initialize database:', error);
+        console.error('Failed to initialize app:', error);
         setDbError(error instanceof Error ? error.message : 'Unknown error');
       }
     };
 
-    initializeDb();
+    initializeApp();
   }, []);
 
   if (dbError) {
@@ -56,7 +59,7 @@ export default function RootLayout() {
     );
   }
 
-  if (!dbInitialized) {
+  if (!dbInitialized || !i18nInitialized) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <Text>Loading...</Text>

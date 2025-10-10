@@ -9,7 +9,7 @@ export interface IStorage {
   // 배열 데이터 관리 (Routines, Exercises, WorkoutRecords)
   getArray<T>(key: string): Promise<T[]>;
   setArray<T>(key: string, items: T[]): Promise<void>;
-  addToArray<T>(key: string, item: T): Promise<void>;
+  addToArray<T extends { id: string }>(key: string, item: T): Promise<void>;
   updateInArray<T extends { id: string }>(key: string, item: T): Promise<void>;
   removeFromArray(key: string, id: string): Promise<void>;
 }

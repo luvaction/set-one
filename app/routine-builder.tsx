@@ -311,7 +311,7 @@ export default function RoutineBuilderScreen() {
       repsMax: exercise.defaultRepsMax,
       durationSeconds: exercise.defaultDurationSeconds,
       targetMuscle: exercise.targetMuscle,
-      difficulty: exercise.difficulty,
+      difficulty: getDifficultyKey(exercise.difficulty), // Convert to English key
       restTime: exercise.restTime,
     };
     setSelectedExercises([...selectedExercises, newExercise]);
@@ -437,7 +437,7 @@ export default function RoutineBuilderScreen() {
             durationSeconds: ex.durationSeconds,
             targetWeight: ex.targetWeight,
             targetMuscle: ex.targetMuscle,
-            difficulty: ex.difficulty,
+            difficulty: getDifficultyKey(ex.difficulty),
             restTime: ex.restTime,
           };
           return routineExercise;

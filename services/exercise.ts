@@ -17,6 +17,7 @@ interface CustomExerciseRow {
   description: string | null;
   equipment: string | null; // JSON string
   muscle_groups: string | null; // JSON string
+  difficulty: string | null; // Added difficulty
   created_at: number;
   updated_at: number;
 }
@@ -30,6 +31,7 @@ const rowToExercise = (row: CustomExerciseRow): Exercise => {
     description: row.description ?? undefined,
     equipment: row.equipment ? JSON.parse(row.equipment) : undefined,
     muscleGroups: row.muscle_groups ? JSON.parse(row.muscle_groups) : [],
+    difficulty: row.difficulty ?? undefined, // Map difficulty
     isCustom: true,
     createdAt: new Date(row.created_at).toISOString(),
     updatedAt: new Date(row.updated_at).toISOString(),
@@ -78,8 +80,8 @@ export const exerciseService = {
 
     await runSql(
       `INSERT INTO custom_exercises (
-        id, name, category, subcategory, description, equipment, muscle_groups, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        id, name, category, subcategory, description, equipment, muscle_groups, difficulty, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         data.name,
@@ -88,6 +90,7 @@ export const exerciseService = {
         data.description || null,
         JSON.stringify(data.equipment || []),
         JSON.stringify(data.muscleGroups || []),
+        data.difficulty || null, // Include difficulty
         createdAt,
         updatedAt,
       ]
@@ -118,7 +121,7 @@ export const exerciseService = {
     await runSql(
       `UPDATE custom_exercises SET
         name = ?, category = ?, subcategory = ?, description = ?,
-        equipment = ?, muscle_groups = ?, updated_at = ?
+        equipment = ?, muscle_groups = ?, difficulty = ?, updated_at = ?
       WHERE id = ?`,
       [
         data.name ?? exercise.name,
@@ -127,6 +130,7 @@ export const exerciseService = {
         data.description ?? exercise.description,
         JSON.stringify(data.equipment ?? exercise.equipment),
         JSON.stringify(data.muscleGroups ?? exercise.muscleGroups),
+        data.difficulty ?? exercise.difficulty ?? null, // Include difficulty
         updatedAt,
         id,
       ]

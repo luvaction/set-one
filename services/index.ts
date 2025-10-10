@@ -1,6 +1,6 @@
 // Storage
 export * from "./storage/interface";
-export { storage } from "./storage/asyncStorage";
+export { storage } from "./storage/sqliteStorage";
 
 // Services
 export * from "./profile";

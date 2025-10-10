@@ -2,7 +2,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { saveLanguage } from "@/i18n/config";
 import { CreateProfileData } from "@/models";
 import { profileService } from "@/services/profile";
-import { storage } from "@/services/storage/asyncStorage";
+import { storage } from "@/services";
 import { getOrCreateUserId } from "@/utils/userIdHelper";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";

@@ -1,4 +1,4 @@
-import { storage } from "@/services/storage/asyncStorage";
+import { storage } from "@/services";
 import { WorkoutRecord, STORAGE_KEYS } from "@/models";
 
 // 임시 과거 데이터 생성 (통계 확인용)
@@ -77,7 +77,7 @@ export async function generateMockWorkoutData() {
   const existingRecords = await storage.getArray<WorkoutRecord>(STORAGE_KEYS.WORKOUT_RECORDS);
 
   // 임시 데이터와 병합 (중복 제거)
-  const allRecords = [...mockRecords, ...existingRecords.filter(r => !r.id.startsWith('mock-'))];
+  const allRecords = [...mockRecords, ...existingRecords.filter((r: WorkoutRecord) => !r.id.startsWith('mock-'))];
 
   // 저장
   await storage.setArray(STORAGE_KEYS.WORKOUT_RECORDS, allRecords);
@@ -89,7 +89,7 @@ export async function generateMockWorkoutData() {
 // 임시 데이터 삭제
 export async function clearMockWorkoutData() {
   const existingRecords = await storage.getArray<WorkoutRecord>(STORAGE_KEYS.WORKOUT_RECORDS);
-  const realRecords = existingRecords.filter(r => !r.id.startsWith('mock-'));
+  const realRecords = existingRecords.filter((r: WorkoutRecord) => !r.id.startsWith('mock-'));
   await storage.setArray(STORAGE_KEYS.WORKOUT_RECORDS, realRecords);
   console.log(`✅ Cleared mock data, kept ${realRecords.length} real records`);
 }

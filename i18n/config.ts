@@ -1,4 +1,4 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { storage } from "@/services";
 import * as Localization from "expo-localization";
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
@@ -15,7 +15,7 @@ const fallbackLanguage = "en";
 // AsyncStorage에서 저장된 언어 불러오기
 const getStoredLanguage = async (): Promise<string | null> => {
   try {
-    return await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY);
+    return await storage.getItem<string>(LANGUAGE_STORAGE_KEY);
   } catch (error) {
     console.error("Failed to load language from storage:", error);
     return null;
@@ -25,14 +25,14 @@ const getStoredLanguage = async (): Promise<string | null> => {
 // AsyncStorage에 언어 저장하기
 export const saveLanguage = async (language: string): Promise<void> => {
   try {
-    await AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, language);
+    await storage.setItem(LANGUAGE_STORAGE_KEY, language);
   } catch (error) {
     console.error("Failed to save language to storage:", error);
   }
 };
 
 // i18n 초기화 함수
-const initializeI18n = async () => {
+export const initializeI18n = async () => {
   // 1. 저장된 언어 확인
   const storedLanguage = await getStoredLanguage();
 
@@ -61,7 +61,6 @@ const initializeI18n = async () => {
   });
 };
 
-// i18n 초기화 실행
-initializeI18n();
+
 
 export default i18n;
