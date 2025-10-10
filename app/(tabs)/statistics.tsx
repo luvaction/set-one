@@ -127,9 +127,16 @@ export default function StatisticsScreen() {
   const [weightTrendData, setWeightTrendData] = useState<WeightTrendData[]>([]);
   const [weightTrendPeriod, setWeightTrendPeriod] = useState<TrendPeriod>("month");
 
-  const loadStatistics = useCallback(async () => {
+  // 체중 추이 로드 함수 분리
+  const loadWeightTrends = async () => {
+    const trends = await statisticsService.getWeightTrendData(t, weightTrendPeriod);
+    setWeightTrendData(trends);
+  };
+
+  // loadStatistics를 일반 함수로 변경하여 항상 최신 상태 참조
+  const loadStatistics = async () => {
     try {
-      const [stats, weekComp, prs, exStats, exerciseTypes, insightsData, profileData, weightTrends] = await Promise.all([
+      const [stats, weekComp, prs, exStats, exerciseTypes, insightsData, profileData] = await Promise.all([
         statisticsService.getCoreStats(),
         statisticsService.getWeekComparison(),
         statisticsService.getPersonalRecords(),
@@ -137,7 +144,6 @@ export default function StatisticsScreen() {
         statisticsService.getExerciseTypeDistribution(),
         statisticsService.getInsights(),
         profileService.getProfile(),
-        statisticsService.getWeightTrendData(t, weightTrendPeriod),
       ]);
 
       setCoreStats(stats);
@@ -147,7 +153,9 @@ export default function StatisticsScreen() {
       setExerciseTypeDistribution(exerciseTypes);
       setInsights(insightsData);
       setWeeklyGoal(profileData?.weeklyGoal || null);
-      setWeightTrendData(weightTrends);
+
+      // 체중 추이도 새로고침
+      await loadWeightTrends();
 
       // 처음에는 모든 운동 선택
       if (selectedExercises.size === 0 && exStats.length > 0) {
@@ -159,7 +167,7 @@ export default function StatisticsScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [t, weightTrendPeriod]);
+  };
 
   // 세트 수 추이 데이터 로드
   useEffect(() => {
@@ -185,20 +193,19 @@ export default function StatisticsScreen() {
     loadSetsTrends();
   }, [t, trendPeriod, selectedExercises, exerciseStats]);
 
-  // 체중 추이 데이터 로드
+  // 체중 추이 기간이 변경되면 체중 추이만 다시 로드
   useEffect(() => {
-    const loadWeightTrends = async () => {
-      const trends = await statisticsService.getWeightTrendData(t, weightTrendPeriod);
-      setWeightTrendData(trends);
-    };
-
     loadWeightTrends();
-  }, [t, weightTrendPeriod]);
+    // loadWeightTrends는 일반 함수이므로 dependency에 포함하지 않음
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weightTrendPeriod]);
 
   useFocusEffect(
     useCallback(() => {
       loadStatistics();
-    }, [loadStatistics])
+      // loadStatistics는 일반 함수이므로 dependency에 포함하지 않음
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
   );
 
   const onRefresh = () => {
@@ -258,19 +265,19 @@ export default function StatisticsScreen() {
         {/* 핵심 지표 카드 */}
         {coreStats && (
           <View style={styles.statsCardsContainer}>
-            <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
+            <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <Text style={styles.statIcon}>🔥</Text>
               <Text style={[styles.statValue, { color: colors.text }]}>{t("statistics.workoutDays", { count: coreStats.currentStreak })}</Text>
               <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t("statistics.currentStreak")}</Text>
             </View>
 
-            <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
+            <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <Text style={styles.statIcon}>💪</Text>
               <Text style={[styles.statValue, { color: colors.text }]}>{coreStats.totalVolume.toLocaleString()}kg</Text>
               <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t("statistics.totalVolume")}</Text>
             </View>
 
-            <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
+            <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <Text style={styles.statIcon}>🎯</Text>
               <Text style={[styles.statValue, { color: colors.text }]}>{isGoalSet ? `${goalAchievementRate?.toFixed(0)}%` : "-"}</Text>
               <Text style={[styles.statLabel, { color: colors.textSecondary, fontSize: 11, textAlign: "center" }]}>
@@ -284,7 +291,7 @@ export default function StatisticsScreen() {
         {weekComparison && (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("statistics.thisWeekGrowth")}</Text>
-            <View style={[styles.comparisonCard, { backgroundColor: colors.surface }]}>
+            <View style={[styles.comparisonCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <View style={styles.comparisonRow}>
                 <View style={styles.comparisonItem}>
                   <Text style={[styles.comparisonLabel, { color: colors.textSecondary }]}>{t("statistics.workoutCount")}</Text>
@@ -336,7 +343,7 @@ export default function StatisticsScreen() {
         {coreStats && (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("statistics.thisYearActivity")}</Text>
-            <View style={[styles.yearStatsCard, { backgroundColor: colors.surface }]}>
+            <View style={[styles.yearStatsCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <View style={styles.yearStatRow}>
                 <View style={styles.yearStatItem}>
                   <Text style={[styles.yearStatValue, { color: colors.primary }]}>
@@ -366,7 +373,7 @@ export default function StatisticsScreen() {
                   styles.insightCard,
                   {
                     backgroundColor: colors.surface,
-                    borderLeftColor: insight.type === "success" ? "#4CAF50" : insight.type === "warning" ? "#FF9800" : colors.primary,
+                    borderColor: colors.border,
                   },
                 ]}
               >
@@ -398,14 +405,14 @@ export default function StatisticsScreen() {
             </View>
 
             {weightTrendData.length === 0 ? (
-              <View style={[styles.chartContainer, { backgroundColor: colors.surface }]}>
+              <View style={[styles.chartContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <View style={styles.emptyChartContainer}>
                   <Ionicons name="body-outline" size={48} color={colors.textSecondary} />
                   <Text style={[styles.emptyChartText, { color: colors.textSecondary }]}>{t("statistics.noTrendData")}</Text>
                 </View>
               </View>
             ) : (
-              <View style={[styles.chartContainer, { backgroundColor: colors.surface }]}>
+              <View style={[styles.chartContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <LineChart
                   data={{
                     labels: weightTrendData.map((data) => data.periodLabel),
@@ -458,7 +465,7 @@ export default function StatisticsScreen() {
         {personalRecords.length > 0 && (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("statistics.personalRecords")}</Text>
-            <View style={[styles.prContainer, { backgroundColor: colors.surface }]}>
+            <View style={[styles.prContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               {personalRecords.slice(0, 5).map((pr, index) => (
                 <View key={index} style={styles.prItem}>
                   <View style={styles.prRank}>
@@ -498,7 +505,7 @@ export default function StatisticsScreen() {
             <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("statistics.detailedStats")}</Text>
 
             {/* 체크박스 필터 */}
-            <View style={[styles.filterContainer, { backgroundColor: colors.surface }]}>
+            <View style={[styles.filterContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <Text style={[styles.filterTitle, { color: colors.text }]}>{t("statistics.selectExercises")}</Text>
               <View style={styles.checkboxContainer}>
                 {exerciseStats.slice(0, 10).map((ex) => {
@@ -573,7 +580,7 @@ export default function StatisticsScreen() {
                           ))}
                         </View>
                       </View>
-                      <View style={[styles.chartContainer, { backgroundColor: colors.surface }]}>
+                      <View style={[styles.chartContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                         <View style={styles.emptyChartContainer}>
                           <Ionicons name="bar-chart-outline" size={48} color={colors.textSecondary} />
                           <Text style={[styles.emptyChartText, { color: colors.textSecondary }]}>{t("statistics.noTrendData")}</Text>
@@ -622,7 +629,7 @@ export default function StatisticsScreen() {
                       </View>
                     </View>
 
-                    <View style={[styles.chartContainer, { backgroundColor: colors.surface }]}>
+                    <View style={[styles.chartContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                       {/* 범례 */}
                       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 16, paddingHorizontal: 8, width: "100%" }}>
                         {selectedData
@@ -680,7 +687,7 @@ export default function StatisticsScreen() {
 
             {/* 상세 통계 테이블 */}
             {selectedExercises.size > 0 && (
-              <View style={[styles.exerciseStatsContainer, { backgroundColor: colors.surface }]}>
+              <View style={[styles.exerciseStatsContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 {exerciseStats
                   .filter((ex) => selectedExercises.has(ex.exerciseName))
                   .map((ex, index) => (
@@ -721,7 +728,7 @@ export default function StatisticsScreen() {
             )}
 
             {selectedExercises.size === 0 && (
-              <View style={[styles.emptyContainer, { backgroundColor: colors.surface }]}>
+              <View style={[styles.emptyContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t("statistics.selectExercisePlease")}</Text>
               </View>
             )}
@@ -799,9 +806,11 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 12,
     alignItems: "center",
     gap: 8,
+    borderWidth: 1,
+    borderColor: "transparent", // Will be overridden by inline style
   },
   statIcon: {
     fontSize: 32,
@@ -857,8 +866,10 @@ const styles = StyleSheet.create({
   },
   filterContainer: {
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 12,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "transparent", // Will be overridden by inline style
   },
   filterTitle: {
     fontSize: 14,
@@ -895,8 +906,10 @@ const styles = StyleSheet.create({
   },
   exerciseStatsContainer: {
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 12,
     marginTop: 20,
+    borderWidth: 1,
+    borderColor: "transparent", // Will be overridden by inline style
   },
   exerciseStatItem: {
     paddingVertical: 16,
@@ -946,14 +959,18 @@ const styles = StyleSheet.create({
   },
   emptyContainer: {
     padding: 20,
-    borderRadius: 16,
+    borderRadius: 12,
     marginTop: 12,
+    borderWidth: 1,
+    borderColor: "transparent", // Will be overridden by inline style
   },
   chartContainer: {
     padding: 20,
-    borderRadius: 16,
+    borderRadius: 12,
     marginTop: 12,
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: "transparent", // Will be overridden by inline style
   },
   chartTitle: {
     fontSize: 15,
@@ -978,7 +995,9 @@ const styles = StyleSheet.create({
   },
   comparisonCard: {
     padding: 20,
-    borderRadius: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "transparent", // Will be overridden by inline style
   },
   comparisonRow: {
     flexDirection: "row",
@@ -1012,7 +1031,9 @@ const styles = StyleSheet.create({
   },
   yearStatsCard: {
     padding: 20,
-    borderRadius: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "transparent", // Will be overridden by inline style
   },
   yearStatRow: {
     flexDirection: "row",
@@ -1040,7 +1061,8 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
-    borderLeftWidth: 4,
+    borderWidth: 1,
+    borderColor: "transparent", // Will be overridden by inline style
     alignItems: "center",
     gap: 12,
   },
@@ -1054,8 +1076,10 @@ const styles = StyleSheet.create({
   },
   prContainer: {
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 12,
     gap: 12,
+    borderWidth: 1,
+    borderColor: "transparent", // Will be overridden by inline style
   },
   prItem: {
     flexDirection: "row",

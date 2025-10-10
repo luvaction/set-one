@@ -6,6 +6,7 @@ import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import StatisticsScreen from "./statistics";
 import { Calendar, DateData } from "react-native-calendars";
 
 const koreanToExerciseId: Record<string, string> = {
@@ -327,19 +328,7 @@ export default function HistoryScreen() {
           )}
         </ScrollView>
       ) : (
-        <View style={styles.statisticsTabContainer}>
-          <Pressable style={[styles.statisticsCard, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={() => router.push("/statistics")}>
-            <View style={styles.statisticsIconContainer}>
-              <Ionicons name="bar-chart" size={48} color={colors.primary} />
-            </View>
-            <Text style={[styles.statisticsTitle, { color: colors.text }]}>{t("history.viewStatistics")}</Text>
-            <Text style={[styles.statisticsDescription, { color: colors.textSecondary }]}>{t("history.statisticsDescription")}</Text>
-            <View style={[styles.statisticsButton, { backgroundColor: colors.primary }]}>
-              <Text style={[styles.statisticsButtonText, { color: colors.buttonText }]}>{t("history.goToStatistics")}</Text>
-              <Ionicons name="chevron-forward" size={20} color={colors.buttonText} />
-            </View>
-          </Pressable>
-        </View>
+        <StatisticsScreen />
       )}
 
       <Modal visible={showEditModal} transparent animationType="slide" onRequestClose={() => setShowEditModal(false)}>
