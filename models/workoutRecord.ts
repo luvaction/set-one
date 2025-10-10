@@ -12,6 +12,7 @@ export interface CompletedSet {
   weight: number; // 무게 (kg)
   isCompleted: boolean; // 완료 여부
   completedAt?: string; // 완료 시간
+  restDurationSeconds?: number; // 이 세트 후 휴식 시간 (초)
 }
 
 // 운동 기록에 포함된 운동
@@ -22,6 +23,7 @@ export interface WorkoutExercise {
   targetWeight?: number; // 목표 무게 (kg) - 세트 완료 시 기본값으로 사용
   sets: CompletedSet[];
   isCompleted: boolean; // 이 운동을 모두 완료했는지
+  exerciseDurationSeconds?: number; // 이 운동에 소요된 총 활동 시간 (초)
 }
 
 // 운동 세션 상태

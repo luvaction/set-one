@@ -93,6 +93,17 @@ const getRoutineName = (t: any, routineId?: string, routineName?: string) => {
   return routineName || "";
 };
 
+// 시간 포맷 함수
+const formatTime = (seconds: number): string => {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  }
+  return `${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+};
+
 export default function HistoryScreen() {
   const { theme, colors } = useTheme();
   const { t } = useTranslation();
@@ -296,6 +307,11 @@ export default function HistoryScreen() {
                       <View key={exIdx} style={styles.exerciseItem}>
                         <View style={{ flex: 1 }}>
                           <Text style={[styles.exerciseName, { color: colors.text }]}>{getExerciseName(t, ex.exerciseId, ex.exerciseName)}</Text>
+                          {ex.exerciseDurationSeconds !== undefined && ex.exerciseDurationSeconds > 0 && (
+                            <Text style={[styles.exerciseDuration, { color: colors.textSecondary }]}>
+                              {t("history.exerciseDuration")}: {formatTime(ex.exerciseDurationSeconds)}
+                            </Text>
+                          )}
                           <Text style={[styles.exerciseSets, { color: colors.textSecondary }]}>
                             {t("history.sets", { completed: ex.sets.filter((s) => s.isCompleted).length, total: ex.sets.length })}
                           </Text>
@@ -309,6 +325,9 @@ export default function HistoryScreen() {
                                       ? t("history.repsWithWeight", { reps: set.actualReps, weight: set.weight })
                                       : t("history.reps", { reps: set.actualReps })
                                   : "-"}
+                                {set.restDurationSeconds !== undefined && set.restDurationSeconds > 0 && (
+                                  ` (${t("history.rest")}: ${formatTime(set.restDurationSeconds)})`
+                                )}
                               </Text>
                             ))}
                           </View>
@@ -496,6 +515,10 @@ const styles = StyleSheet.create({
   exerciseName: {
     fontSize: 14,
     fontWeight: "600",
+    marginBottom: 4,
+  },
+  exerciseDuration: {
+    fontSize: 12,
     marginBottom: 4,
   },
   exerciseSets: {

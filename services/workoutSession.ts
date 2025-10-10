@@ -222,7 +222,8 @@ export const workoutSessionService = {
     setIndex: number,
     actualReps: number | undefined,
     actualDurationSeconds: number | undefined,
-    weight: number
+    weight: number,
+    restDurationSeconds: number | undefined // Add rest duration
   ): Promise<WorkoutSession> {
     const session = await this.getActiveSession();
     if (!session || session.id !== sessionId) {
@@ -237,6 +238,7 @@ export const workoutSessionService = {
       weight,
       isCompleted: true,
       completedAt: now(),
+      restDurationSeconds: restDurationSeconds, // Store rest duration
     };
 
     // 운동 완료 여부 확인
@@ -262,6 +264,22 @@ export const workoutSessionService = {
     session.exercises[exerciseIndex].sets[setIndex].isCompleted = false;
     session.exercises[exerciseIndex].sets[setIndex].completedAt = undefined;
     session.exercises[exerciseIndex].isCompleted = false;
+
+    return await this.updateSession(session);
+  },
+
+  // 운동 시간 업데이트
+  async updateExerciseDuration(
+    sessionId: string,
+    exerciseIndex: number,
+    duration: number
+  ): Promise<WorkoutSession> {
+    const session = await this.getActiveSession();
+    if (!session || session.id !== sessionId) {
+      throw new Error("Active session not found");
+    }
+
+    session.exercises[exerciseIndex].exerciseDurationSeconds = duration;
 
     return await this.updateSession(session);
   },

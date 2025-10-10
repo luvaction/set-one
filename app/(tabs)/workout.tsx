@@ -179,6 +179,7 @@ export default function WorkoutScreen() {
   const setTimerRef = useRef<number | null>(null);
   const restTimerRef = useRef<number | null>(null);
   const workoutStartTimeRef = useRef<number>(0);
+  const exerciseStartTimeRef = useRef<number>(0); // New ref for exercise start time
 
   // 화면 포커스될 때마다 활성 세션 확인
   useFocusEffect(
@@ -361,6 +362,7 @@ export default function WorkoutScreen() {
 
       // 타이머 초기화 및 시작
       workoutStartTimeRef.current = Date.now();
+      exerciseStartTimeRef.current = Date.now(); // Initialize exercise start time
       setTotalElapsedTime(0);
       startTotalTimer();
     } catch (error) {
@@ -479,6 +481,7 @@ export default function WorkoutScreen() {
     const reps = parseInt(actualReps) || 0;
     const duration = parseInt(actualDurationSeconds) || 0; // New
     const weightValue = parseFloat(weight) || 0;
+    const restDuration = restTimer?.elapsedTime || 0; // Get rest duration
 
     if (reps <= 0 && duration <= 0) {
       Alert.alert(t('workoutSession.error'), t('workoutSession.repsMinimum'));
@@ -496,9 +499,26 @@ export default function WorkoutScreen() {
         setIndex,
         reps,
         duration, // Pass duration
-        weightValue
+        weightValue,
+        restDuration // Pass rest duration
       );
       setActiveSession(updated);
+
+      // 운동 완료 여부 확인
+      const allSetsCompleted = exercise.sets.every(
+        (set) => set.isCompleted
+      );
+
+      // 현재 운동의 모든 세트가 완료되었다면 운동 시간 기록
+      if (allSetsCompleted && exerciseStartTimeRef.current !== 0) {
+        const exerciseDuration = Math.floor((Date.now() - exerciseStartTimeRef.current) / 1000);
+        await workoutSessionService.updateExerciseDuration(
+          activeSession.id,
+          exerciseIndex,
+          exerciseDuration
+        );
+        exerciseStartTimeRef.current = Date.now(); // Reset for next exercise
+      }
 
       // 세트 타이머 중지
       stopSetTimer();
@@ -510,6 +530,12 @@ export default function WorkoutScreen() {
         if (!nextSet.isCompleted) {
           startRestTimer(exerciseIndex, setIndex + 1);
         }
+      }
+
+      // 현재 운동의 모든 세트가 완료되었고, 다음 운동이 있다면,
+      // 다음 운동을 위해 exerciseStartTimeRef를 설정합니다.
+      if (allSetsCompleted && exerciseIndex < activeSession.exercises.length - 1) {
+        exerciseStartTimeRef.current = Date.now();
       }
 
       // 모달 닫기
