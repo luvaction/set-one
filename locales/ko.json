@@ -198,7 +198,7 @@
     "weightTrend": "체중 추이",
     "periodLabel": {
       "week": "{{month}}월 {{weekOfMonth}}주",
-      "month": "{{year}}.{{month}}",
+      "month": "{{month}}월",
       "year": "{{year}}년",
       "monthOnly": "{{month}}월",
       "day": "{{month}}월 {{day}}일"

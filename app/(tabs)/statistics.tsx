@@ -321,8 +321,10 @@ export default function StatisticsScreen() {
 
                 <View style={styles.comparisonItem}>
                   <Text style={[styles.comparisonLabel, { color: colors.textSecondary }]}>{t("statistics.totalVolume")}</Text>
-                  <Text style={[styles.comparisonValue, { color: colors.text }]}>{Math.round(weekComparison.thisWeek.volume).toLocaleString()}kg</Text>
-                  {weekComparison.change.volume !== 0 && (
+                  <Text style={[styles.comparisonValue, { color: colors.text }]}>
+                    {isNaN(weekComparison.thisWeek.volume) ? "0" : Math.round(weekComparison.thisWeek.volume).toLocaleString()}kg
+                  </Text>
+                  {weekComparison.change.volume !== 0 && !isNaN(weekComparison.change.volume) && (
                     <View style={styles.changeContainer}>
                       <Ionicons name={weekComparison.change.volume > 0 ? "arrow-up" : "arrow-down"} size={14} color={weekComparison.change.volume > 0 ? "#4CAF50" : "#FF5252"} />
                       <Text style={[styles.changeText, { color: weekComparison.change.volume > 0 ? "#4CAF50" : "#FF5252" }]}>{Math.abs(weekComparison.change.volume)}%</Text>

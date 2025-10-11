@@ -198,7 +198,7 @@
     "weightTrend": "Weight Trend",
     "periodLabel": {
       "week": "{{month}}W{{weekOfMonth}}",
-      "month": "{{year}}.{{month}}",
+      "month": "{{month}}",
       "year": "{{year}}",
       "monthOnly": "{{month}}",
       "day": "{{month}}/{{day}}"

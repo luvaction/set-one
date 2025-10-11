@@ -678,8 +678,8 @@ export const statisticsService = {
         } else if (period === "day") {
           periodKey = date.toISOString().split("T")[0];
         } else {
-          // year: aggregate by month
-          periodKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+          // year: aggregate by year
+          periodKey = `${date.getFullYear()}`;
         }
 
         if (!periodData[periodKey]) {
@@ -706,13 +706,13 @@ export const statisticsService = {
       // 기간별로 최근 N개만 표시
       let recentTrends = trendArray;
       if (period === "week") {
-        recentTrends = trendArray.slice(-8); // 최근 8주
+        recentTrends = trendArray.slice(-12); // 최근 12주
       } else if (period === "month") {
-        recentTrends = trendArray.slice(-6); // 최근 6개월
-      } else if (period === "year") {
         recentTrends = trendArray.slice(-12); // 최근 12개월
+      } else if (period === "year") {
+        recentTrends = trendArray.slice(-5); // 최근 5년
       } else if (period === "day") {
-        recentTrends = trendArray.slice(-7); // 최근 7일
+        recentTrends = trendArray.slice(-30); // 최근 30일
       }
 
       trendMap.set(exerciseId, recentTrends);
@@ -743,14 +743,13 @@ export const statisticsService = {
       return t('statistics.periodLabel.week', { month, weekOfMonth });
     } else if (period === "month") {
       const [year, month] = periodKey.split("-");
-      return t('statistics.periodLabel.month', { year, month });
+      return t('statistics.periodLabel.month', { month });
     } else if (period === "day") {
       const [year, month, day] = periodKey.split("-");
       return t('statistics.periodLabel.day', { month: parseInt(month), day: parseInt(day) });
     } else {
-      // year (now YYYY-MM format)
-      const [year, month] = periodKey.split("-");
-      return t('statistics.periodLabel.monthOnly', { month: parseInt(month) }); // Assuming a new translation key for month only
+      // year: just the year
+      return t('statistics.periodLabel.year', { year: periodKey });
     }
   },
 
@@ -786,7 +785,8 @@ export const statisticsService = {
       } else if (period === "day") {
         periodKey = date.toISOString().split("T")[0];
       } else {
-        periodKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+        // year: aggregate by year
+        periodKey = `${date.getFullYear()}`;
       }
 
       if (!periodData[periodKey]) {
