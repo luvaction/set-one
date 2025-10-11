@@ -649,7 +649,7 @@ export const statisticsService = {
   },
 
   // 운동별 세트 수 추이 (선택한 운동들의 기간별 평균 세트 수)
-  async getSetsTrend(t: (key: string, params?: any) => string, period: TrendPeriod, exerciseIds: string[]): Promise<Map<string, SetsTrendData[]>> {
+  async getSetsTrend(t: (key: string, params?: any) => string, period: TrendPeriod, exerciseIds: string[], range?: number): Promise<Map<string, SetsTrendData[]>> {
     const records = await workoutRecordService.getAllRecords();
     const completedRecords = records.filter((r) => r.status === "completed");
 
@@ -705,14 +705,20 @@ export const statisticsService = {
 
       // 기간별로 최근 N개만 표시
       let recentTrends = trendArray;
-      if (period === "week") {
-        recentTrends = trendArray.slice(-12); // 최근 12주
-      } else if (period === "month") {
-        recentTrends = trendArray.slice(-12); // 최근 12개월
-      } else if (period === "year") {
-        recentTrends = trendArray.slice(-5); // 최근 5년
-      } else if (period === "day") {
-        recentTrends = trendArray.slice(-30); // 최근 30일
+      if (range !== undefined && range > 0) {
+        // 사용자가 지정한 범위 사용
+        recentTrends = trendArray.slice(-range);
+      } else {
+        // 기본값 사용
+        if (period === "week") {
+          recentTrends = trendArray.slice(-12); // 최근 12주
+        } else if (period === "month") {
+          recentTrends = trendArray.slice(-12); // 최근 12개월
+        } else if (period === "year") {
+          recentTrends = trendArray.slice(-5); // 최근 5년
+        } else if (period === "day") {
+          recentTrends = trendArray.slice(-30); // 최근 30일
+        }
       }
 
       trendMap.set(exerciseId, recentTrends);
@@ -767,7 +773,7 @@ export const statisticsService = {
   },
 
   // 체중 추이 데이터
-  async getWeightTrendData(t: (key: string, params?: any) => string, period: TrendPeriod): Promise<WeightTrendData[]> {
+  async getWeightTrendData(t: (key: string, params?: any) => string, period: TrendPeriod, range?: number): Promise<WeightTrendData[]> {
     const records = await workoutRecordService.getAllRecords();
     const completedRecordsWithWeight = records.filter((r) => r.status === "completed" && r.bodyWeight !== undefined && r.bodyWeight > 0);
 
@@ -811,14 +817,20 @@ export const statisticsService = {
 
     // 기간별로 최근 N개만 표시
     let recentTrends = trendArray;
-    if (period === "week") {
-      recentTrends = trendArray.slice(-8); // 최근 8주
-    } else if (period === "month") {
-      recentTrends = trendArray.slice(-6); // 최근 6개월
-    } else if (period === "year") {
-      recentTrends = trendArray.slice(-12); // 최근 12개월
-    } else if (period === "day") {
-      recentTrends = trendArray.slice(-7); // 최근 7일
+    if (range !== undefined && range > 0) {
+      // 사용자가 지정한 범위 사용
+      recentTrends = trendArray.slice(-range);
+    } else {
+      // 기본값 사용
+      if (period === "week") {
+        recentTrends = trendArray.slice(-8); // 최근 8주
+      } else if (period === "month") {
+        recentTrends = trendArray.slice(-6); // 최근 6개월
+      } else if (period === "year") {
+        recentTrends = trendArray.slice(-12); // 최근 12개월
+      } else if (period === "day") {
+        recentTrends = trendArray.slice(-7); // 최근 7일
+      }
     }
 
     return recentTrends;

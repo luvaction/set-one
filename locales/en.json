@@ -202,7 +202,24 @@
       "year": "{{year}}",
       "monthOnly": "{{month}}",
       "day": "{{month}}/{{day}}"
-    }
+    },
+    "selectRange": "Select Range",
+    "allData": "All",
+    "rangeInputLabel": {
+      "day": "Number of days",
+      "week": "Number of weeks",
+      "month": "Number of months"
+    },
+    "rangeHint": {
+      "day": "7-30 days",
+      "week": "2-12 weeks",
+      "month": "3-24 months"
+    },
+    "rangeError": {
+      "invalidNumber": "Please enter a valid number",
+      "outOfRange": "Please enter a value between {{min}} and {{max}}"
+    },
+    "mockDataGenerated": "Mock data generation complete"
   },
   "profile": {
     "title": "Profile",

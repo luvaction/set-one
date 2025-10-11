@@ -201,8 +201,25 @@
       "month": "{{month}}월",
       "year": "{{year}}년",
       "monthOnly": "{{month}}월",
-      "day": "{{month}}월 {{day}}일"
-    }
+      "day": "{{month}}/{{day}}일"
+    },
+    "selectRange": "표시 범위 선택",
+    "allData": "전체",
+    "rangeInputLabel": {
+      "day": "표시할 일 수",
+      "week": "표시할 주 수",
+      "month": "표시할 월 수"
+    },
+    "rangeHint": {
+      "day": "7~30일 범위",
+      "week": "2~12주 범위",
+      "month": "3~24개월 범위"
+    },
+    "rangeError": {
+      "invalidNumber": "유효한 숫자를 입력해주세요",
+      "outOfRange": "{{min}}~{{max}} 범위의 값을 입력해주세요"
+    },
+    "mockDataGenerated": "임시 데이터 생성 완료"
   },
   "profile": {
     "title": "MY",

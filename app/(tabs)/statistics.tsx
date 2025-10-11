@@ -17,7 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Alert, Dimensions, Modal, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Dimensions, Modal, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { LineChart, PieChart } from "react-native-chart-kit";
 
 // 한글 이름 -> exerciseId 역매핑
@@ -128,6 +128,24 @@ export default function StatisticsScreen() {
   const [weightTrendData, setWeightTrendData] = useState<WeightTrendData[]>([]);
   const [weightTrendPeriod, setWeightTrendPeriod] = useState<TrendPeriod>("month");
 
+  // 범위 선택 상태 (각 기간별로 다른 범위)
+  const [dayRange, setDayRange] = useState(30);
+  const [weekRange, setWeekRange] = useState(4);
+  const [monthRange, setMonthRange] = useState(12);
+  const [yearRange, setYearRange] = useState<number | undefined>(undefined); // 전체 데이터
+
+  // 체중 추이 범위 선택 상태
+  const [weightDayRange, setWeightDayRange] = useState(30);
+  const [weightWeekRange, setWeightWeekRange] = useState(4);
+  const [weightMonthRange, setWeightMonthRange] = useState(12);
+  const [weightYearRange, setWeightYearRange] = useState<number | undefined>(undefined); // 전체 데이터
+
+  // 범위 선택 모달 상태
+  const [rangeModalVisible, setRangeModalVisible] = useState(false);
+  const [rangeModalType, setRangeModalType] = useState<"sets" | "weight">("sets");
+  const [tempRangeValue, setTempRangeValue] = useState<string>("");
+  const [rangeError, setRangeError] = useState<string>("");
+
   // 차트 클릭 모달 상태
   const [chartModalVisible, setChartModalVisible] = useState(false);
   const [selectedChartData, setSelectedChartData] = useState<{
@@ -142,7 +160,13 @@ export default function StatisticsScreen() {
 
   // 체중 추이 로드 함수 분리
   const loadWeightTrends = async () => {
-    const trends = await statisticsService.getWeightTrendData(t, weightTrendPeriod);
+    let range: number | undefined;
+    if (weightTrendPeriod === "day") range = weightDayRange;
+    else if (weightTrendPeriod === "week") range = weightWeekRange;
+    else if (weightTrendPeriod === "month") range = weightMonthRange;
+    else if (weightTrendPeriod === "year") range = weightYearRange;
+
+    const trends = await statisticsService.getWeightTrendData(t, weightTrendPeriod, range);
     setWeightTrendData(trends);
   };
 
@@ -194,7 +218,13 @@ export default function StatisticsScreen() {
         return;
       }
 
-      const trends = await statisticsService.getSetsTrend(t, trendPeriod, topExerciseIds);
+      let range: number | undefined;
+      if (trendPeriod === "day") range = dayRange;
+      else if (trendPeriod === "week") range = weekRange;
+      else if (trendPeriod === "month") range = monthRange;
+      else if (trendPeriod === "year") range = yearRange;
+
+      const trends = await statisticsService.getSetsTrend(t, trendPeriod, topExerciseIds, range);
       setSetsTrends(trends);
       // Initialize chartVisibleExercises with all top 5 exercises
       const topExerciseNames = exerciseStats.slice(0, 5).map((ex) => ex.exerciseName);
@@ -202,14 +232,14 @@ export default function StatisticsScreen() {
     };
 
     loadSetsTrends();
-  }, [t, trendPeriod, exerciseStats]);
+  }, [t, trendPeriod, exerciseStats, dayRange, weekRange, monthRange, yearRange]);
 
-  // 체중 추이 기간이 변경되면 체중 추이만 다시 로드
+  // 체중 추이 기간 또는 범위가 변경되면 체중 추이만 다시 로드
   useEffect(() => {
     loadWeightTrends();
     // loadWeightTrends는 일반 함수이므로 dependency에 포함하지 않음
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weightTrendPeriod]);
+  }, [weightTrendPeriod, weightDayRange, weightWeekRange, weightMonthRange, weightYearRange]);
 
   useFocusEffect(
     useCallback(() => {
@@ -400,7 +430,47 @@ export default function StatisticsScreen() {
         {/* 체중 추이 차트 */}
         {weightTrendData.length > 0 && (
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("statistics.weightTrend")}</Text>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0 }]}>{t("statistics.weightTrend")}</Text>
+              {weightTrendPeriod !== "year" && (
+                <TouchableOpacity
+                  onPress={() => {
+                    setRangeModalType("weight");
+                    const currentValue =
+                      weightTrendPeriod === "day"
+                        ? weightDayRange
+                        : weightTrendPeriod === "week"
+                          ? weightWeekRange
+                          : weightMonthRange;
+                    setTempRangeValue(String(currentValue));
+                    setRangeModalVisible(true);
+                  }}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 4,
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    borderRadius: 8,
+                    backgroundColor: colors.primary + "15",
+                    borderWidth: 1,
+                    borderColor: colors.primary + "40",
+                  }}
+                >
+                  <Ionicons name="options-outline" size={16} color={colors.primary} />
+                  <Text style={{ fontSize: 12, fontWeight: "600", color: colors.primary }}>
+                    {weightTrendPeriod === "day" && `${weightDayRange}${t("statistics.periodDay")}`}
+                    {weightTrendPeriod === "week" && `${weightWeekRange}${t("statistics.periodWeek")}`}
+                    {weightTrendPeriod === "month" && `${weightMonthRange}${t("statistics.periodMonth")}`}
+                  </Text>
+                </TouchableOpacity>
+              )}
+              {weightTrendPeriod === "year" && (
+                <Text style={{ fontSize: 12, fontWeight: "600", color: colors.textSecondary }}>
+                  {t("statistics.allData")}
+                </Text>
+              )}
+            </View>
             <View style={[styles.filterButtons, { marginBottom: 16 }]}>
               {(["day", "week", "month", "year"] as TrendPeriod[]).map((period) => (
                 <TouchableOpacity
@@ -426,7 +496,7 @@ export default function StatisticsScreen() {
               <View style={[styles.chartContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <LineChart
                   data={{
-                    labels: weightTrendData.map((data) => data.periodLabel),
+                    labels: weightTrendData.map(() => ""), // 빈 레이블로 차트의 기본 레이블 숨기기
                     datasets: [
                       {
                         data: weightTrendData.map((data) => data.averageWeight),
@@ -463,7 +533,7 @@ export default function StatisticsScreen() {
                     marginVertical: 8,
                     borderRadius: 16,
                   }}
-                  withVerticalLabels={true}
+                  withVerticalLabels={false}
                   withHorizontalLabels={true}
                   withDots={true}
                   withInnerLines={true}
@@ -486,6 +556,33 @@ export default function StatisticsScreen() {
                     setChartModalVisible(true);
                   }}
                 />
+
+                {/* 지그재그 레이블 */}
+                <View style={{ width: Dimensions.get("window").width - 80, marginTop: 8, marginLeft: 10 }}>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                    {weightTrendData.map((data, index) => (
+                      <View
+                        key={index}
+                        style={{
+                          alignItems: "center",
+                          width: (Dimensions.get("window").width - 100) / Math.max(weightTrendData.length, 1),
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 10,
+                            color: colors.textSecondary,
+                            textAlign: "center",
+                            marginTop: index % 2 === 0 ? 0 : 12,
+                            fontWeight: "500",
+                          }}
+                        >
+                          {data.periodLabel}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
               </View>
             )}
           </View>
@@ -641,7 +738,47 @@ export default function StatisticsScreen() {
 
                 return (
                   <>
-                    <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 24 }]}>{t("statistics.setsTrend")}</Text>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 24, marginBottom: 16 }}>
+                      <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0 }]}>{t("statistics.setsTrend")}</Text>
+                      {trendPeriod !== "year" && (
+                        <TouchableOpacity
+                          onPress={() => {
+                            setRangeModalType("sets");
+                            const currentValue =
+                              trendPeriod === "day"
+                                ? dayRange
+                                : trendPeriod === "week"
+                                  ? weekRange
+                                  : monthRange;
+                            setTempRangeValue(String(currentValue));
+                            setRangeModalVisible(true);
+                          }}
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 4,
+                            paddingHorizontal: 12,
+                            paddingVertical: 6,
+                            borderRadius: 8,
+                            backgroundColor: colors.primary + "15",
+                            borderWidth: 1,
+                            borderColor: colors.primary + "40",
+                          }}
+                        >
+                          <Ionicons name="options-outline" size={16} color={colors.primary} />
+                          <Text style={{ fontSize: 12, fontWeight: "600", color: colors.primary }}>
+                            {trendPeriod === "day" && `${dayRange}${t("statistics.periodDay")}`}
+                            {trendPeriod === "week" && `${weekRange}${t("statistics.periodWeek")}`}
+                            {trendPeriod === "month" && `${monthRange}${t("statistics.periodMonth")}`}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                      {trendPeriod === "year" && (
+                        <Text style={{ fontSize: 12, fontWeight: "600", color: colors.textSecondary }}>
+                          {t("statistics.allData")}
+                        </Text>
+                      )}
+                    </View>
                     <View style={[styles.filterButtons, { marginBottom: 16 }]}>
                       {(["day", "week", "month", "year"] as TrendPeriod[]).map((period) => (
                         <TouchableOpacity
@@ -711,7 +848,7 @@ export default function StatisticsScreen() {
 
                       <LineChart
                         data={{
-                          labels,
+                          labels: labels.map(() => ""), // 빈 레이블로 차트의 기본 레이블 숨기기
                           datasets,
                           legend: [], // 커스텀 범례 사용
                         }}
@@ -743,7 +880,7 @@ export default function StatisticsScreen() {
                           marginVertical: 8,
                           borderRadius: 16,
                         }}
-                        withVerticalLabels={true}
+                        withVerticalLabels={false}
                         withHorizontalLabels={true}
                         withDots={true}
                         withInnerLines={true}
@@ -785,6 +922,33 @@ export default function StatisticsScreen() {
                         }}
                         segments={4}
                       />
+
+                      {/* 지그재그 레이블 */}
+                      <View style={{ width: Dimensions.get("window").width - 80, marginTop: 8, marginLeft: 10 }}>
+                        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                          {labels.map((label, index) => (
+                            <View
+                              key={index}
+                              style={{
+                                alignItems: "center",
+                                width: (Dimensions.get("window").width - 100) / Math.max(labels.length, 1),
+                              }}
+                            >
+                              <Text
+                                style={{
+                                  fontSize: 10,
+                                  color: colors.textSecondary,
+                                  textAlign: "center",
+                                  marginTop: index % 2 === 0 ? 0 : 12,
+                                  fontWeight: "500",
+                                }}
+                              >
+                                {label}
+                              </Text>
+                            </View>
+                          ))}
+                        </View>
+                      </View>
                     </View>
                   </>
                 );
@@ -894,6 +1058,147 @@ export default function StatisticsScreen() {
                 </TouchableOpacity>
               </>
             )}
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* 범위 선택 모달 */}
+      <Modal animationType="fade" transparent={true} visible={rangeModalVisible} onRequestClose={() => setRangeModalVisible(false)}>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setRangeModalVisible(false)}>
+          <TouchableOpacity activeOpacity={1} style={[styles.modalContent, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Text style={[styles.modalLabel, { color: colors.text, fontSize: 18, fontWeight: "700", marginBottom: 20 }]}>
+              {t("statistics.selectRange")}
+            </Text>
+
+            <View style={{ width: "100%", gap: 16, marginBottom: 20 }}>
+              {/* 입력 레이블 */}
+              <Text style={{ fontSize: 14, fontWeight: "600", color: colors.text, marginBottom: -8 }}>
+                {(rangeModalType === "sets" ? trendPeriod : weightTrendPeriod) === "day" && t("statistics.rangeInputLabel.day")}
+                {(rangeModalType === "sets" ? trendPeriod : weightTrendPeriod) === "week" && t("statistics.rangeInputLabel.week")}
+                {(rangeModalType === "sets" ? trendPeriod : weightTrendPeriod) === "month" && t("statistics.rangeInputLabel.month")}
+              </Text>
+
+              {/* TextInput */}
+              <TextInput
+                style={{
+                  paddingVertical: 14,
+                  paddingHorizontal: 16,
+                  borderRadius: 12,
+                  borderWidth: 2,
+                  borderColor: rangeError ? "#FF5252" : colors.primary,
+                  backgroundColor: colors.surface,
+                  fontSize: 16,
+                  fontWeight: "600",
+                  color: colors.text,
+                  textAlign: "center",
+                }}
+                value={tempRangeValue}
+                onChangeText={(text) => {
+                  setTempRangeValue(text);
+                  setRangeError(""); // Clear error when user types
+                }}
+                keyboardType="numeric"
+                placeholder={
+                  (rangeModalType === "sets" ? trendPeriod : weightTrendPeriod) === "day"
+                    ? "7"
+                    : (rangeModalType === "sets" ? trendPeriod : weightTrendPeriod) === "week"
+                      ? "2"
+                      : "3"
+                }
+                placeholderTextColor={colors.textSecondary}
+              />
+
+              {/* 힌트 텍스트 */}
+              <Text style={{ fontSize: 12, color: rangeError ? "#FF5252" : colors.textSecondary, textAlign: "center" }}>
+                {rangeError ||
+                  ((rangeModalType === "sets" ? trendPeriod : weightTrendPeriod) === "day" && t("statistics.rangeHint.day")) ||
+                  ((rangeModalType === "sets" ? trendPeriod : weightTrendPeriod) === "week" && t("statistics.rangeHint.week")) ||
+                  ((rangeModalType === "sets" ? trendPeriod : weightTrendPeriod) === "month" && t("statistics.rangeHint.month"))}
+              </Text>
+            </View>
+
+            {/* 버튼 그룹 */}
+            <View style={{ flexDirection: "row", gap: 12, width: "100%" }}>
+              {/* 취소 버튼 */}
+              <TouchableOpacity
+                style={[
+                  styles.modalCloseButton,
+                  {
+                    backgroundColor: colors.border + "40",
+                    flex: 1,
+                  },
+                ]}
+                onPress={() => {
+                  setRangeModalVisible(false);
+                  setRangeError("");
+                }}
+              >
+                <Text style={[styles.modalCloseButtonText, { color: colors.text }]}>{t("common.cancel")}</Text>
+              </TouchableOpacity>
+
+              {/* 확인 버튼 */}
+              <TouchableOpacity
+                style={[
+                  styles.modalCloseButton,
+                  {
+                    backgroundColor: colors.primary,
+                    flex: 1,
+                  },
+                ]}
+                onPress={() => {
+                  const currentPeriod = rangeModalType === "sets" ? trendPeriod : weightTrendPeriod;
+                  const value = parseInt(tempRangeValue, 10);
+
+                  // Validate input
+                  if (isNaN(value) || tempRangeValue.trim() === "") {
+                    setRangeError(t("statistics.rangeError.invalidNumber") || "유효한 숫자를 입력해주세요");
+                    return;
+                  }
+
+                  // Check min/max based on period
+                  let min = 0;
+                  let max = 0;
+                  if (currentPeriod === "day") {
+                    min = 7;
+                    max = 30;
+                  } else if (currentPeriod === "week") {
+                    min = 2;
+                    max = 12;
+                  } else if (currentPeriod === "month") {
+                    min = 3;
+                    max = 24;
+                  }
+
+                  if (value < min || value > max) {
+                    setRangeError(
+                      currentPeriod === "day"
+                        ? t("statistics.rangeError.outOfRange", { min: 7, max: 30 }) || `7일에서 30일 사이의 값을 입력해주세요`
+                        : currentPeriod === "week"
+                          ? t("statistics.rangeError.outOfRange", { min: 2, max: 12 }) || `2주에서 12주 사이의 값을 입력해주세요`
+                          : t("statistics.rangeError.outOfRange", { min: 3, max: 24 }) || `3개월에서 24개월 사이의 값을 입력해주세요`
+                    );
+                    return;
+                  }
+
+                  // Apply value
+                  if (currentPeriod === "day") {
+                    if (rangeModalType === "sets") setDayRange(value);
+                    else setWeightDayRange(value);
+                  } else if (currentPeriod === "week") {
+                    if (rangeModalType === "sets") setWeekRange(value);
+                    else setWeightWeekRange(value);
+                  } else if (currentPeriod === "month") {
+                    if (rangeModalType === "sets") setMonthRange(value);
+                    else setWeightMonthRange(value);
+                  }
+
+                  setRangeModalVisible(false);
+                  setRangeError("");
+                }}
+              >
+                <Text style={[styles.modalCloseButtonText, { color: colors.buttonText }]}>{t("common.confirm")}</Text>
+              </TouchableOpacity>
+            </View>
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
