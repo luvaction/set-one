@@ -4,6 +4,7 @@ const DATABASE_NAME = 'set1.db';
 let db: SQLiteDatabase | null = null;
 
 export const initDb = async () => {
+  console.log('initDb function called.');
   if (db) {
     console.log('Database already initialized.');
     return;

@@ -371,4 +371,10 @@ export const workoutRecordService = {
     );
     return rows.map(row => row.date);
   },
+
+  // 모든 운동 기록 삭제
+  async clearAllWorkoutRecords(): Promise<void> {
+    await runSql('DELETE FROM workout_records');
+    // CASCADE 설정으로 recorded_exercises와 completed_sets도 함께 삭제됩니다.
+  },
 };

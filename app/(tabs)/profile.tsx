@@ -3,6 +3,7 @@ import { saveLanguage } from "@/i18n/config";
 import { CreateProfileData } from "@/models";
 import { profileService } from "@/services/profile";
 import { storage } from "@/services";
+import { workoutRecordService } from "@/services/workoutRecord";
 import { getOrCreateUserId } from "@/utils/userIdHelper";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
@@ -80,7 +81,8 @@ export default function ProfileScreen() {
         style: "destructive",
         onPress: async () => {
           try {
-            await storage.clear();
+            await storage.clear(); // Clear key_value_store
+            await workoutRecordService.clearAllWorkoutRecords(); // Clear all workout records
             setProfile(emptyProfile);
             Alert.alert(t("common.confirm"), t("profile.allDataDeleted"));
           } catch (error) {
