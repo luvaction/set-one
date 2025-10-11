@@ -107,6 +107,16 @@ const formatDate = (dateString: string, language: string) => {
   }
 };
 
+const getAdaptiveDotRadius = (dataLength: number) => {
+  if (dataLength <= 10) {
+    return "3"; // Larger dots for fewer points
+  } else if (dataLength <= 30) {
+    return "2"; // Medium dots
+  } else {
+    return "1"; // Smaller dots for many points
+  }
+};
+
 export default function StatisticsScreen() {
   const { colors, theme } = useTheme();
   const styles = getStyles(colors);
@@ -496,7 +506,11 @@ export default function StatisticsScreen() {
               <View style={[styles.chartContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <LineChart
                   data={{
-                    labels: weightTrendData.map((data) => data.periodLabel),
+                    labels: weightTrendData.map((data, index) => {
+                      const maxWeightLabels = 7; // Adjust as needed
+                      const weightLabelSkip = weightTrendData.length > maxWeightLabels ? Math.ceil(weightTrendData.length / maxWeightLabels) : 1;
+                      return index % weightLabelSkip === 0 ? data.periodLabel : "";
+                    }),
                     datasets: [
                       {
                         data: weightTrendData.map((data) => data.averageWeight),
@@ -518,7 +532,7 @@ export default function StatisticsScreen() {
                       borderRadius: 16,
                     },
                     propsForDots: {
-                      r: "4",
+                      r: getAdaptiveDotRadius(weightTrendData.length),
                       strokeWidth: "2",
                       stroke: colors.primary,
                     },
@@ -821,7 +835,11 @@ export default function StatisticsScreen() {
 
                       <LineChart
                         data={{
-                          labels: labels,
+                          labels: labels.map((label, index) => {
+                            const maxSetsLabels = 7; // Adjust as needed
+                            const setsLabelSkip = labels.length > maxSetsLabels ? Math.ceil(labels.length / maxSetsLabels) : 1;
+                            return index % setsLabelSkip === 0 ? label : "";
+                          }),
                           datasets,
                           legend: [], // 커스텀 범례 사용
                         }}
@@ -838,7 +856,7 @@ export default function StatisticsScreen() {
                             borderRadius: 16,
                           },
                           propsForDots: {
-                            r: "5",
+                            r: getAdaptiveDotRadius(labels.length),
                             strokeWidth: "0",
                             stroke: "transparent",
                           },
