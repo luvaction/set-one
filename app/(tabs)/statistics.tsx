@@ -135,7 +135,7 @@ export default function StatisticsScreen() {
   const [yearRange, setYearRange] = useState<number | undefined>(undefined); // 전체 데이터
 
   // 체중 추이 범위 선택 상태
-  const [weightDayRange, setWeightDayRange] = useState(30);
+  const [weightDayRange, setWeightDayRange] = useState(7);
   const [weightWeekRange, setWeightWeekRange] = useState(4);
   const [weightMonthRange, setWeightMonthRange] = useState(12);
   const [weightYearRange, setWeightYearRange] = useState<number | undefined>(undefined); // 전체 데이터
@@ -496,7 +496,7 @@ export default function StatisticsScreen() {
               <View style={[styles.chartContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <LineChart
                   data={{
-                    labels: weightTrendData.map(() => ""), // 빈 레이블로 차트의 기본 레이블 숨기기
+                    labels: weightTrendData.map((data) => data.periodLabel),
                     datasets: [
                       {
                         data: weightTrendData.map((data) => data.averageWeight),
@@ -533,7 +533,7 @@ export default function StatisticsScreen() {
                     marginVertical: 8,
                     borderRadius: 16,
                   }}
-                  withVerticalLabels={false}
+                  withVerticalLabels={true}
                   withHorizontalLabels={true}
                   withDots={true}
                   withInnerLines={true}
@@ -556,33 +556,6 @@ export default function StatisticsScreen() {
                     setChartModalVisible(true);
                   }}
                 />
-
-                {/* 지그재그 레이블 */}
-                <View style={{ width: Dimensions.get("window").width - 80, marginTop: 8, marginLeft: 10 }}>
-                  <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                    {weightTrendData.map((data, index) => (
-                      <View
-                        key={index}
-                        style={{
-                          alignItems: "center",
-                          width: (Dimensions.get("window").width - 100) / Math.max(weightTrendData.length, 1),
-                        }}
-                      >
-                        <Text
-                          style={{
-                            fontSize: 10,
-                            color: colors.textSecondary,
-                            textAlign: "center",
-                            marginTop: index % 2 === 0 ? 0 : 12,
-                            fontWeight: "500",
-                          }}
-                        >
-                          {data.periodLabel}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-                </View>
               </View>
             )}
           </View>
@@ -848,7 +821,7 @@ export default function StatisticsScreen() {
 
                       <LineChart
                         data={{
-                          labels: labels.map(() => ""), // 빈 레이블로 차트의 기본 레이블 숨기기
+                          labels: labels,
                           datasets,
                           legend: [], // 커스텀 범례 사용
                         }}
@@ -880,7 +853,7 @@ export default function StatisticsScreen() {
                           marginVertical: 8,
                           borderRadius: 16,
                         }}
-                        withVerticalLabels={false}
+                        withVerticalLabels={true}
                         withHorizontalLabels={true}
                         withDots={true}
                         withInnerLines={true}
@@ -922,33 +895,6 @@ export default function StatisticsScreen() {
                         }}
                         segments={4}
                       />
-
-                      {/* 지그재그 레이블 */}
-                      <View style={{ width: Dimensions.get("window").width - 80, marginTop: 8, marginLeft: 10 }}>
-                        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                          {labels.map((label, index) => (
-                            <View
-                              key={index}
-                              style={{
-                                alignItems: "center",
-                                width: (Dimensions.get("window").width - 100) / Math.max(labels.length, 1),
-                              }}
-                            >
-                              <Text
-                                style={{
-                                  fontSize: 10,
-                                  color: colors.textSecondary,
-                                  textAlign: "center",
-                                  marginTop: index % 2 === 0 ? 0 : 12,
-                                  fontWeight: "500",
-                                }}
-                              >
-                                {label}
-                              </Text>
-                            </View>
-                          ))}
-                        </View>
-                      </View>
                     </View>
                   </>
                 );
