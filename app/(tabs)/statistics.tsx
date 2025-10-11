@@ -17,7 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Alert, Dimensions, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Dimensions, Modal, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { LineChart, PieChart } from "react-native-chart-kit";
 
 // 한글 이름 -> exerciseId 역매핑
@@ -113,13 +113,12 @@ export default function StatisticsScreen() {
   const { t, i18n, ready } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [showMockButton, setShowMockButton] = useState(false); // 테스트 버튼 숨김
+  const [showMockButton, setShowMockButton] = useState(true); // 테스트 버튼 표시
 
   const [coreStats, setCoreStats] = useState<CoreStats | null>(null);
   const [weekComparison, setWeekComparison] = useState<WeekComparison | null>(null);
   const [personalRecords, setPersonalRecords] = useState<PersonalRecord[]>([]);
   const [exerciseStats, setExerciseStats] = useState<ExerciseStats[]>([]);
-  const [selectedExercises, setSelectedExercises] = useState<Set<string>>(new Set());
   const [chartVisibleExercises, setChartVisibleExercises] = useState<Set<string>>(new Set());
   const [exerciseTypeDistribution, setExerciseTypeDistribution] = useState<ExerciseTypeDistribution[]>([]);
   const [insights, setInsights] = useState<Insight[]>([]);
@@ -128,6 +127,18 @@ export default function StatisticsScreen() {
   const [setsTrends, setSetsTrends] = useState<Map<string, SetsTrendData[]>>(new Map());
   const [weightTrendData, setWeightTrendData] = useState<WeightTrendData[]>([]);
   const [weightTrendPeriod, setWeightTrendPeriod] = useState<TrendPeriod>("month");
+
+  // 차트 클릭 모달 상태
+  const [chartModalVisible, setChartModalVisible] = useState(false);
+  const [selectedChartData, setSelectedChartData] = useState<{
+    type: "sets" | "pie" | "weight";
+    label: string;
+    items: Array<{
+      exerciseName: string;
+      value: string | number;
+      color: string;
+    }>;
+  } | null>(null);
 
   // 체중 추이 로드 함수 분리
   const loadWeightTrends = async () => {
@@ -158,11 +169,6 @@ export default function StatisticsScreen() {
 
       // 체중 추이도 새로고침
       await loadWeightTrends();
-
-      // 처음에는 모든 운동 선택
-      if (selectedExercises.size === 0 && exStats.length > 0) {
-        setSelectedExercises(new Set(exStats.slice(0, 5).map((ex) => ex.exerciseName)));
-      }
     } catch (error) {
       console.error("Failed to load statistics:", error);
     } finally {
@@ -171,31 +177,32 @@ export default function StatisticsScreen() {
     }
   };
 
-  // 세트 수 추이 데이터 로드
+  // 세트 수 추이 데이터 로드 - 자동으로 상위 5개 운동 선택
   useEffect(() => {
     const loadSetsTrends = async () => {
-      if (selectedExercises.size === 0 || exerciseStats.length === 0) {
+      if (exerciseStats.length === 0) {
         return;
       }
 
-      // exerciseName으로 선택되어 있으므로, exerciseId를 찾아야 함
-      const selectedExerciseIds = exerciseStats
-        .filter((ex) => selectedExercises.has(ex.exerciseName))
+      // 상위 5개 운동의 exerciseId 가져오기
+      const topExerciseIds = exerciseStats
+        .slice(0, 5)
         .map((ex) => ex.exerciseId)
         .filter((id) => id); // exerciseId가 없는 경우 제외
 
-      if (selectedExerciseIds.length === 0) {
+      if (topExerciseIds.length === 0) {
         return;
       }
 
-      const trends = await statisticsService.getSetsTrend(t, trendPeriod, selectedExerciseIds);
+      const trends = await statisticsService.getSetsTrend(t, trendPeriod, topExerciseIds);
       setSetsTrends(trends);
-      // Initialize chartVisibleExercises with all selectedExercises
-      setChartVisibleExercises(new Set(selectedExercises));
+      // Initialize chartVisibleExercises with all top 5 exercises
+      const topExerciseNames = exerciseStats.slice(0, 5).map((ex) => ex.exerciseName);
+      setChartVisibleExercises(new Set(topExerciseNames));
     };
 
     loadSetsTrends();
-  }, [t, trendPeriod, selectedExercises, exerciseStats]);
+  }, [t, trendPeriod, exerciseStats]);
 
   // 체중 추이 기간이 변경되면 체중 추이만 다시 로드
   useEffect(() => {
@@ -218,23 +225,11 @@ export default function StatisticsScreen() {
   };
 
   const handleGenerateMockData = async () => {
-    await generateMockWorkoutData();
+    let generatedCount = 0;
+    generatedCount = await generateMockWorkoutData();
     setShowMockButton(false);
     loadStatistics();
-  };
-
-  const toggleExercise = (exerciseName: string) => {
-    const newSelected = new Set(selectedExercises);
-    if (newSelected.has(exerciseName)) {
-      newSelected.delete(exerciseName);
-    } else {
-      if (newSelected.size >= 5) {
-        Alert.alert(t("statistics.maxSelection"), t("statistics.deselectFirst"), [{ text: t("common.confirm") }]);
-        return;
-      }
-      newSelected.add(exerciseName);
-    }
-    setSelectedExercises(newSelected);
+    Alert.alert(t("common.success"), t("statistics.mockDataGenerated") + ` (${generatedCount} records)`);
   };
 
   const toggleChartExerciseVisibility = (exerciseName: string) => {
@@ -474,6 +469,20 @@ export default function StatisticsScreen() {
                   withVerticalLines={false}
                   withHorizontalLines={true}
                   fromZero={false}
+                  onDataPointClick={({ index }) => {
+                    setSelectedChartData({
+                      type: "weight",
+                      label: weightTrendData[index].periodLabel,
+                      items: [
+                        {
+                          exerciseName: t("statistics.weightTrend"),
+                          value: `${weightTrendData[index].averageWeight.toFixed(1)}kg`,
+                          color: colors.primary,
+                        },
+                      ],
+                    });
+                    setChartModalVisible(true);
+                  }}
                 />
               </View>
             )}
@@ -518,43 +527,13 @@ export default function StatisticsScreen() {
           </View>
         )}
 
-        {/* 운동별 통계 - 바차트 */}
+        {/* 운동별 통계 - 세트 수 추이 */}
         {exerciseStats.length > 0 && (
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("statistics.detailedStats")}</Text>
-
-            {/* 체크박스 필터 */}
-            <View style={[styles.filterContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <Text style={[styles.filterTitle, { color: colors.text }]}>{t("statistics.selectExercises")}</Text>
-              <View style={styles.checkboxContainer}>
-                {exerciseStats.slice(0, 10).map((ex) => {
-                  const isSelected = selectedExercises.has(ex.exerciseName);
-                  return (
-                    <TouchableOpacity
-                      key={ex.exerciseName}
-                      style={[
-                        styles.checkboxItem,
-                        isSelected && {
-                          backgroundColor: "rgba(99, 102, 241, 0.15)",
-                          borderColor: colors.primary,
-                        },
-                      ]}
-                      onPress={() => toggleExercise(ex.exerciseName)}
-                    >
-                      <View style={[styles.checkbox, { borderColor: colors.border }, isSelected && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
-                        {isSelected && <Ionicons name="checkmark" size={12} color="#fff" />}
-                      </View>
-                      <Text style={[styles.checkboxLabel, { color: isSelected ? colors.primary : colors.text }]}>{getExerciseName(t, ex.exerciseId, ex.exerciseName)}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-
             {/* 세트 수 추이 차트 */}
-            {selectedExercises.size > 0 &&
-              (() => {
-                const selectedData = exerciseStats.filter((ex) => selectedExercises.has(ex.exerciseName));
+            {(() => {
+                // 자동으로 상위 5개 운동 사용
+                const selectedData = exerciseStats.slice(0, 5);
 
                 // 데이터가 없는 경우
                 if (selectedData.length === 0) {
@@ -607,19 +586,53 @@ export default function StatisticsScreen() {
                   );
                 }
 
-                // 라인 차트용 데이터 준비
-                const chartColors = ["#4F46E5", "#059669", "#D97706", "#DC2626", "#7C3AED"];
-                const datasets = selectedData
+                // 라인 차트용 데이터 준비 - 테두리 없이 순수한 색상으로 크기만 차별화
+                const chartColors = ["#6366F1", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6"];
+                const dotConfigs = [
+                  { r: 9, strokeWidth: 0, stroke: "transparent", opacity: 0.95 }, // 가장 큰 점
+                  { r: 6.5, strokeWidth: 0, stroke: "transparent", opacity: 0.95 }, // 작은 점
+                  { r: 8, strokeWidth: 0, stroke: "transparent", opacity: 0.95 }, // 큰 점
+                  { r: 6, strokeWidth: 0, stroke: "transparent", opacity: 0.95 }, // 가장 작은 점
+                  { r: 7.5, strokeWidth: 0, stroke: "transparent", opacity: 0.95 }, // 중간 큰 점
+                ];
+
+                // 큰 점을 먼저 그리고 작은 점을 나중에 그려서 작은 점이 위에 오도록
+                // 겹치는 점들이 보이도록 아주 작은 오프셋 추가
+                const offsets = [0, 0.03, -0.03, 0.05, -0.05]; // 각 운동별 오프셋
+
+                const datasetsWithConfig = selectedData
                   .filter((ex) => setsTrends.get(ex.exerciseId) && setsTrends.get(ex.exerciseId)!.length > 0)
                   .filter((ex) => chartVisibleExercises.has(ex.exerciseName))
                   .map((ex, idx) => {
                     const trends = setsTrends.get(ex.exerciseId) || [];
+                    const dotConfig = dotConfigs[idx % dotConfigs.length];
+                    const baseColor = chartColors[idx % chartColors.length];
+                    const offset = offsets[idx % offsets.length]; // 오프셋 적용
+                    // 투명도를 적용한 색상 생성
+                    const colorWithOpacity = baseColor + Math.round(dotConfig.opacity * 255).toString(16).padStart(2, '0');
+
                     return {
-                      data: trends.map((t) => t.averageSets),
-                      color: (_opacity = 1) => chartColors[idx % chartColors.length],
-                      strokeWidth: 2,
+                      dataset: {
+                        // 아주 작은 오프셋을 추가해서 겹치지 않도록
+                        data: trends.map((t) => t.averageSets + offset),
+                        color: (_opacity = 1) => colorWithOpacity,
+                        strokeWidth: 3,
+                        withDots: true,
+                        propsForDots: {
+                          r: dotConfig.r.toString(),
+                          strokeWidth: dotConfig.strokeWidth.toString(),
+                          stroke: dotConfig.stroke,
+                          fill: colorWithOpacity,
+                        },
+                      },
+                      size: dotConfig.r,
+                      originalColor: baseColor,
+                      offset: offset, // 오프셋 저장 (나중에 모달에서 원본 값 표시용)
                     };
-                  });
+                  })
+                  .sort((a, b) => b.size - a.size); // 큰 것부터 정렬 (큰 점이 먼저 그려지도록)
+
+                const datasets = datasetsWithConfig.map((d) => d.dataset);
 
                 // 첫 번째 운동의 레이블 사용
                 const labels = setsTrends.get(selectedData[0].exerciseId)?.map((t) => t.periodLabel) || [];
@@ -646,18 +659,50 @@ export default function StatisticsScreen() {
                     </View>
 
                     <View style={[styles.chartContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                      {/* 범례 */}
-                      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 16, paddingHorizontal: 8, width: "100%" }}>
+                      {/* 범례 - 스타일 개선 */}
+                      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 14, marginBottom: 20, paddingHorizontal: 4, width: "100%" }}>
                         {selectedData
                           .filter((ex) => setsTrends.get(ex.exerciseId) && setsTrends.get(ex.exerciseId)!.length > 0)
                           .map((ex, idx) => (
                             <TouchableOpacity
                               key={ex.exerciseName}
                               onPress={() => toggleChartExerciseVisibility(ex.exerciseName)}
-                              style={{ flexDirection: "row", alignItems: "center", gap: 6, opacity: chartVisibleExercises.has(ex.exerciseName) ? 1 : 0.5 }} // Add opacity for visual feedback
+                              style={{
+                                flexDirection: "row",
+                                alignItems: "center",
+                                gap: 8,
+                                paddingVertical: 6,
+                                paddingHorizontal: 10,
+                                borderRadius: 20,
+                                backgroundColor: chartVisibleExercises.has(ex.exerciseName) ? chartColors[idx % chartColors.length] + "15" : colors.border + "20",
+                                borderWidth: 1.5,
+                                borderColor: chartVisibleExercises.has(ex.exerciseName) ? chartColors[idx % chartColors.length] + "40" : colors.border + "40",
+                                opacity: chartVisibleExercises.has(ex.exerciseName) ? 1 : 0.5,
+                              }}
                             >
-                              <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: chartColors[idx % chartColors.length] }} />
-                              <Text style={{ fontSize: 12, color: colors.text, textDecorationLine: chartVisibleExercises.has(ex.exerciseName) ? "none" : "line-through" }}>{getExerciseName(t, ex.exerciseId, ex.exerciseName)}</Text>
+                              <View
+                                style={{
+                                  width: 14,
+                                  height: 14,
+                                  borderRadius: 7,
+                                  backgroundColor: chartColors[idx % chartColors.length],
+                                  shadowColor: chartColors[idx % chartColors.length],
+                                  shadowOffset: { width: 0, height: 2 },
+                                  shadowOpacity: 0.4,
+                                  shadowRadius: 3,
+                                  elevation: 3,
+                                }}
+                              />
+                              <Text
+                                style={{
+                                  fontSize: 13,
+                                  fontWeight: "600",
+                                  color: chartVisibleExercises.has(ex.exerciseName) ? colors.text : colors.textSecondary,
+                                  textDecorationLine: chartVisibleExercises.has(ex.exerciseName) ? "none" : "line-through",
+                                }}
+                              >
+                                {getExerciseName(t, ex.exerciseId, ex.exerciseName)}
+                              </Text>
                             </TouchableOpacity>
                           ))}
                       </View>
@@ -669,7 +714,7 @@ export default function StatisticsScreen() {
                           legend: [], // 커스텀 범례 사용
                         }}
                         width={Dimensions.get("window").width - 40}
-                        height={220}
+                        height={240}
                         chartConfig={{
                           backgroundColor: colors.surface,
                           backgroundGradientFrom: colors.surface,
@@ -681,13 +726,13 @@ export default function StatisticsScreen() {
                             borderRadius: 16,
                           },
                           propsForDots: {
-                            r: "4",
-                            strokeWidth: "2",
-                            stroke: colors.primary,
+                            r: "5",
+                            strokeWidth: "0",
+                            stroke: "transparent",
                           },
                           propsForBackgroundLines: {
-                            strokeDasharray: "0", // Solid line
-                            stroke: colors.border + "50", // Lighter border color
+                            strokeDasharray: "0",
+                            stroke: colors.border + "40",
                             strokeWidth: 1,
                           },
                         }}
@@ -700,63 +745,48 @@ export default function StatisticsScreen() {
                         withHorizontalLabels={true}
                         withDots={true}
                         withInnerLines={true}
-                        withOuterLines={true}
+                        withOuterLines={false}
                         withVerticalLines={false}
                         withHorizontalLines={true}
+                        withShadow={false}
                         fromZero={false}
+                        onDataPointClick={({ index }) => {
+                          // 모든 visible 데이터의 해당 인덱스 값을 수집
+                          // datasetsWithConfig의 originalColor를 사용하여 정렬 전 원본 순서의 색상 사용
+                          const visibleExercises = selectedData.filter(
+                            (ex) => setsTrends.get(ex.exerciseId) && setsTrends.get(ex.exerciseId)!.length > 0 && chartVisibleExercises.has(ex.exerciseName)
+                          );
+
+                          const items = visibleExercises
+                            .map((exercise, idx) => {
+                              const trends = setsTrends.get(exercise.exerciseId) || [];
+                              const value = trends[index]?.averageSets;
+                              if (value !== undefined) {
+                                return {
+                                  exerciseName: getExerciseName(t, exercise.exerciseId, exercise.exerciseName),
+                                  value: value.toFixed(1),
+                                  color: chartColors[idx % chartColors.length],
+                                };
+                              }
+                              return null;
+                            })
+                            .filter((item): item is NonNullable<typeof item> => item !== null);
+
+                          if (items.length > 0) {
+                            setSelectedChartData({
+                              type: "sets",
+                              label: labels[index],
+                              items,
+                            });
+                            setChartModalVisible(true);
+                          }
+                        }}
+                        segments={4}
                       />
                     </View>
                   </>
                 );
               })()}
-
-            {/* 상세 통계 테이블 */}
-            {selectedExercises.size > 0 && (
-              <View style={[styles.exerciseStatsContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                {exerciseStats
-                  .filter((ex) => selectedExercises.has(ex.exerciseName))
-                  .map((ex, index) => (
-                    <View key={index} style={[styles.exerciseStatItem, { borderBottomColor: colors.border }]}>
-                      <View style={styles.exerciseStatHeader}>
-                        <Text style={[styles.exerciseStatName, { color: colors.text }]}>{getExerciseName(t, ex.exerciseId, ex.exerciseName)}</Text>
-                        <Text style={[styles.exerciseStatWorkouts, { color: colors.textSecondary }]}>{t("statistics.workoutDays", { count: ex.workoutCount })}</Text>
-                      </View>
-                      <View style={styles.exerciseStatGrid}>
-                        <View style={styles.exerciseStatCell}>
-                          <Text style={[styles.exerciseStatValue, { color: colors.primary }]}>
-                            {ex.totalSets} {t("routines.sets")}
-                          </Text>
-                          <Text style={[styles.exerciseStatLabel, { color: colors.textSecondary }]}>{t("statistics.totalSets")}</Text>
-                        </View>
-                        <View style={styles.exerciseStatCell}>
-                          <Text style={[styles.exerciseStatValue, { color: colors.primary }]}>
-                            {ex.totalReps}
-                            {t("statistics.timesUnit")}
-                          </Text>
-                          <Text style={[styles.exerciseStatLabel, { color: colors.textSecondary }]}>{t("statistics.totalReps")}</Text>
-                        </View>
-                        <View style={styles.exerciseStatCell}>
-                          <Text style={[styles.exerciseStatValue, { color: colors.primary }]}>{ex.totalVolume.toLocaleString()}kg</Text>
-                          <Text style={[styles.exerciseStatLabel, { color: colors.textSecondary }]}>{t("statistics.totalVolume")}</Text>
-                        </View>
-                      </View>
-                      {ex.avgWeight > 0 && (
-                        <View style={styles.exerciseStatFooter}>
-                          <Text style={[styles.exerciseStatDetail, { color: colors.textSecondary }]}>
-                            {t("statistics.average")} {ex.avgWeight}kg · {t("statistics.maximum")} {ex.maxWeight}kg
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-                  ))}
-              </View>
-            )}
-
-            {selectedExercises.size === 0 && (
-              <View style={[styles.emptyContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t("statistics.selectExercisePlease")}</Text>
-              </View>
-            )}
           </View>
         )}
 
@@ -767,25 +797,30 @@ export default function StatisticsScreen() {
             <View style={[styles.chartContainer, { backgroundColor: colors.surface }]}>
               <PieChart
                 data={exerciseTypeDistribution.map((item, index) => {
-                  const chartColors = ["#4F46E5", "#059669", "#D97706", "#DC2626", "#7C3AED"];
+                  // 더 화려하고 선명한 색상 팔레트
+                  const vibrantColors = ["#6366F1", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#14B8A6", "#F97316"];
                   return {
                     name: getExerciseTypeName(t, item.type),
                     population: item.count,
-                    color: chartColors[index % chartColors.length],
+                    color: vibrantColors[index % vibrantColors.length],
                     legendFontColor: colors.text,
-                    legendFontSize: 13,
+                    legendFontSize: 14,
                   };
                 })}
                 width={Dimensions.get("window").width - 40}
-                height={220}
+                height={240}
                 chartConfig={{
                   color: (_opacity = 1) => colors.primary,
                   labelColor: (_opacity = 1) => colors.text,
                 }}
                 accessor="population"
                 backgroundColor="transparent"
+                paddingLeft="15"
                 absolute
                 hasLegend={true}
+                style={{
+                  borderRadius: 16,
+                }}
               />
             </View>
           </View>
@@ -793,6 +828,73 @@ export default function StatisticsScreen() {
 
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* 차트 데이터 상세 정보 모달 */}
+      <Modal animationType="fade" transparent={true} visible={chartModalVisible} onRequestClose={() => setChartModalVisible(false)}>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setChartModalVisible(false)}>
+          <TouchableOpacity activeOpacity={1} style={[styles.modalContent, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            {selectedChartData && (
+              <>
+                {/* 기간/레이블 */}
+                <Text style={[styles.modalLabel, { color: colors.text, fontSize: 18, fontWeight: "700", marginBottom: 16 }]}>{selectedChartData.label}</Text>
+
+                {/* 운동 리스트 - ScrollView로 감싸기 */}
+                <ScrollView style={{ width: "100%", maxHeight: 400 }} showsVerticalScrollIndicator={false}>
+                  <View style={{ width: "100%", marginBottom: 16 }}>
+                    {selectedChartData.items.map((item, idx) => (
+                      <View
+                        key={idx}
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          paddingVertical: 12,
+                          paddingHorizontal: 16,
+                          marginBottom: 8,
+                          borderRadius: 12,
+                          backgroundColor: item.color + "15",
+                          borderWidth: 2,
+                          borderColor: item.color + "40",
+                        }}
+                      >
+                        {/* 색상 인디케이터 */}
+                        <View
+                          style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 16,
+                            backgroundColor: item.color,
+                            marginRight: 12,
+                            shadowColor: item.color,
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.4,
+                            shadowRadius: 4,
+                            elevation: 4,
+                          }}
+                        />
+
+                        {/* 운동 정보 */}
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.modalItemName, { color: colors.text }]}>{item.exerciseName}</Text>
+                          <Text style={[styles.modalItemValue, { color: colors.text }]}>
+                            {selectedChartData.type === "sets" && `${item.value} ${t("routines.sets")}`}
+                            {selectedChartData.type === "pie" && item.value}
+                            {selectedChartData.type === "weight" && item.value}
+                          </Text>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                </ScrollView>
+
+                {/* 닫기 버튼 */}
+                <TouchableOpacity style={[styles.modalCloseButton, { backgroundColor: colors.primary }]} onPress={() => setChartModalVisible(false)}>
+                  <Text style={[styles.modalCloseButtonText, { color: colors.buttonText }]}>{t("common.confirm")}</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -1183,5 +1285,66 @@ const getStyles = (colors: any) => StyleSheet.create({
   prTotal: {
     fontSize: 12,
     fontWeight: "500",
+  },
+  // 모달 스타일
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    width: "85%",
+    maxWidth: 400,
+    maxHeight: "80%",
+    padding: 24,
+    borderRadius: 20,
+    alignItems: "center",
+    borderWidth: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  modalExerciseName: {
+    fontSize: 20,
+    fontWeight: "700",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  modalLabel: {
+    fontSize: 14,
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  modalValue: {
+    fontSize: 32,
+    fontWeight: "800",
+    marginBottom: 24,
+    textAlign: "center",
+  },
+  modalItemName: {
+    fontSize: 15,
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  modalItemValue: {
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  modalCloseButton: {
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  modalCloseButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
   },
 });

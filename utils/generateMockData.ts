@@ -81,6 +81,7 @@ export async function generateMockWorkoutData() {
 
   // 저장
   await storage.setArray(STORAGE_KEYS.WORKOUT_RECORDS, allRecords);
+  console.log(`✅ Successfully saved ${allRecords.length} records to storage.`);
 
   console.log(`✅ Generated ${mockRecords.length} mock workout records`);
   return mockRecords.length;
