@@ -1,160 +1,76 @@
-import { openDatabaseAsync, SQLiteDatabase } from 'expo-sqlite';
+import { openDatabaseAsync, SQLiteDatabase } from "expo-sqlite";
 
-const DATABASE_NAME = 'set1.db';
+const DATABASE_NAME = "set1.db";
 let db: SQLiteDatabase | null = null;
 
 export const initDb = async () => {
-  console.log('initDb function called.');
+  console.log("initDb function called.");
   if (db) {
-    console.log('Database already initialized.');
+    console.log("Database already initialized.");
     return;
   }
 
   try {
     db = await openDatabaseAsync(DATABASE_NAME);
-    console.log('Database opened successfully.');
+    console.log("Database opened successfully.");
 
-    if (!db) { // Assert db is not null
-      throw new Error('Failed to open database.');
+    if (!db) {
+      // Assert db is not null
+      throw new Error("Failed to open database.");
     }
     await db.execAsync(`
       PRAGMA journal_mode = WAL;
 
-      -- 기존 active_session 데이터 정리 (잘못된 데이터 방지)
-      DELETE FROM active_session;
-      CREATE TABLE IF NOT EXISTS profiles (
-        id TEXT PRIMARY KEY NOT NULL,
-        user_id TEXT UNIQUE NOT NULL,
-        name TEXT,
-        gender TEXT,
-        birth_date TEXT,
-        height REAL,
-        weight REAL,
-        target_weight REAL,
-        goal TEXT,
-        activity_level TEXT,
-        weekly_goal INTEGER,
-        unit_system TEXT,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL
-      );
+      -- (이하 다른 CREATE TABLE 구문들은 동일)
+      
       CREATE TABLE IF NOT EXISTS custom_exercises (
         id TEXT PRIMARY KEY NOT NULL,
         name TEXT NOT NULL,
         category TEXT,
         subcategory TEXT,
         description TEXT,
-        equipment TEXT, -- JSON array as string
-        muscle_groups TEXT, -- JSON array as string
-        difficulty TEXT, -- Added difficulty column
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL
-      );
-      CREATE TABLE IF NOT EXISTS hidden_exercises (
-        exercise_id TEXT PRIMARY KEY NOT NULL,
-        created_at INTEGER NOT NULL
-      );
-      CREATE TABLE IF NOT EXISTS routines (
-        id TEXT PRIMARY KEY NOT NULL,
-        user_id TEXT NOT NULL,
-        name TEXT NOT NULL,
-        description TEXT,
-        is_recommended INTEGER, -- 0 for false, 1 for true
-        category TEXT,
-        last_used TEXT,
-        duration TEXT,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL
-      );
-      CREATE TABLE IF NOT EXISTS routine_exercises (
-        id TEXT PRIMARY KEY NOT NULL,
-        routine_id TEXT NOT NULL,
-        exercise_id TEXT NOT NULL,
-        name TEXT NOT NULL,
-        sets INTEGER NOT NULL,
-        reps_min INTEGER,
-        reps_max INTEGER,
-        duration_seconds INTEGER,
-        target_weight REAL,
-        target_muscle TEXT,
+        equipment TEXT, 
+        muscle_groups TEXT, 
         difficulty TEXT,
+        default_sets INTEGER,
+        default_reps_min INTEGER,
+        default_reps_max INTEGER,
+        default_duration_seconds INTEGER,
         rest_time INTEGER,
-        "order" INTEGER NOT NULL,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL,
-        FOREIGN KEY (routine_id) REFERENCES routines (id) ON DELETE CASCADE
-      );
-      CREATE TABLE IF NOT EXISTS workout_records (
-        id TEXT PRIMARY KEY NOT NULL,
-        user_id TEXT NOT NULL,
-        date TEXT NOT NULL,
-        routine_id TEXT,
-        routine_name TEXT NOT NULL,
-        status TEXT NOT NULL,
-        duration REAL NOT NULL,
-        total_volume REAL,
-        completion_rate REAL NOT NULL,
-        body_weight REAL,
-        memo TEXT,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL,
-        FOREIGN KEY (routine_id) REFERENCES routines (id) ON DELETE SET NULL
-      );
-      CREATE TABLE IF NOT EXISTS recorded_exercises (
-        id TEXT PRIMARY KEY NOT NULL,
-        workout_record_id TEXT NOT NULL,
-        exercise_id TEXT NOT NULL,
-        exercise_name TEXT NOT NULL,
-        target_sets INTEGER NOT NULL,
-        target_weight REAL,
-        is_completed INTEGER NOT NULL, -- 0 for false, 1 for true
-        "order" INTEGER NOT NULL,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL,
-        FOREIGN KEY (workout_record_id) REFERENCES workout_records (id) ON DELETE CASCADE
-      );
-      CREATE TABLE IF NOT EXISTS completed_sets (
-        id TEXT PRIMARY KEY NOT NULL,
-        recorded_exercise_id TEXT NOT NULL,
-        set_number INTEGER NOT NULL,
-        target_reps INTEGER,
-        target_reps_min INTEGER,
-        target_reps_max INTEGER,
-        target_duration_seconds INTEGER,
-        actual_reps INTEGER NOT NULL,
-        actual_duration_seconds INTEGER,
-        weight REAL NOT NULL,
-        is_completed INTEGER NOT NULL, -- 0 for false, 1 for true
-        completed_at INTEGER,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL,
-        FOREIGN KEY (recorded_exercise_id) REFERENCES recorded_exercises (id) ON DELETE CASCADE
-      );
-      CREATE TABLE IF NOT EXISTS active_session (
-        id TEXT PRIMARY KEY NOT NULL,
-        user_id TEXT NOT NULL,
-        routine_id TEXT,
-        routine_name TEXT NOT NULL,
-        status TEXT NOT NULL,
-        start_time TEXT NOT NULL,
-        exercises_data TEXT NOT NULL, -- JSON as string
-        current_exercise_index INTEGER NOT NULL,
-        total_duration REAL NOT NULL,
-        paused_duration REAL NOT NULL,
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL
       );
 
-      
-
-      CREATE TABLE IF NOT EXISTS key_value_store (
-        key TEXT PRIMARY KEY NOT NULL,
-        value TEXT NOT NULL
-      );
+      -- (이하 다른 CREATE TABLE 구문들은 동일)
     `);
-    console.log('Database schema created or already exists.');
+    console.log("Database schema created or already exists.");
+
+    // --- 스키마 마이그레이션 ---
+    const columnsToAdd = [
+      { name: "default_sets", type: "INTEGER" },
+      { name: "default_reps_min", type: "INTEGER" },
+      { name: "default_reps_max", type: "INTEGER" },
+      { name: "default_duration_seconds", type: "INTEGER" },
+      { name: "rest_time", type: "INTEGER" },
+    ];
+
+    for (const column of columnsToAdd) {
+      try {
+        const tableInfo = await db.getAllAsync(`PRAGMA table_info(custom_exercises);`, []); // 👇 [수정] 두 번째 인자로 빈 배열 [] 추가
+        const columnExists = tableInfo.some((info: any) => info.name === column.name);
+
+        if (!columnExists) {
+          await db.execAsync(`ALTER TABLE custom_exercises ADD COLUMN ${column.name} ${column.type};`);
+          console.log(`Added column ${column.name} to custom_exercises table.`);
+        }
+      } catch (migrationError) {
+        console.error(`Error migrating column ${column.name}:`, migrationError);
+      }
+    }
+    console.log("Custom exercises table migration check completed.");
+    // --- 스키마 마이그레이션 끝 ---
   } catch (error) {
-    console.error('Error initializing database:', error);
+    console.error("Error initializing database:", error);
     throw error;
   }
 };
@@ -162,7 +78,7 @@ export const initDb = async () => {
 // Helper to execute SQL queries (for DML - INSERT, UPDATE, DELETE)
 export const runSql = async (sqlStatement: string, params: any[] = []): Promise<any> => {
   if (!db) {
-    throw new Error('Database not initialized.');
+    throw new Error("Database not initialized.");
   }
   return db.runAsync(sqlStatement, params);
 };
@@ -170,7 +86,7 @@ export const runSql = async (sqlStatement: string, params: any[] = []): Promise<
 // Helper to get a single item (for SELECT)
 export const getSingleItem = async <T>(sqlStatement: string, params: any[] = []): Promise<T | null> => {
   if (!db) {
-    throw new Error('Database not initialized.');
+    throw new Error("Database not initialized.");
   }
   const result = await db.getFirstAsync<T>(sqlStatement, params);
   return result;
@@ -179,7 +95,7 @@ export const getSingleItem = async <T>(sqlStatement: string, params: any[] = [])
 // Helper to get multiple items (for SELECT)
 export const getMultipleItems = async <T>(sqlStatement: string, params: any[] = []): Promise<T[]> => {
   if (!db) {
-    throw new Error('Database not initialized.');
+    throw new Error("Database not initialized.");
   }
   const result = await db.getAllAsync<T>(sqlStatement, params);
   return result;

@@ -29,7 +29,7 @@ export const convertExerciseToRoutine = async (exercise: {
       {
         id: exercise.id,
         name: exercise.name,
-        sets: exercise.defaultSets || 3, // 기본값 추가
+        sets: exercise.defaultSets, // 기본값 추가
         repsMin: exercise.defaultRepsMin || (hasRepsInfo ? undefined : 10),
         repsMax: exercise.defaultRepsMax || (hasRepsInfo ? undefined : 12),
         durationSeconds: exercise.defaultDurationSeconds,

@@ -1,36 +1,19 @@
-import { ThemedText } from "@/components/themed-text";
-import { ThemedView } from "@/components/themed-view";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Routine } from "@/models";
-import { routineService } from "@/services/routine";
-import { exerciseService } from "@/services/exercise";
+import { CreateRoutineData } from "@/models/routine";
 import { workoutSessionService } from "@/services";
+import { exerciseService } from "@/services/exercise";
+import { routineService } from "@/services/routine";
 import { getOrCreateUserId } from "@/utils/userIdHelper";
 import { convertExerciseToRoutine } from "@/utils/workoutHelpers";
 import { Ionicons } from "@expo/vector-icons";
-import { Link, router, useFocusEffect } from "expo-router";
-import { useTranslation } from "react-i18next";
+import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { CreateRoutineData } from "@/models/routine";
-import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Modal,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-  ScrollView,
-  TouchableWithoutFeedback,
-  KeyboardAvoidingView,
-  Platform,
-  Keyboard,
-} from "react-native";
+import { useTranslation } from "react-i18next";
+import { Alert, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
+import DraggableFlatList, { RenderItemParams, ScaleDecorator, ShadowDecorator } from "react-native-draggable-flatlist";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import DraggableFlatList, { ScaleDecorator, ShadowDecorator, RenderItemParams } from "react-native-draggable-flatlist";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { styles } from "../style/Routine.styles";
 
 // reps를 표시용 문자열로 변환하는 헬퍼 함수
 const formatReps = (repsMin?: number, repsMax?: number, durationSeconds?: number): string => {
@@ -562,8 +545,10 @@ export default function RoutinesScreen() {
 
     try {
       if (editingExerciseId) {
-        // 수정 모드
-        await exerciseService.updateExercise(editingExerciseId, {
+        // --- 수정 모드 ---
+
+        // 👇 1. 업데이트할 데이터를 객체 변수로 먼저 만듭니다.
+        const exerciseDataToUpdate = {
           name: customExerciseName,
           category: customExerciseCategory,
           muscleGroups: [customExerciseMuscle],
@@ -572,11 +557,18 @@ export default function RoutinesScreen() {
           defaultRepsMin: parseInt(customExerciseDefaultRepsMin) || 10,
           defaultRepsMax: parseInt(customExerciseDefaultRepsMax) || 15,
           targetWeight: customExerciseTargetWeight ? parseFloat(customExerciseTargetWeight) : undefined,
-        });
+        };
+
+        // 👇 2. 서비스 호출 전에 만든 변수를 로그로 남깁니다.
+        console.log(`[DB LOG] Updating exercise (ID: ${editingExerciseId}):`, JSON.stringify(exerciseDataToUpdate, null, 2));
+
+        // 👇 3. 위에서 만든 변수를 사용하여 서비스 함수를 한 번만 호출합니다.
+        await exerciseService.updateExercise(editingExerciseId, exerciseDataToUpdate);
+
         Alert.alert(t("workout.completed"), t("customExercise.updated"));
       } else {
-        // 추가 모드
-        await exerciseService.createExercise({
+        // --- 추가 모드 ---
+        const newExerciseData = {
           userId: await getOrCreateUserId(),
           name: customExerciseName,
           category: customExerciseCategory,
@@ -587,21 +579,18 @@ export default function RoutinesScreen() {
           defaultRepsMax: parseInt(customExerciseDefaultRepsMax) || 15,
           targetWeight: customExerciseTargetWeight ? parseFloat(customExerciseTargetWeight) : undefined,
           isCustom: true,
-        });
+        };
+
+        console.log("[DB LOG] Creating new exercise:", JSON.stringify(newExerciseData, null, 2));
+
+        await exerciseService.createExercise(newExerciseData);
         Alert.alert(t("workout.completed"), t("customExercise.added"));
-      } // 모달 닫고 초기화
+      }
 
-      setShowCustomExerciseModal(false);
-      setCustomExerciseName("");
-      setCustomExerciseMuscle("");
-      setCustomExerciseCategory("bodyweight");
-      setCustomExerciseDifficulty("초급");
-      setCustomExerciseDefaultSets("3");
-      setCustomExerciseDefaultRepsMin("10");
-      setCustomExerciseDefaultRepsMax("15");
-      setCustomExerciseTargetWeight("");
-      setEditingExerciseId(null); // 커스텀 운동 목록 다시 로드
+      // 모달 닫고 상태 초기화
+      closeCustomExerciseModal();
 
+      // 커스텀 운동 목록 다시 로드
       await loadCustomExercises();
     } catch (error) {
       console.error("Failed to save custom exercise:", error);
@@ -667,10 +656,11 @@ export default function RoutinesScreen() {
     name: ex.name,
     category: ex.category,
     targetMuscle: ex.muscleGroups?.[0] || "",
-    difficulty: "초급",
-    defaultSets: 3,
-    defaultRepsMin: 10, // Default for custom exercises
-    defaultRepsMax: 15, // Default for custom exercises
+    // 각 속성에 대해 DB 값을 우선 사용하고, 없을 경우 기본값을 지정합니다.
+    difficulty: ex.difficulty || "초급",
+    defaultSets: ex.defaultSets || 3, // ex.defaultSets 값을 사용하도록 수정!
+    defaultRepsMin: ex.defaultRepsMin || 10,
+    defaultRepsMax: ex.defaultRepsMax || 15,
     isCustom: true,
   }));
 
@@ -702,6 +692,7 @@ export default function RoutinesScreen() {
   }); // 개별 운동 바로 시작
 
   const handlePlayExercise = async (exercise: any) => {
+    console.log('[DEBUG] Data passed to convertExerciseToRoutine:', JSON.stringify(exercise, null, 2));
     try {
       const routine = await convertExerciseToRoutine(exercise);
       await workoutSessionService.startSession(await getOrCreateUserId(), routine);
@@ -877,9 +868,7 @@ export default function RoutinesScreen() {
               </TouchableOpacity>
               <View style={styles.routineInfo}>
                 <View style={styles.routineNameRow}>
-                  <Text style={[styles.routineName, { color: colors.text }]}>
-                    {routine.name}
-                  </Text>
+                  <Text style={[styles.routineName, { color: colors.text }]}>{routine.name}</Text>
                   {routine.isRecommended && (
                     <View style={[styles.recommendedBadge, { backgroundColor: colors.primary }]}>
                       <Text style={[styles.recommendedText, { color: colors.buttonText }]}>추천</Text>
@@ -893,7 +882,7 @@ export default function RoutinesScreen() {
                 )}
                 <View style={styles.routineMeta}>
                   <Text style={[styles.lastUsed, { color: colors.icon }]}>마지막 사용: {routine.lastUsed || "사용한 적 없음"}</Text>
-                  <Text style={[styles.routineDuration, { color: colors.icon }]}>⏱ {routine.duration || t('routines.exerciseCount', { count: routine.exercises.length })}</Text>
+                  <Text style={[styles.routineDuration, { color: colors.icon }]}>⏱ {routine.duration || t("routines.exerciseCount", { count: routine.exercises.length })}</Text>
                 </View>
               </View>
             </View>
@@ -985,9 +974,15 @@ export default function RoutinesScreen() {
           {/* 헤더 */}
           <View style={styles.header}>
             <View />
-            <TouchableOpacity style={[styles.addButton, { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 20, backgroundColor: colors.primary + '10' }]} onPress={() => router.push("/routine-builder")}>
+            <TouchableOpacity
+              style={[
+                styles.addButton,
+                { flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 20, backgroundColor: colors.primary + "10" },
+              ]}
+              onPress={() => router.push("/routine-builder")}
+            >
               <Ionicons name="add-circle-outline" size={22} color={colors.primary} />
-              <Text style={{ color: colors.primary, fontSize: 15, fontWeight: '600' }}>{t("routines.createRoutine")}</Text>
+              <Text style={{ color: colors.primary, fontSize: 15, fontWeight: "600" }}>{t("routines.createRoutine")}</Text>
             </TouchableOpacity>
           </View>
 
@@ -1102,9 +1097,15 @@ export default function RoutinesScreen() {
           {/* 헤더 */}
           <View style={styles.header}>
             <View />
-            <TouchableOpacity style={[styles.addButton, { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 20, backgroundColor: colors.primary + '10' }]} onPress={() => router.push("/routine-builder")}>
+            <TouchableOpacity
+              style={[
+                styles.addButton,
+                { flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 20, backgroundColor: colors.primary + "10" },
+              ]}
+              onPress={() => router.push("/routine-builder")}
+            >
               <Ionicons name="add-circle-outline" size={22} color={colors.primary} />
-              <Text style={{ color: colors.primary, fontSize: 15, fontWeight: '600' }}>{t("routines.createRoutine")}</Text>
+              <Text style={{ color: colors.primary, fontSize: 15, fontWeight: "600" }}>{t("routines.createRoutine")}</Text>
             </TouchableOpacity>
           </View>
 
@@ -1542,7 +1543,7 @@ export default function RoutinesScreen() {
                                 </Text>
                               )}
                               <View style={styles.routineMeta}>
-                                <Text style={[styles.routineDuration, { color: colors.icon }]}>⏱ {t('routines.exerciseCount', { count: routine.exercises.length })}</Text>
+                                <Text style={[styles.routineDuration, { color: colors.icon }]}>⏱ {t("routines.exerciseCount", { count: routine.exercises.length })}</Text>
                               </View>
                             </View>
                             <View style={styles.routineActions}>
@@ -1644,7 +1645,7 @@ export default function RoutinesScreen() {
                                         </Text>
                                       )}
                                       <View style={styles.routineMeta}>
-                                        <Text style={[styles.routineDuration, { color: colors.icon }]}>⏱ {t('routines.exerciseCount', { count: routine.exercises.length })}</Text>
+                                        <Text style={[styles.routineDuration, { color: colors.icon }]}>⏱ {t("routines.exerciseCount", { count: routine.exercises.length })}</Text>
                                       </View>
                                     </View>
                                     <View style={styles.routineActions}>
@@ -1940,594 +1941,3 @@ export default function RoutinesScreen() {
     </GestureHandlerRootView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 100,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 20,
-    paddingTop: 10,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-  },
-  addButton: {
-    padding: 4,
-  },
-  segmentContainer: {
-    flexDirection: "row",
-
-    borderRadius: 8,
-    padding: 4,
-    marginHorizontal: 20,
-    marginBottom: 20,
-  },
-  segmentButton: {
-    flex: 1,
-    paddingVertical: 10,
-    alignItems: "center",
-    borderRadius: 6,
-  },
-  segmentButtonActive: {},
-  segmentText: {
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  segmentTextActive: {
-    fontWeight: "600",
-  },
-  categoryContainer: {
-    marginBottom: 20,
-  },
-  categoryContent: {
-    paddingHorizontal: 20,
-    gap: 12,
-  },
-  routinesList: {
-    paddingHorizontal: 20,
-    gap: 12,
-  },
-  routineCard: {
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-
-    gap: 12,
-  },
-  routineHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: 8,
-  },
-  routineMainInfo: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 8,
-  },
-  dragHandle: {
-    padding: 4,
-    marginRight: 4,
-  },
-  routineInfo: {
-    flex: 1,
-    gap: 8,
-    minWidth: 0,
-  },
-  routineName: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  routineDescription: {
-    fontSize: 14,
-    marginTop: 4,
-    lineHeight: 20,
-  },
-  routineMeta: {
-    flexDirection: "column",
-    gap: 4,
-    flexWrap: "wrap",
-  },
-  levelBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  levelBeginner: {
-    backgroundColor: "#4CAF50" + "20",
-  },
-  levelIntermediate: {
-    backgroundColor: "#FF9800" + "20",
-  },
-  levelAdvanced: {
-    backgroundColor: "#F44336" + "20",
-  },
-  levelText: {
-    fontSize: 11,
-    fontWeight: "600",
-  },
-  
-  
-  addToMyButton: {
-    padding: 8,
-    borderRadius: 8,
-  },
-  routineActions: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  actionButton: {
-    padding: 8,
-  },
-  lastUsed: {
-    fontSize: 11,
-  },
-  routineDuration: {
-    fontSize: 11,
-  },
-  emptyState: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 80,
-    paddingHorizontal: 40,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: "600",
-
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptyDescription: {
-    fontSize: 14,
-
-    textAlign: "center",
-    lineHeight: 20,
-  },
-  exerciseList: {
-    gap: 8,
-  },
-  exerciseItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    paddingVertical: 6,
-  },
-  exerciseMainInfo: {
-    flex: 1,
-    gap: 4,
-  },
-  exerciseName: {
-    fontSize: 14,
-
-    fontWeight: "500",
-  },
-  exerciseTags: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  muscleTag: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  chestTag: {
-    backgroundColor: "#FF6B9D" + "20",
-  },
-  backTag: {
-    backgroundColor: "#4ECDC4" + "20",
-  },
-  legTag: {
-    backgroundColor: "#45B7D1" + "20",
-  },
-  coreTag: {
-    backgroundColor: "#FFA07A" + "20",
-  },
-  tricepsTag: {
-    backgroundColor: "#98D8C8" + "20",
-  },
-  muscleTagText: {
-    fontSize: 10,
-
-    fontWeight: "600",
-  },
-  difficultyText: {
-    fontSize: 10,
-    fontStyle: "italic",
-  },
-  difficultyTag: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  difficultyTagText: {
-    fontSize: 10,
-    fontWeight: "600",
-  },
-  beginnerTag: {
-    backgroundColor: "#4CAF50",
-  },
-  intermediateTag: {
-    backgroundColor: "#FF9800",
-  },
-  advancedTag: {
-    backgroundColor: "#F44336",
-  },
-  exerciseDetails: {
-    fontSize: 12,
-  },
-  exerciseActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  removeExerciseButton: {
-    padding: 2,
-  },
-  addExerciseButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-
-    borderRadius: 8,
-    marginTop: 4,
-  },
-  addExerciseText: {
-    fontSize: 12,
-
-    fontWeight: "500",
-  },
-  recommendedCard: {},
-  routineNameRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  recommendedBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  recommendedText: {
-    fontSize: 10,
-    fontWeight: "600",
-  },
-  searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginHorizontal: 20,
-    marginBottom: 16,
-    borderWidth: 1,
-
-    gap: 12,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-    padding: 0,
-    marginLeft: 8,
-  },
-  exerciseLibrary: {
-    paddingHorizontal: 20,
-    gap: 8,
-  },
-  exerciseLibraryCard: {
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  exerciseLibraryInfo: {
-    flex: 1,
-    gap: 6,
-  },
-  exerciseLibraryName: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  exerciseDefaultSets: {
-    fontSize: 12,
-  },
-  addToRoutineButton: {
-    padding: 4,
-  },
-  exerciseCardActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  playIconButton: {
-    padding: 4,
-  },
-  playButton: {
-    padding: 8,
-    borderRadius: 8,
-  },
-  shoulderTag: {
-    backgroundColor: "#9B59B6" + "20",
-  },
-  fullBodyTag: {
-    backgroundColor: "#E67E22" + "20",
-  },
-  bicepsTag: {
-    backgroundColor: "#3498DB" + "20",
-  },
-  filterLabel: {
-    fontSize: 16,
-    fontWeight: "600",
-
-    marginHorizontal: 20,
-    marginTop: 8,
-    marginBottom: 8,
-  },
-  categoryHeader: {
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 8,
-    borderWidth: 1,
-
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 12,
-  },
-  categoryHeaderContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    flex: 1,
-  },
-  categoryHeaderText: {
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  subcategoryContainer: {
-    marginLeft: 16,
-    marginBottom: 12,
-    gap: 12,
-  },
-  subcategoryHeader: {
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  subcategoryHeaderText: {
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  groupHeaderInfo: {
-    flex: 1,
-    gap: 4,
-  },
-  groupDescription: {
-    fontSize: 14,
-
-    lineHeight: 18,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContent: {
-    width: "100%",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 24,
-    paddingBottom: 40,
-  },
-  customExerciseModalContent: {
-    width: "95%",
-    maxHeight: "85%",
-    borderRadius: 20,
-    padding: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  addToRoutineModalContent: {
-    width: "90%",
-    maxWidth: 500,
-    maxHeight: "70%",
-    borderRadius: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 20,
-    borderBottomWidth: 1,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    marginBottom: 24,
-  },
-  modalCloseButton: {
-    padding: 4,
-  },
-  modalOptions: {
-    padding: 20,
-  },
-  modalOption: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 8,
-    gap: 12,
-  },
-  modalOptionText: {
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  routineOptionContent: {
-    flex: 1,
-    gap: 4,
-  },
-  routineExerciseCount: {
-    fontSize: 12,
-  },
-  modalDivider: {
-    height: 1,
-
-    marginVertical: 16,
-  },
-  modalSectionTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 12,
-  },
-  filterContainer: {
-    marginHorizontal: 20,
-    marginBottom: 16,
-  },
-  filterScroll: {
-    gap: 8,
-    paddingVertical: 4,
-  },
-  filterButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-  },
-  filterButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  beginnerFilterActive: {
-    backgroundColor: "#4CAF50",
-    borderColor: "#4CAF50",
-  },
-  intermediateFilterActive: {
-    backgroundColor: "#FF9800",
-    borderColor: "#FF9800",
-  },
-  advancedFilterActive: {
-    backgroundColor: "#F44336",
-    borderColor: "#F44336",
-  },
-  emptySearchResult: {
-    paddingVertical: 60,
-    alignItems: "center",
-    gap: 16,
-  },
-  emptySearchText: {
-    fontSize: 16,
-  },
-  customExerciseButtonContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-  },
-  customExerciseButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 14,
-    borderRadius: 12,
-    gap: 8,
-  },
-  customExerciseButtonText: {
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  inputLabel: {
-    fontSize: 15,
-    fontWeight: "600",
-    marginBottom: 10,
-  },
-  modalInput: {
-    borderWidth: 1.5,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
-    marginBottom: 20,
-  },
-  categoryButtons: {
-    flexDirection: "row",
-    gap: 10,
-    marginBottom: 20,
-  },
-  modalCategoryButton: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    alignItems: "center",
-  },
-  modalCategoryButtonText: {
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  exerciseNameRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  customBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  customBadgeText: {
-    fontSize: 11,
-    fontWeight: "700",
-  },
-  modalButtons: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 24,
-  },
-  modalButton: {
-    flex: 1,
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  cancelButton: {
-    borderWidth: 1.5,
-  },
-  cancelButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  saveButton: {},
-  saveButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-});

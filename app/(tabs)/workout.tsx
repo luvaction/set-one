@@ -5,47 +5,47 @@ import { workoutSessionService } from "@/services/workoutSession";
 import { getOrCreateUserId } from "@/utils/userIdHelper";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
-import React from "react";
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Alert, Modal, Pressable, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { styles } from "../style/Workout.style";
 
 // 한글 이름 -> exerciseId 역매핑
 const koreanToExerciseId: Record<string, string> = {
-  '일반 푸시업': 'regularPushup',
-  '다이아몬드 푸시업': 'diamondPushup',
-  '와이드 푸시업': 'widePushup',
-  '인클라인 푸시업': 'inclinePushup',
-  '디클라인 푸시업': 'declinePushup',
-  '풀업': 'regularPullup',
-  '친업': 'chinup',
-  '어시스트 풀업': 'assistedPullup',
-  '바디웨이트 스쿼트': 'bodyweightSquat',
-  '점프 스쿼트': 'jumpSquat',
-  '피스톨 스쿼트': 'pistolSquat',
-  '불가리안 스플릿 스쿼트': 'bulgarianSplitSquat',
-  '플랫 벤치프레스': 'flatBenchPress',
-  '인클라인 벤치프레스': 'inclineBenchPress',
-  '디클라인 벤치프레스': 'declineBenchPress',
-  '덤벨 벤치프레스': 'dumbbellBenchPress',
-  '컨벤셔널 데드리프트': 'conventionalDeadlift',
-  '스모 데드리프트': 'sumoDeadlift',
-  '루마니안 데드리프트': 'romanianDeadlift',
-  '덤벨 플라이': 'dumbbellFly',
-  '바벨 로우': 'barbellRow',
-  '덤벨 로우': 'dumbbellRow',
-  '바디웨이트 딥스': 'bodyweightDips',
-  '어시스트 딥스': 'assistedDips',
-  '플랭크': 'regularPlank',
-  '사이드 플랭크': 'sidePlank',
-  '플랭크 업다운': 'plankUpDown',
-  '버피': 'burpee',
-  '마운틴클라이머': 'mountainClimber',
-  '점핑잭': 'jumpingJack',
-  '하이니': 'highKnees',
-  '햄스트링 스트레칭': 'hamstringStretch',
-  '어깨 스트레칭': 'shoulderStretch',
-  '가슴 스트레칭': 'chestStretch',
+  "일반 푸시업": "regularPushup",
+  "다이아몬드 푸시업": "diamondPushup",
+  "와이드 푸시업": "widePushup",
+  "인클라인 푸시업": "inclinePushup",
+  "디클라인 푸시업": "declinePushup",
+  풀업: "regularPullup",
+  친업: "chinup",
+  "어시스트 풀업": "assistedPullup",
+  "바디웨이트 스쿼트": "bodyweightSquat",
+  "점프 스쿼트": "jumpSquat",
+  "피스톨 스쿼트": "pistolSquat",
+  "불가리안 스플릿 스쿼트": "bulgarianSplitSquat",
+  "플랫 벤치프레스": "flatBenchPress",
+  "인클라인 벤치프레스": "inclineBenchPress",
+  "디클라인 벤치프레스": "declineBenchPress",
+  "덤벨 벤치프레스": "dumbbellBenchPress",
+  "컨벤셔널 데드리프트": "conventionalDeadlift",
+  "스모 데드리프트": "sumoDeadlift",
+  "루마니안 데드리프트": "romanianDeadlift",
+  "덤벨 플라이": "dumbbellFly",
+  "바벨 로우": "barbellRow",
+  "덤벨 로우": "dumbbellRow",
+  "바디웨이트 딥스": "bodyweightDips",
+  "어시스트 딥스": "assistedDips",
+  플랭크: "regularPlank",
+  "사이드 플랭크": "sidePlank",
+  "플랭크 업다운": "plankUpDown",
+  버피: "burpee",
+  마운틴클라이머: "mountainClimber",
+  점핑잭: "jumpingJack",
+  하이니: "highKnees",
+  "햄스트링 스트레칭": "hamstringStretch",
+  "어깨 스트레칭": "shoulderStretch",
+  "가슴 스트레칭": "chestStretch",
 };
 
 // 번역 헬퍼 함수
@@ -61,7 +61,7 @@ const getExerciseName = (t: any, exerciseId: string, exerciseName?: string) => {
   }
 
   // 커스텀 운동이면 실제 이름 반환 (번역 불필요)
-  if (exerciseId && exerciseId.startsWith('ex_custom_')) {
+  if (exerciseId && exerciseId.startsWith("ex_custom_")) {
     return exerciseName || exerciseId;
   }
 
@@ -71,22 +71,22 @@ const getExerciseName = (t: any, exerciseId: string, exerciseName?: string) => {
   }
 
   // fallback
-  return exerciseName || '';
+  return exerciseName || "";
 };
 
 const getRoutineName = (t: any, routineId?: string, routineName?: string) => {
   // 추천 루틴인 경우 ID로 번역 (routine_user_는 제외)
-  if (routineId && routineId.startsWith('routine_') && !routineId.startsWith('routine_user_')) {
+  if (routineId && routineId.startsWith("routine_") && !routineId.startsWith("routine_user_")) {
     return t(`routines.${routineId}`);
   }
 
   // 한글 루틴 이름 매핑 (추천 루틴의 경우)
   const koreanRoutineMap: Record<string, string> = {
-    '초보자 전신 운동': 'routine_beginner_fullbody',
-    '가슴 집중 운동': 'routine_chest_day',
-    '등 집중 운동': 'routine_back_day',
-    '하체 집중 운동': 'routine_leg_day',
-    '홈트레이닝': 'routine_home_workout',
+    "초보자 전신 운동": "routine_beginner_fullbody",
+    "가슴 집중 운동": "routine_chest_day",
+    "등 집중 운동": "routine_back_day",
+    "하체 집중 운동": "routine_leg_day",
+    홈트레이닝: "routine_home_workout",
   };
 
   // 한글 이름으로 저장된 추천 루틴 변환
@@ -95,7 +95,7 @@ const getRoutineName = (t: any, routineId?: string, routineName?: string) => {
   }
 
   // 일반 루틴은 이름 그대로 반환
-  return routineName || '';
+  return routineName || "";
 };
 
 // 타이머 상태 타입
@@ -120,7 +120,8 @@ const formatReps = (reps?: number, repsMin?: number, repsMax?: number, durationS
   if (durationSeconds) {
     return `${durationSeconds}초`;
   }
-  if (reps) { // If a single rep value is provided
+  if (reps) {
+    // If a single rep value is provided
     return `${reps}`;
   }
   if (repsMin && repsMax) {
@@ -219,8 +220,8 @@ export default function WorkoutScreen() {
   useEffect(() => {
     return () => {
       if (setTimerRef.current) clearInterval(setTimerRef.current);
-    if (restTimerRef.current) clearInterval(restTimerRef.current);
-    if (exerciseRestTimerRef.current) clearInterval(exerciseRestTimerRef.current);
+      if (restTimerRef.current) clearInterval(restTimerRef.current);
+      if (exerciseRestTimerRef.current) clearInterval(exerciseRestTimerRef.current);
     };
   }, []);
 
@@ -258,8 +259,6 @@ export default function WorkoutScreen() {
     }
     return `${minutes}:${secs.toString().padStart(2, "0")}`;
   };
-
-  
 
   // 세트 타이머 시작
   const startSetTimer = (exerciseIndex: number, setIndex: number) => {
@@ -409,15 +408,15 @@ export default function WorkoutScreen() {
       startTotalTimer();
     } catch (error) {
       console.error("Failed to start workout:", error);
-      Alert.alert(t('workoutSession.error'), t('routines.startWorkoutFailed'));
+      Alert.alert(t("workoutSession.error"), t("routines.startWorkoutFailed"));
     }
   };
 
   const handleStopWorkout = () => {
-    Alert.alert(t('workoutSession.stopWorkoutTitle'), t('workoutSession.stopWorkoutMessage'), [
-      { text: t('workoutSession.continue'), style: "cancel" },
+    Alert.alert(t("workoutSession.stopWorkoutTitle"), t("workoutSession.stopWorkoutMessage"), [
+      { text: t("workoutSession.continue"), style: "cancel" },
       {
-        text: t('workoutSession.stop'),
+        text: t("workoutSession.stop"),
         style: "destructive",
         onPress: async () => {
           if (activeSession) {
@@ -432,10 +431,10 @@ export default function WorkoutScreen() {
               workoutStartTimeRef.current = 0;
               setTotalElapsedTime(0);
 
-              Alert.alert(t('workout.completed'), t('workoutSession.workoutSaved'));
+              Alert.alert(t("workout.completed"), t("workoutSession.workoutSaved"));
             } catch (error) {
               console.error("Failed to stop workout:", error);
-              Alert.alert(t('workoutSession.error'), t('workoutSession.stopWorkoutFailed'));
+              Alert.alert(t("workoutSession.error"), t("workoutSession.stopWorkoutFailed"));
             }
           }
         },
@@ -468,10 +467,10 @@ export default function WorkoutScreen() {
       setShowBodyWeightInputModal(false);
       setBodyWeightInput("");
 
-      Alert.alert(t('workoutSession.congratulations'), t('workoutSession.workoutCompletedMessage'));
+      Alert.alert(t("workoutSession.congratulations"), t("workoutSession.workoutCompletedMessage"));
     } catch (error) {
       console.error("Failed to complete workout:", error);
-      Alert.alert(t('workoutSession.error'), t('workoutSession.completeWorkoutFailed'));
+      Alert.alert(t("workoutSession.error"), t("workoutSession.completeWorkoutFailed"));
     }
   };
 
@@ -527,7 +526,7 @@ export default function WorkoutScreen() {
     const setElapsedTime = activeSetTimer?.elapsedTime || 0; // Get elapsed time for the current set
 
     if (reps <= 0 && duration <= 0) {
-      Alert.alert(t('workoutSession.error'), t('workoutSession.repsMinimum'));
+      Alert.alert(t("workoutSession.error"), t("workoutSession.repsMinimum"));
       return;
     }
 
@@ -549,18 +548,12 @@ export default function WorkoutScreen() {
       setActiveSession(updated);
 
       // 운동 완료 여부 확인
-      const allSetsCompleted = exercise.sets.every(
-        (set) => set.isCompleted
-      );
+      const allSetsCompleted = exercise.sets.every((set) => set.isCompleted);
 
       // 현재 운동의 모든 세트가 완료되었다면 운동 시간 기록
       if (allSetsCompleted && exerciseStartTimeRef.current !== 0) {
         const exerciseDuration = Math.floor((Date.now() - exerciseStartTimeRef.current) / 1000);
-        await workoutSessionService.updateExerciseDuration(
-          activeSession.id,
-          exerciseIndex,
-          exerciseDuration
-        );
+        await workoutSessionService.updateExerciseDuration(activeSession.id, exerciseIndex, exerciseDuration);
         exerciseStartTimeRef.current = Date.now(); // Reset for next exercise
       }
 
@@ -594,7 +587,7 @@ export default function WorkoutScreen() {
       setWeight("");
     } catch (error) {
       console.error("Failed to complete set:", error);
-      Alert.alert(t('workoutSession.error'), t('workoutSession.completeSetFailed'));
+      Alert.alert(t("workoutSession.error"), t("workoutSession.completeSetFailed"));
     }
   };
 
@@ -605,7 +598,7 @@ export default function WorkoutScreen() {
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
           <View style={styles.headerLeft}>
             <Text style={[styles.headerTitle, { color: colors.text }]}>{getRoutineName(t, activeSession.routineId, activeSession.routineName)}</Text>
-            <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>{t('workoutSession.workoutInProgress')}</Text>
+            <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>{t("workoutSession.workoutInProgress")}</Text>
             <View style={styles.timerContainer}>
               <Ionicons name="time-outline" size={16} color={colors.primary} />
               <Text style={[styles.totalTimerText, { color: colors.primary }]}>{formatTime(totalElapsedTime)}</Text>
@@ -613,7 +606,7 @@ export default function WorkoutScreen() {
           </View>
           <TouchableOpacity style={[styles.stopButton, { backgroundColor: colors.textSecondary + "20" }]} onPress={handleStopWorkout}>
             <Ionicons name="stop-circle" size={20} color={colors.textSecondary} />
-            <Text style={[styles.stopButtonText, { color: colors.textSecondary }]}>{t('workoutSession.stop')}</Text>
+            <Text style={[styles.stopButtonText, { color: colors.textSecondary }]}>{t("workoutSession.stop")}</Text>
           </TouchableOpacity>
         </View>
 
@@ -622,7 +615,7 @@ export default function WorkoutScreen() {
           <View style={[styles.restTimerBanner, { backgroundColor: colors.primary }]}>
             <Ionicons name="cafe-outline" size={24} color={colors.buttonText} />
             <View style={styles.restTimerContent}>
-              <Text style={[styles.restTimerTitle, { color: colors.buttonText }]}>{t('workoutSession.restTime')}</Text>
+              <Text style={[styles.restTimerTitle, { color: colors.buttonText }]}>{t("workoutSession.restTime")}</Text>
               <Text style={[styles.restTimerValue, { color: colors.buttonText }]}>{formatTime(restTimer.elapsedTime)}</Text>
             </View>
             <TouchableOpacity onPress={stopRestTimer}>
@@ -636,7 +629,7 @@ export default function WorkoutScreen() {
           <View style={[styles.restTimerBanner, { backgroundColor: colors.primary }]}>
             <Ionicons name="walk-outline" size={24} color={colors.buttonText} />
             <View style={styles.restTimerContent}>
-              <Text style={[styles.restTimerTitle, { color: colors.buttonText }]}>{t('workoutSession.restBetweenExercises')}</Text>
+              <Text style={[styles.restTimerTitle, { color: colors.buttonText }]}>{t("workoutSession.restBetweenExercises")}</Text>
               <Text style={[styles.restTimerValue, { color: colors.buttonText }]}>{formatTime(exerciseRestTimer.elapsedTime)}</Text>
             </View>
             <TouchableOpacity onPress={stopExerciseRestTimer}>
@@ -659,100 +652,103 @@ export default function WorkoutScreen() {
 
                   return (
                     <React.Fragment key={set.setNumber}>
-                    <View
-                      key={set.setNumber}
-                      style={[
-                        styles.setRow,
-                        { borderBottomColor: colors.border },
-                        set.isCompleted && { backgroundColor: colors.primary + "15", borderLeftWidth: 3, borderLeftColor: colors.primary },
-                        isActiveSet &&
-                          !set.isCompleted && {
-                            backgroundColor: colors.surface,
-                            borderLeftWidth: 3,
-                            borderLeftColor: colors.primary,
-                            borderWidth: 1,
-                            borderColor: colors.primary + "30",
-                          },
-                      ]}
-                    >
-                      <View style={styles.setInfo}>
-                        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                          {set.isCompleted && <Ionicons name="checkmark-circle" size={16} color={colors.primary} />}
-                          {isActiveSet && !set.isCompleted && <Ionicons name="play-circle" size={16} color={colors.primary} />}
-                          <Text style={[styles.setNumber, { color: set.isCompleted || isActiveSet ? colors.primary : colors.textSecondary }]}>{t('workoutSession.setNumber', { number: set.setNumber })}</Text>
-                        </View>
-                        <Text style={[styles.targetReps, { color: colors.textSecondary }]}>{t('workoutSession.target', { reps: formatReps(set.targetReps, set.targetRepsMin, set.targetRepsMax, set.targetDurationSeconds) })}</Text>
-                      </View>
-
-                      {set.isCompleted ? (
-                        <View style={styles.completedInfo}>
-                          <Text style={[styles.completedText, { color: colors.primary }]}>
-                            ✓ {set.actualDurationSeconds !== undefined && set.actualDurationSeconds > 0
-                              ? `${formatTime(set.actualDurationSeconds)}`
-                              : `${set.actualReps}회`}
-                            {set.weight > 0 && ` (${set.weight}kg)`}
-                            {set.elapsedTimeSeconds !== undefined && set.elapsedTimeSeconds > 0 && ` (${formatTime(set.elapsedTimeSeconds)})`}
-                          </Text>
-                          {set.restDurationSeconds !== undefined && set.restDurationSeconds > 0 && (
-                            <Text style={[styles.restTimeText, { color: colors.textSecondary }]}>
-                              {t('workoutSession.rest')} {formatTime(set.restDurationSeconds)}
+                      <View
+                        key={set.setNumber}
+                        style={[
+                          styles.setRow,
+                          { borderBottomColor: colors.border },
+                          set.isCompleted && { backgroundColor: colors.primary + "15", borderLeftWidth: 3, borderLeftColor: colors.primary },
+                          isActiveSet &&
+                            !set.isCompleted && {
+                              backgroundColor: colors.surface,
+                              borderLeftWidth: 3,
+                              borderLeftColor: colors.primary,
+                              borderWidth: 1,
+                              borderColor: colors.primary + "30",
+                            },
+                        ]}
+                      >
+                        <View style={styles.setInfo}>
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                            {set.isCompleted && <Ionicons name="checkmark-circle" size={16} color={colors.primary} />}
+                            {isActiveSet && !set.isCompleted && <Ionicons name="play-circle" size={16} color={colors.primary} />}
+                            <Text style={[styles.setNumber, { color: set.isCompleted || isActiveSet ? colors.primary : colors.textSecondary }]}>
+                              {t("workoutSession.setNumber", { number: set.setNumber })}
                             </Text>
-                          )}
-                          <TouchableOpacity
-                            onPress={async () => {
-                              try {
-                                const updated = await workoutSessionService.uncompleteSet(activeSession.id, exerciseIndex, setIndex);
-                                setActiveSession(updated);
-                              } catch (error) {
-                                console.error("Failed to uncomplete set:", error);
-                              }
-                            }}
-                          >
-                            <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
-                          </TouchableOpacity>
+                          </View>
+                          <Text style={[styles.targetReps, { color: colors.textSecondary }]}>
+                            {t("workoutSession.target", { reps: formatReps(set.targetReps, set.targetRepsMin, set.targetRepsMax, set.targetDurationSeconds) })}
+                          </Text>
                         </View>
-                      ) : (
-                        <View style={styles.setControls}>
-                          {isActiveSet && (
-                            <View style={styles.setTimerDisplay}>
-                              <Ionicons name="timer-outline" size={16} color={colors.primary} />
-                              <Text style={[styles.setTimerText, { color: colors.primary }]}>{formatTime(activeSetTimer.elapsedTime)}</Text>
-                            </View>
-                          )}
 
-                          <View style={styles.setButtons}>
-                            {!isActiveSet ? (
-                              <TouchableOpacity style={[styles.iconButton, { backgroundColor: colors.primary + "20" }]} onPress={() => startSetTimer(exerciseIndex, setIndex)}>
-                                <Ionicons name="play" size={18} color={colors.primary} />
-                              </TouchableOpacity>
-                            ) : activeSetTimer.isRunning ? (
-                              <TouchableOpacity style={[styles.iconButton, { backgroundColor: colors.textSecondary + "20" }]} onPress={pauseSetTimer}>
-                                <Ionicons name="pause" size={18} color={colors.textSecondary} />
-                              </TouchableOpacity>
-                            ) : (
-                              <TouchableOpacity style={[styles.iconButton, { backgroundColor: colors.primary + "20" }]} onPress={resumeSetTimer}>
-                                <Ionicons name="play" size={18} color={colors.primary} />
-                              </TouchableOpacity>
+                        {set.isCompleted ? (
+                          <View style={styles.completedInfo}>
+                            <Text style={[styles.completedText, { color: colors.primary }]}>
+                              ✓ {set.actualDurationSeconds !== undefined && set.actualDurationSeconds > 0 ? `${formatTime(set.actualDurationSeconds)}` : `${set.actualReps}회`}
+                              {set.weight > 0 && ` (${set.weight}kg)`}
+                              {set.elapsedTimeSeconds !== undefined && set.elapsedTimeSeconds > 0 && ` (${formatTime(set.elapsedTimeSeconds)})`}
+                            </Text>
+                            {set.restDurationSeconds !== undefined && set.restDurationSeconds > 0 && (
+                              <Text style={[styles.restTimeText, { color: colors.textSecondary }]}>
+                                {t("workoutSession.rest")} {formatTime(set.restDurationSeconds)}
+                              </Text>
                             )}
                             <TouchableOpacity
-                              style={[styles.iconButton, styles.completeIconButton, { backgroundColor: colors.primary }]}
-                              onPress={() => handleCompleteSetClick(exerciseIndex, setIndex)}
+                              onPress={async () => {
+                                try {
+                                  const updated = await workoutSessionService.uncompleteSet(activeSession.id, exerciseIndex, setIndex);
+                                  setActiveSession(updated);
+                                } catch (error) {
+                                  console.error("Failed to uncomplete set:", error);
+                                }
+                              }}
                             >
-                              <Ionicons name="checkmark" size={18} color={colors.buttonText} />
+                              <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
                             </TouchableOpacity>
                           </View>
+                        ) : (
+                          <View style={styles.setControls}>
+                            {isActiveSet && (
+                              <View style={styles.setTimerDisplay}>
+                                <Ionicons name="timer-outline" size={16} color={colors.primary} />
+                                <Text style={[styles.setTimerText, { color: colors.primary }]}>{formatTime(activeSetTimer.elapsedTime)}</Text>
+                              </View>
+                            )}
+
+                            <View style={styles.setButtons}>
+                              {!isActiveSet ? (
+                                <TouchableOpacity style={[styles.iconButton, { backgroundColor: colors.primary + "20" }]} onPress={() => startSetTimer(exerciseIndex, setIndex)}>
+                                  <Ionicons name="play" size={18} color={colors.primary} />
+                                </TouchableOpacity>
+                              ) : activeSetTimer.isRunning ? (
+                                <TouchableOpacity style={[styles.iconButton, { backgroundColor: colors.textSecondary + "20" }]} onPress={pauseSetTimer}>
+                                  <Ionicons name="pause" size={18} color={colors.textSecondary} />
+                                </TouchableOpacity>
+                              ) : (
+                                <TouchableOpacity style={[styles.iconButton, { backgroundColor: colors.primary + "20" }]} onPress={resumeSetTimer}>
+                                  <Ionicons name="play" size={18} color={colors.primary} />
+                                </TouchableOpacity>
+                              )}
+                              <TouchableOpacity
+                                style={[styles.iconButton, styles.completeIconButton, { backgroundColor: colors.primary }]}
+                                onPress={() => handleCompleteSetClick(exerciseIndex, setIndex)}
+                              >
+                                <Ionicons name="checkmark" size={18} color={colors.buttonText} />
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                        )}
+                      </View>
+                      {set.isCompleted && set.restDurationSeconds !== undefined && set.restDurationSeconds > 0 && setIndex < exercise.sets.length - 1 && (
+                        <View style={[styles.restBetweenSets, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                          <Ionicons name="timer-outline" size={16} color={colors.textSecondary} />
+                          <Text style={[styles.restBetweenSetsText, { color: colors.textSecondary }]}>
+                            {t("workoutSession.rest")} {formatTime(set.restDurationSeconds)}
+                          </Text>
                         </View>
                       )}
-                    </View>
-                    {set.isCompleted && set.restDurationSeconds !== undefined && set.restDurationSeconds > 0 && setIndex < exercise.sets.length - 1 && (
-                      <View style={[styles.restBetweenSets, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                        <Ionicons name="timer-outline" size={16} color={colors.textSecondary} />
-                        <Text style={[styles.restBetweenSetsText, { color: colors.textSecondary }]}>
-                          {t('workoutSession.rest')} {formatTime(set.restDurationSeconds)}
-                        </Text>
-                      </View>
-                    )}
-                  </React.Fragment>);
+                    </React.Fragment>
+                  );
                 })}
               </View>
             </View>
@@ -762,7 +758,7 @@ export default function WorkoutScreen() {
         <View style={[styles.footer, { borderTopColor: colors.border, backgroundColor: colors.surface }]}>
           <TouchableOpacity style={[styles.completeButton, { backgroundColor: colors.primary }]} onPress={handleCompleteWorkout}>
             <Ionicons name="checkmark-circle" size={24} color={colors.buttonText} />
-            <Text style={[styles.completeButtonText, { color: colors.buttonText }]}>{t('workoutSession.finishWorkout')}</Text>
+            <Text style={[styles.completeButtonText, { color: colors.buttonText }]}>{t("workoutSession.finishWorkout")}</Text>
           </TouchableOpacity>
         </View>
 
@@ -770,7 +766,7 @@ export default function WorkoutScreen() {
         <Modal visible={showSetCompleteModal} animationType="fade" transparent={true} onRequestClose={() => setShowSetCompleteModal(false)}>
           <View style={styles.modalOverlay}>
             <View style={[styles.setCompleteModal, { backgroundColor: colors.surface }]}>
-              <Text style={[styles.modalTitleSmall, { color: colors.text }]}>{t('workoutSession.setCompleteRecord')}</Text>
+              <Text style={[styles.modalTitleSmall, { color: colors.text }]}>{t("workoutSession.setCompleteRecord")}</Text>
 
               {completingSet && activeSession && (
                 <View style={styles.modalContent}>
@@ -780,40 +776,35 @@ export default function WorkoutScreen() {
 
                   {/* 오류 발생 위치 수정 완료 */}
                   <Text style={[styles.modalLabel, { color: colors.textSecondary, marginBottom: 15 }]}>
-                    {t('workoutSession.setInfo', {
+                    {t("workoutSession.setInfo", {
                       number: completingSet.setIndex + 1,
-                      target: formatReps(
-                        completingSet.targetReps,
-                        completingSet.targetRepsMin,
-                        completingSet.targetRepsMax,
-                        completingSet.targetDurationSeconds
-                      ),
+                      target: formatReps(completingSet.targetReps, completingSet.targetRepsMin, completingSet.targetRepsMax, completingSet.targetDurationSeconds),
                     })}
                   </Text>
 
                   {/* 횟수 입력 */}
                   {completingSet.targetDurationSeconds === undefined ? (
                     <View>
-                      <Text style={[styles.inputLabel, { color: colors.text }]}>{t('workoutSession.actualReps')}</Text>
+                      <Text style={[styles.inputLabel, { color: colors.text }]}>{t("workoutSession.actualReps")}</Text>
                       <TextInput
                         style={[styles.modalInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
                         value={actualReps}
                         onChangeText={setActualReps}
                         keyboardType="numeric"
-                        placeholder={t('workoutSession.repsRequired')}
+                        placeholder={t("workoutSession.repsRequired")}
                         placeholderTextColor={colors.textSecondary}
                         maxLength={3}
                       />
                     </View>
                   ) : (
                     <View>
-                      <Text style={[styles.inputLabel, { color: colors.text }]}>{t('workoutSession.actualDuration')}</Text>
+                      <Text style={[styles.inputLabel, { color: colors.text }]}>{t("workoutSession.actualDuration")}</Text>
                       <TextInput
                         style={[styles.modalInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
                         value={actualDurationSeconds}
                         onChangeText={setActualDurationSeconds}
                         keyboardType="numeric"
-                        placeholder={t('workoutSession.durationRequired')}
+                        placeholder={t("workoutSession.durationRequired")}
                         placeholderTextColor={colors.textSecondary}
                         maxLength={3}
                       />
@@ -821,13 +812,13 @@ export default function WorkoutScreen() {
                   )}
 
                   {/* 무게 입력 */}
-                  <Text style={[styles.inputLabel, { color: colors.text, marginTop: 15 }]}>{t('workoutSession.weightKg')}</Text>
+                  <Text style={[styles.inputLabel, { color: colors.text, marginTop: 15 }]}>{t("workoutSession.weightKg")}</Text>
                   <TextInput
                     style={[styles.modalInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
                     value={weight}
                     onChangeText={setWeight}
                     keyboardType="numeric"
-                    placeholder={t('workoutSession.weightOptional')}
+                    placeholder={t("workoutSession.weightOptional")}
                     placeholderTextColor={colors.textSecondary}
                     maxLength={6}
                   />
@@ -836,10 +827,10 @@ export default function WorkoutScreen() {
 
               <View style={styles.modalActions}>
                 <Pressable style={[styles.modalCancelButton, { borderColor: colors.border }]} onPress={() => setShowSetCompleteModal(false)}>
-                  <Text style={[styles.modalCancelButtonText, { color: colors.text }]}>{t('common.cancel')}</Text>
+                  <Text style={[styles.modalCancelButtonText, { color: colors.text }]}>{t("common.cancel")}</Text>
                 </Pressable>
                 <Pressable style={[styles.modalSaveButton, { backgroundColor: colors.primary }]} onPress={handleSaveSetComplete}>
-                  <Text style={[styles.modalSaveButtonText, { color: colors.buttonText }]}>{t('common.save')}</Text>
+                  <Text style={[styles.modalSaveButtonText, { color: colors.buttonText }]}>{t("common.save")}</Text>
                 </Pressable>
               </View>
             </View>
@@ -850,26 +841,26 @@ export default function WorkoutScreen() {
         <Modal visible={showBodyWeightInputModal} animationType="fade" transparent={true} onRequestClose={() => setShowBodyWeightInputModal(false)}>
           <View style={styles.modalOverlay}>
             <View style={[styles.setCompleteModal, { backgroundColor: colors.surface }]}>
-              <Text style={[styles.modalTitleSmall, { color: colors.text }]}>{t('workoutSession.recordBodyWeight')}</Text>
-              <Text style={[styles.modalSubtitle, { color: colors.textSecondary, marginBottom: 15 }]}>{t('workoutSession.recordBodyWeightOptional')}</Text>
+              <Text style={[styles.modalTitleSmall, { color: colors.text }]}>{t("workoutSession.recordBodyWeight")}</Text>
+              <Text style={[styles.modalSubtitle, { color: colors.textSecondary, marginBottom: 15 }]}>{t("workoutSession.recordBodyWeightOptional")}</Text>
 
-              <Text style={[styles.inputLabel, { color: colors.text }]}>{t('workoutSession.bodyWeightKg')}</Text>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>{t("workoutSession.bodyWeightKg")}</Text>
               <TextInput
                 style={[styles.modalInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
                 value={bodyWeightInput}
                 onChangeText={setBodyWeightInput}
                 keyboardType="numeric"
-                placeholder={t('workoutSession.bodyWeightPlaceholder')}
+                placeholder={t("workoutSession.bodyWeightPlaceholder")}
                 placeholderTextColor={colors.textSecondary}
                 maxLength={6}
               />
 
               <View style={styles.modalActions}>
                 <Pressable style={[styles.modalCancelButton, { borderColor: colors.border }]} onPress={() => setShowBodyWeightInputModal(false)}>
-                  <Text style={[styles.modalCancelButtonText, { color: colors.text }]}>{t('common.cancel')}</Text>
+                  <Text style={[styles.modalCancelButtonText, { color: colors.text }]}>{t("common.cancel")}</Text>
                 </Pressable>
                 <Pressable style={[styles.modalSaveButton, { backgroundColor: colors.primary }]} onPress={handleSaveCompletedWorkout}>
-                  <Text style={[styles.modalSaveButtonText, { color: colors.buttonText }]}>{t('common.save')}</Text>
+                  <Text style={[styles.modalSaveButtonText, { color: colors.buttonText }]}>{t("common.save")}</Text>
                 </Pressable>
               </View>
             </View>
@@ -884,12 +875,12 @@ export default function WorkoutScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.contentCenter}>
         <Ionicons name="fitness-outline" size={80} color={colors.primary} />
-        <Text style={[styles.title, { color: colors.text }]}>{t('workoutSession.startWorkoutTitle')}</Text>
-        <Text style={[styles.description, { color: colors.textSecondary }]}>{t('workoutSession.selectRoutinePrompt')}</Text>
+        <Text style={[styles.title, { color: colors.text }]}>{t("workoutSession.startWorkoutTitle")}</Text>
+        <Text style={[styles.description, { color: colors.textSecondary }]}>{t("workoutSession.selectRoutinePrompt")}</Text>
 
         <TouchableOpacity style={[styles.startButton, { backgroundColor: colors.primary }]} onPress={() => setShowRoutineSelector(true)}>
           <Ionicons name="play-circle" size={24} color={colors.buttonText} />
-          <Text style={[styles.buttonText, { color: colors.buttonText }]}>{t('workoutSession.selectRoutine')}</Text>
+          <Text style={[styles.buttonText, { color: colors.buttonText }]}>{t("workoutSession.selectRoutine")}</Text>
         </TouchableOpacity>
       </View>
 
@@ -897,7 +888,7 @@ export default function WorkoutScreen() {
       <Modal visible={showRoutineSelector} animationType="slide" onRequestClose={() => setShowRoutineSelector(false)}>
         <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
           <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>{t('workoutSession.selectRoutine')}</Text>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{t("workoutSession.selectRoutine")}</Text>
             <TouchableOpacity onPress={() => setShowRoutineSelector(false)}>
               <Ionicons name="close" size={28} color={colors.textSecondary} />
             </TouchableOpacity>
@@ -906,7 +897,7 @@ export default function WorkoutScreen() {
           <ScrollView style={styles.routinesList}>
             {myRoutines.length > 0 && (
               <>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('routines.myRoutines')}</Text>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("routines.myRoutines")}</Text>
                 {myRoutines.map((routine) => (
                   <TouchableOpacity
                     key={routine.id}
@@ -915,7 +906,7 @@ export default function WorkoutScreen() {
                   >
                     <View style={styles.routineInfo}>
                       <Text style={[styles.routineName, { color: colors.text }]}>{getRoutineName(t, routine.id, routine.name)}</Text>
-                      <Text style={[styles.exerciseCount, { color: colors.textSecondary }]}>{t('workoutSession.exercisesCount', { count: routine.exercises.length })}</Text>
+                      <Text style={[styles.exerciseCount, { color: colors.textSecondary }]}>{t("workoutSession.exercisesCount", { count: routine.exercises.length })}</Text>
                     </View>
                     <Ionicons name="chevron-forward" size={24} color={colors.textSecondary} />
                   </TouchableOpacity>
@@ -925,7 +916,7 @@ export default function WorkoutScreen() {
 
             {recommendedRoutines.length > 0 && (
               <>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('routines.recommended')}</Text>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("routines.recommended")}</Text>
                 {recommendedRoutines.map((routine) => (
                   <TouchableOpacity
                     key={routine.id}
@@ -934,7 +925,7 @@ export default function WorkoutScreen() {
                   >
                     <View style={styles.routineInfo}>
                       <Text style={[styles.routineName, { color: colors.text }]}>{getRoutineName(t, routine.id, routine.name)}</Text>
-                      <Text style={[styles.exerciseCount, { color: colors.textSecondary }]}>{t('workoutSession.exercisesCount', { count: routine.exercises.length })}</Text>
+                      <Text style={[styles.exerciseCount, { color: colors.textSecondary }]}>{t("workoutSession.exercisesCount", { count: routine.exercises.length })}</Text>
                     </View>
                     <Ionicons name="chevron-forward" size={24} color={colors.textSecondary} />
                   </TouchableOpacity>
@@ -944,7 +935,7 @@ export default function WorkoutScreen() {
 
             {myRoutines.length === 0 && recommendedRoutines.length === 0 && (
               <View style={styles.emptyState}>
-                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('workoutSession.noRoutinesMessage')}</Text>
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t("workoutSession.noRoutinesMessage")}</Text>
               </View>
             )}
           </ScrollView>
@@ -953,349 +944,3 @@ export default function WorkoutScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    padding: 20,
-    paddingTop: 60,
-    borderBottomWidth: 1,
-  },
-  headerLeft: {
-    flex: 1,
-    gap: 4,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-  },
-  headerSubtitle: {
-    fontSize: 14,
-  },
-  timerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginTop: 8,
-  },
-  totalTimerText: {
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  restTimerBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 16,
-    gap: 12,
-  },
-  restTimerContent: {
-    flex: 1,
-  },
-  restTimerTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  restTimerValue: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginTop: 4,
-  },
-  stopButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  stopButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  contentCenter: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  contentScroll: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 10,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginTop: 24,
-    marginBottom: 8,
-  },
-  description: {
-    fontSize: 16,
-    textAlign: "center",
-    marginBottom: 32,
-    lineHeight: 24,
-  },
-  startButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-    borderRadius: 12,
-  },
-  buttonText: {
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  exerciseCard: {
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-  },
-  exerciseHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  exerciseName: {
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  setsContainer: {
-    gap: 8,
-  },
-  setRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-    gap: 8,
-  },
-  setInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  setNumber: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  targetReps: {
-    fontSize: 12,
-  },
-  setControls: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  setTimerDisplay: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    backgroundColor: "rgba(0, 0, 0, 0.05)",
-  },
-  setTimerText: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  setButtons: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  iconButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  completeIconButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-  },
-  completedInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  completedText: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  restTimeText: {
-    fontSize: 12,
-    marginTop: 4,
-  },
-  restBetweenSets: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderStyle: "dashed",
-    marginVertical: 4,
-    gap: 8,
-  },
-  restBetweenSetsText: {
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  checkButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
-  },
-  checkButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  footer: {
-    padding: 20,
-    borderTopWidth: 1,
-  },
-  completeButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 16,
-    borderRadius: 12,
-  },
-  completeButtonText: {
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  modalContainer: {
-    flex: 1,
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 20,
-    paddingTop: 60,
-    borderBottomWidth: 1,
-  },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-  },
-  routinesList: {
-    flex: 1,
-    padding: 20,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginTop: 8,
-    marginBottom: 12,
-  },
-  routineCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-  },
-  routineInfo: {
-    flex: 1,
-  },
-  routineName: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 4,
-  },
-  exerciseCount: {
-    fontSize: 14,
-  },
-  emptyState: {
-    padding: 40,
-    alignItems: "center",
-  },
-  emptyText: {
-    fontSize: 16,
-    textAlign: "center",
-    lineHeight: 24,
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
-  },
-  setCompleteModal: {
-    width: "85%",
-    borderRadius: 12,
-    padding: 20,
-  },
-  modalTitleSmall: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 10,
-  },
-  modalContent: {
-    marginBottom: 20,
-  },
-  modalSubtitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 5,
-  },
-  modalLabel: {
-    // ⬅️ 이 스타일을 추가하여 오류를 해결했습니다.
-    fontSize: 14,
-    marginBottom: 8, // 참고 코드에서 가져옴
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 5,
-  },
-  modalInput: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-  },
-  modalActions: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: 10,
-    marginTop: 20, // Add margin to separate from input
-  },
-  modalCancelButton: {
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  modalCancelButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  modalSaveButton: {
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  modalSaveButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-});

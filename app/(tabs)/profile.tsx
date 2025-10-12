@@ -1,14 +1,29 @@
 import { useTheme } from "@/contexts/ThemeContext";
 import { saveLanguage } from "@/i18n/config";
 import { CreateProfileData } from "@/models";
-import { profileService } from "@/services/profile";
 import { storage } from "@/services";
+import { profileService } from "@/services/profile";
 import { workoutRecordService } from "@/services/workoutRecord";
-import { getOrCreateUserId } from "@/utils/userIdHelper";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Alert, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableWithoutFeedback, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  Keyboard,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  Switch,
+  Text,
+  TextInput,
+  TouchableWithoutFeedback,
+  View,
+} from "react-native";
+
+import { styles } from "../style/Profile.styles";
 
 const emptyProfile: CreateProfileData = {
   name: "",
@@ -376,227 +391,227 @@ export default function ProfileScreen() {
               <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
                 <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
                   <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-                <Text style={[styles.modalTitle, { color: colors.text }]}>{t("profile.editProfile")}</Text>
+                    <Text style={[styles.modalTitle, { color: colors.text }]}>{t("profile.editProfile")}</Text>
 
-                {/* 이름 */}
-                <Text style={[styles.inputLabel, { color: colors.text }]}>{t("profile.name")}</Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-                  value={editingProfile.name}
-                  onChangeText={(text) => setEditingProfile({ ...editingProfile, name: text })}
-                  placeholder={t("profile.namePlaceholder")}
-                  placeholderTextColor={colors.textSecondary}
-                />
+                    {/* 이름 */}
+                    <Text style={[styles.inputLabel, { color: colors.text }]}>{t("profile.name")}</Text>
+                    <TextInput
+                      style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                      value={editingProfile.name}
+                      onChangeText={(text) => setEditingProfile({ ...editingProfile, name: text })}
+                      placeholder={t("profile.namePlaceholder")}
+                      placeholderTextColor={colors.textSecondary}
+                    />
 
-                {/* 성별 */}
-                <Text style={[styles.inputLabel, { color: colors.text }]}>{t("profile.gender")}</Text>
-                <View style={styles.buttonGroup}>
-                  <Pressable
-                    style={[
-                      styles.optionButton,
-                      { backgroundColor: colors.background, borderColor: colors.border },
-                      editingProfile.gender === "male" && { backgroundColor: colors.primary, borderColor: colors.primary },
-                    ]}
-                    onPress={() => setEditingProfile({ ...editingProfile, gender: "male" })}
-                  >
-                    <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.gender === "male" && { color: colors.buttonText }]}>
-                      {t("profile.male")}
+                    {/* 성별 */}
+                    <Text style={[styles.inputLabel, { color: colors.text }]}>{t("profile.gender")}</Text>
+                    <View style={styles.buttonGroup}>
+                      <Pressable
+                        style={[
+                          styles.optionButton,
+                          { backgroundColor: colors.background, borderColor: colors.border },
+                          editingProfile.gender === "male" && { backgroundColor: colors.primary, borderColor: colors.primary },
+                        ]}
+                        onPress={() => setEditingProfile({ ...editingProfile, gender: "male" })}
+                      >
+                        <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.gender === "male" && { color: colors.buttonText }]}>
+                          {t("profile.male")}
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        style={[
+                          styles.optionButton,
+                          { backgroundColor: colors.background, borderColor: colors.border },
+                          editingProfile.gender === "female" && { backgroundColor: colors.primary, borderColor: colors.primary },
+                        ]}
+                        onPress={() => setEditingProfile({ ...editingProfile, gender: "female" })}
+                      >
+                        <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.gender === "female" && { color: colors.buttonText }]}>
+                          {t("profile.female")}
+                        </Text>
+                      </Pressable>
+                    </View>
+
+                    {/* 생년월일 */}
+                    <Text style={[styles.inputLabel, { color: colors.text }]}>{t("profile.birthDate")}</Text>
+                    <TextInput
+                      style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                      value={editingProfile.birthDate}
+                      onChangeText={(text) => {
+                        // 숫자만 추출
+                        const numbers = text.replace(/[^0-9]/g, "");
+                        let formatted = "";
+
+                        // 최대 8자리 숫자만 허용
+                        if (numbers.length <= 8) {
+                          // YYYY-MM-DD 형식으로 포맷
+                          if (numbers.length <= 4) {
+                            formatted = numbers;
+                          } else if (numbers.length <= 6) {
+                            formatted = numbers.slice(0, 4) + "-" + numbers.slice(4);
+                          } else {
+                            formatted = numbers.slice(0, 4) + "-" + numbers.slice(4, 6) + "-" + numbers.slice(6, 8);
+                          }
+                          setEditingProfile({ ...editingProfile, birthDate: formatted });
+                        }
+                      }}
+                      placeholder={t("profile.birthDateFormat")}
+                      placeholderTextColor={colors.textSecondary}
+                      keyboardType="numeric"
+                      maxLength={10}
+                    />
+
+                    {/* 키 */}
+                    <Text style={[styles.inputLabel, { color: colors.text }]}>
+                      {t("profile.height")} ({t("profile.heightUnit")})
                     </Text>
-                  </Pressable>
-                  <Pressable
-                    style={[
-                      styles.optionButton,
-                      { backgroundColor: colors.background, borderColor: colors.border },
-                      editingProfile.gender === "female" && { backgroundColor: colors.primary, borderColor: colors.primary },
-                    ]}
-                    onPress={() => setEditingProfile({ ...editingProfile, gender: "female" })}
-                  >
-                    <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.gender === "female" && { color: colors.buttonText }]}>
-                      {t("profile.female")}
+                    <TextInput
+                      style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                      value={String(editingProfile.height)}
+                      onChangeText={(text) => setEditingProfile({ ...editingProfile, height: Number(text) || 0 })}
+                      placeholder={t("profile.heightPlaceholder")}
+                      placeholderTextColor={colors.textSecondary}
+                      keyboardType="numeric"
+                    />
+
+                    {/* 체중 */}
+                    <Text style={[styles.inputLabel, { color: colors.text }]}>
+                      {t("profile.weight")} ({t("profile.weightUnit")})
                     </Text>
-                  </Pressable>
+                    <TextInput
+                      style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                      value={String(editingProfile.weight)}
+                      onChangeText={(text) => setEditingProfile({ ...editingProfile, weight: Number(text) || 0 })}
+                      placeholder={t("profile.weightPlaceholder")}
+                      placeholderTextColor={colors.textSecondary}
+                      keyboardType="numeric"
+                    />
+
+                    {/* 목표 체중 */}
+                    <Text style={[styles.inputLabel, { color: colors.text }]}>
+                      {t("profile.targetWeight")} ({t("profile.weightUnit")})
+                    </Text>
+                    <TextInput
+                      style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                      value={String(editingProfile.targetWeight)}
+                      onChangeText={(text) => setEditingProfile({ ...editingProfile, targetWeight: Number(text) || 0 })}
+                      placeholder={t("profile.targetWeightPlaceholder")}
+                      placeholderTextColor={colors.textSecondary}
+                      keyboardType="numeric"
+                    />
+
+                    {/* 목표 */}
+                    <Text style={[styles.inputLabel, { color: colors.text }]}>{t("profile.goal")}</Text>
+                    <View style={styles.buttonGroup}>
+                      <Pressable
+                        style={[
+                          styles.optionButton,
+                          { backgroundColor: colors.background, borderColor: colors.border },
+                          editingProfile.goal === "lose" && { backgroundColor: colors.primary, borderColor: colors.primary },
+                        ]}
+                        onPress={() => setEditingProfile({ ...editingProfile, goal: "lose" })}
+                      >
+                        <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.goal === "lose" && { color: colors.buttonText }]}>
+                          {t("profile.goalLoseShort")}
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        style={[
+                          styles.optionButton,
+                          { backgroundColor: colors.background, borderColor: colors.border },
+                          editingProfile.goal === "gain" && { backgroundColor: colors.primary, borderColor: colors.primary },
+                        ]}
+                        onPress={() => setEditingProfile({ ...editingProfile, goal: "gain" })}
+                      >
+                        <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.goal === "gain" && { color: colors.buttonText }]}>
+                          {t("profile.goalGainShort")}
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        style={[
+                          styles.optionButton,
+                          { backgroundColor: colors.background, borderColor: colors.border },
+                          editingProfile.goal === "maintain" && { backgroundColor: colors.primary, borderColor: colors.primary },
+                        ]}
+                        onPress={() => setEditingProfile({ ...editingProfile, goal: "maintain" })}
+                      >
+                        <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.goal === "maintain" && { color: colors.buttonText }]}>
+                          {t("profile.goalMaintainShort")}
+                        </Text>
+                      </Pressable>
+                    </View>
+
+                    {/* 활동 레벨 */}
+                    <Text style={[styles.inputLabel, { color: colors.text }]}>{t("profile.activityLevel")}</Text>
+                    <View style={styles.buttonGroup}>
+                      <Pressable
+                        style={[
+                          styles.optionButton,
+                          { backgroundColor: colors.background, borderColor: colors.border },
+                          editingProfile.activityLevel === "low" && { backgroundColor: colors.primary, borderColor: colors.primary },
+                        ]}
+                        onPress={() => setEditingProfile({ ...editingProfile, activityLevel: "low" })}
+                      >
+                        <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.activityLevel === "low" && { color: colors.buttonText }]}>
+                          {t("profile.activityLowShort")}
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        style={[
+                          styles.optionButton,
+                          { backgroundColor: colors.background, borderColor: colors.border },
+                          editingProfile.activityLevel === "medium" && { backgroundColor: colors.primary, borderColor: colors.primary },
+                        ]}
+                        onPress={() => setEditingProfile({ ...editingProfile, activityLevel: "medium" })}
+                      >
+                        <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.activityLevel === "medium" && { color: colors.buttonText }]}>
+                          {t("profile.activityMediumShort")}
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        style={[
+                          styles.optionButton,
+                          { backgroundColor: colors.background, borderColor: colors.border },
+                          editingProfile.activityLevel === "high" && { backgroundColor: colors.primary, borderColor: colors.primary },
+                        ]}
+                        onPress={() => setEditingProfile({ ...editingProfile, activityLevel: "high" })}
+                      >
+                        <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.activityLevel === "high" && { color: colors.buttonText }]}>
+                          {t("profile.activityHighShort")}
+                        </Text>
+                      </Pressable>
+                    </View>
+
+                    {/* 주간 목표 */}
+                    <Text style={[styles.inputLabel, { color: colors.text }]}>{t("profile.weeklyGoalLabel")}</Text>
+                    <TextInput
+                      style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                      value={String(editingProfile.weeklyGoal)}
+                      onChangeText={(text) => setEditingProfile({ ...editingProfile, weeklyGoal: Number(text) || 0 })}
+                      placeholder={t("profile.weeklyGoalPlaceholder")}
+                      placeholderTextColor={colors.textSecondary}
+                      keyboardType="numeric"
+                    />
+
+                    {/* 버튼 */}
+                    <View style={styles.modalButtons}>
+                      <Pressable
+                        style={[styles.modalButton, styles.cancelButton, { backgroundColor: colors.background, borderColor: colors.border }]}
+                        onPress={() => setShowEditModal(false)}
+                      >
+                        <Text style={[styles.cancelButtonText, { color: colors.text }]}>{t("common.cancel")}</Text>
+                      </Pressable>
+                      <Pressable style={[styles.modalButton, styles.saveButton, { backgroundColor: colors.primary }]} onPress={handleSave}>
+                        <Text style={[styles.saveButtonText, { color: colors.buttonText }]}>{t("common.save")}</Text>
+                      </Pressable>
+                    </View>
+                  </ScrollView>
                 </View>
-
-                {/* 생년월일 */}
-                <Text style={[styles.inputLabel, { color: colors.text }]}>{t("profile.birthDate")}</Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-                  value={editingProfile.birthDate}
-                  onChangeText={(text) => {
-                    // 숫자만 추출
-                    const numbers = text.replace(/[^0-9]/g, "");
-                    let formatted = "";
-
-                    // 최대 8자리 숫자만 허용
-                    if (numbers.length <= 8) {
-                      // YYYY-MM-DD 형식으로 포맷
-                      if (numbers.length <= 4) {
-                        formatted = numbers;
-                      } else if (numbers.length <= 6) {
-                        formatted = numbers.slice(0, 4) + "-" + numbers.slice(4);
-                      } else {
-                        formatted = numbers.slice(0, 4) + "-" + numbers.slice(4, 6) + "-" + numbers.slice(6, 8);
-                      }
-                      setEditingProfile({ ...editingProfile, birthDate: formatted });
-                    }
-                  }}
-                  placeholder={t("profile.birthDateFormat")}
-                  placeholderTextColor={colors.textSecondary}
-                  keyboardType="numeric"
-                  maxLength={10}
-                />
-
-                {/* 키 */}
-                <Text style={[styles.inputLabel, { color: colors.text }]}>
-                  {t("profile.height")} ({t("profile.heightUnit")})
-                </Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-                  value={String(editingProfile.height)}
-                  onChangeText={(text) => setEditingProfile({ ...editingProfile, height: Number(text) || 0 })}
-                  placeholder={t("profile.heightPlaceholder")}
-                  placeholderTextColor={colors.textSecondary}
-                  keyboardType="numeric"
-                />
-
-                {/* 체중 */}
-                <Text style={[styles.inputLabel, { color: colors.text }]}>
-                  {t("profile.weight")} ({t("profile.weightUnit")})
-                </Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-                  value={String(editingProfile.weight)}
-                  onChangeText={(text) => setEditingProfile({ ...editingProfile, weight: Number(text) || 0 })}
-                  placeholder={t("profile.weightPlaceholder")}
-                  placeholderTextColor={colors.textSecondary}
-                  keyboardType="numeric"
-                />
-
-                {/* 목표 체중 */}
-                <Text style={[styles.inputLabel, { color: colors.text }]}>
-                  {t("profile.targetWeight")} ({t("profile.weightUnit")})
-                </Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-                  value={String(editingProfile.targetWeight)}
-                  onChangeText={(text) => setEditingProfile({ ...editingProfile, targetWeight: Number(text) || 0 })}
-                  placeholder={t("profile.targetWeightPlaceholder")}
-                  placeholderTextColor={colors.textSecondary}
-                  keyboardType="numeric"
-                />
-
-                {/* 목표 */}
-                <Text style={[styles.inputLabel, { color: colors.text }]}>{t("profile.goal")}</Text>
-                <View style={styles.buttonGroup}>
-                  <Pressable
-                    style={[
-                      styles.optionButton,
-                      { backgroundColor: colors.background, borderColor: colors.border },
-                      editingProfile.goal === "lose" && { backgroundColor: colors.primary, borderColor: colors.primary },
-                    ]}
-                    onPress={() => setEditingProfile({ ...editingProfile, goal: "lose" })}
-                  >
-                    <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.goal === "lose" && { color: colors.buttonText }]}>
-                      {t("profile.goalLoseShort")}
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    style={[
-                      styles.optionButton,
-                      { backgroundColor: colors.background, borderColor: colors.border },
-                      editingProfile.goal === "gain" && { backgroundColor: colors.primary, borderColor: colors.primary },
-                    ]}
-                    onPress={() => setEditingProfile({ ...editingProfile, goal: "gain" })}
-                  >
-                    <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.goal === "gain" && { color: colors.buttonText }]}>
-                      {t("profile.goalGainShort")}
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    style={[
-                      styles.optionButton,
-                      { backgroundColor: colors.background, borderColor: colors.border },
-                      editingProfile.goal === "maintain" && { backgroundColor: colors.primary, borderColor: colors.primary },
-                    ]}
-                    onPress={() => setEditingProfile({ ...editingProfile, goal: "maintain" })}
-                  >
-                    <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.goal === "maintain" && { color: colors.buttonText }]}>
-                      {t("profile.goalMaintainShort")}
-                    </Text>
-                  </Pressable>
-                </View>
-
-                {/* 활동 레벨 */}
-                <Text style={[styles.inputLabel, { color: colors.text }]}>{t("profile.activityLevel")}</Text>
-                <View style={styles.buttonGroup}>
-                  <Pressable
-                    style={[
-                      styles.optionButton,
-                      { backgroundColor: colors.background, borderColor: colors.border },
-                      editingProfile.activityLevel === "low" && { backgroundColor: colors.primary, borderColor: colors.primary },
-                    ]}
-                    onPress={() => setEditingProfile({ ...editingProfile, activityLevel: "low" })}
-                  >
-                    <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.activityLevel === "low" && { color: colors.buttonText }]}>
-                      {t("profile.activityLowShort")}
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    style={[
-                      styles.optionButton,
-                      { backgroundColor: colors.background, borderColor: colors.border },
-                      editingProfile.activityLevel === "medium" && { backgroundColor: colors.primary, borderColor: colors.primary },
-                    ]}
-                    onPress={() => setEditingProfile({ ...editingProfile, activityLevel: "medium" })}
-                  >
-                    <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.activityLevel === "medium" && { color: colors.buttonText }]}>
-                      {t("profile.activityMediumShort")}
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    style={[
-                      styles.optionButton,
-                      { backgroundColor: colors.background, borderColor: colors.border },
-                      editingProfile.activityLevel === "high" && { backgroundColor: colors.primary, borderColor: colors.primary },
-                    ]}
-                    onPress={() => setEditingProfile({ ...editingProfile, activityLevel: "high" })}
-                  >
-                    <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.activityLevel === "high" && { color: colors.buttonText }]}>
-                      {t("profile.activityHighShort")}
-                    </Text>
-                  </Pressable>
-                </View>
-
-                {/* 주간 목표 */}
-                <Text style={[styles.inputLabel, { color: colors.text }]}>{t("profile.weeklyGoalLabel")}</Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-                  value={String(editingProfile.weeklyGoal)}
-                  onChangeText={(text) => setEditingProfile({ ...editingProfile, weeklyGoal: Number(text) || 0 })}
-                  placeholder={t("profile.weeklyGoalPlaceholder")}
-                  placeholderTextColor={colors.textSecondary}
-                  keyboardType="numeric"
-                />
-
-                {/* 버튼 */}
-                <View style={styles.modalButtons}>
-                  <Pressable
-                    style={[styles.modalButton, styles.cancelButton, { backgroundColor: colors.background, borderColor: colors.border }]}
-                    onPress={() => setShowEditModal(false)}
-                  >
-                    <Text style={[styles.cancelButtonText, { color: colors.text }]}>{t("common.cancel")}</Text>
-                  </Pressable>
-                  <Pressable style={[styles.modalButton, styles.saveButton, { backgroundColor: colors.primary }]} onPress={handleSave}>
-                    <Text style={[styles.saveButtonText, { color: colors.buttonText }]}>{t("common.save")}</Text>
-                  </Pressable>
-                </View>
-              </ScrollView>
-            </View>
-          </TouchableWithoutFeedback>
-        </KeyboardAvoidingView>
-      </View>
-    </TouchableWithoutFeedback>
-  </Modal>
+              </TouchableWithoutFeedback>
+            </KeyboardAvoidingView>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
 
       {/* 언어 선택 모달 */}
       <Modal visible={showLanguageModal} transparent animationType="fade" onRequestClose={() => setShowLanguageModal(false)}>
@@ -625,177 +640,3 @@ export default function ProfileScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  settingLabelContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 20,
-    paddingTop: 10,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-  },
-  editButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  editButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  section: {
-    paddingHorizontal: 20,
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 12,
-  },
-  infoCard: {
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-  },
-  infoRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 12,
-  },
-  infoLabel: {
-    fontSize: 14,
-  },
-  infoValue: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  divider: {
-    height: 1,
-  },
-  emptyState: {
-    alignItems: "center",
-    paddingVertical: 80,
-    paddingHorizontal: 40,
-  },
-  emptyText: {
-    fontSize: 16,
-    marginTop: 16,
-    marginBottom: 24,
-  },
-  setupButton: {
-    paddingHorizontal: 32,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  setupButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  keyboardAvoidingView: {
-    width: "90%",
-  },
-  modalContent: {
-    borderRadius: 16,
-    padding: 24,
-    maxHeight: "90%",
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 20,
-  },
-  inputLabel: {
-    fontSize: 14,
-    marginBottom: 8,
-    marginTop: 12,
-  },
-  input: {
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    borderWidth: 1,
-  },
-  buttonGroup: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  optionButton: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    alignItems: "center",
-  },
-  optionButtonActive: {},
-  optionButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  optionButtonTextActive: {},
-  modalButtons: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 24,
-  },
-  modalButton: {
-    flex: 1,
-    padding: 14,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  cancelButton: {
-    borderWidth: 1,
-  },
-  cancelButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  saveButton: {},
-  saveButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  languageModalContent: {
-    borderRadius: 16,
-    padding: 24,
-    width: "80%",
-    maxWidth: 350,
-  },
-  languageOption: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 2,
-    marginBottom: 12,
-  },
-  languageText: {
-    fontSize: 16,
-  },
-});

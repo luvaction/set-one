@@ -18,6 +18,11 @@ interface CustomExerciseRow {
   equipment: string | null; // JSON string
   muscle_groups: string | null; // JSON string
   difficulty: string | null; // Added difficulty
+  default_sets: number | null; // Added
+  default_reps_min: number | null; // Added
+  default_reps_max: number | null; // Added
+  default_duration_seconds: number | null; // Added
+  rest_time: number | null; // Added
   created_at: number;
   updated_at: number;
 }
@@ -31,7 +36,12 @@ const rowToExercise = (row: CustomExerciseRow): Exercise => {
     description: row.description ?? undefined,
     equipment: row.equipment ? JSON.parse(row.equipment) : undefined,
     muscleGroups: row.muscle_groups ? JSON.parse(row.muscle_groups) : [],
-    difficulty: row.difficulty ?? undefined, // Map difficulty
+    difficulty: row.difficulty ?? undefined,
+    defaultSets: row.default_sets ?? undefined, // Mapped
+    defaultRepsMin: row.default_reps_min ?? undefined, // Mapped
+    defaultRepsMax: row.default_reps_max ?? undefined, // Mapped
+    defaultDurationSeconds: row.default_duration_seconds ?? undefined, // Mapped
+    restTime: row.rest_time ?? undefined, // Mapped
     isCustom: true,
     createdAt: new Date(row.created_at).toISOString(),
     updatedAt: new Date(row.updated_at).toISOString(),
@@ -80,8 +90,10 @@ export const exerciseService = {
 
     await runSql(
       `INSERT INTO custom_exercises (
-        id, name, category, subcategory, description, equipment, muscle_groups, difficulty, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        id, name, category, subcategory, description, equipment, muscle_groups, difficulty,
+        default_sets, default_reps_min, default_reps_max, default_duration_seconds, rest_time,
+        created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         data.name,
@@ -90,7 +102,12 @@ export const exerciseService = {
         data.description || null,
         JSON.stringify(data.equipment || []),
         JSON.stringify(data.muscleGroups || []),
-        data.difficulty || null, // Include difficulty
+        data.difficulty || null,
+        data.defaultSets ?? null, // Added
+        data.defaultRepsMin ?? null, // Added
+        data.defaultRepsMax ?? null, // Added
+        data.defaultDurationSeconds ?? null, // Added
+        data.restTime ?? null, // Added
         createdAt,
         updatedAt,
       ]
@@ -121,7 +138,9 @@ export const exerciseService = {
     await runSql(
       `UPDATE custom_exercises SET
         name = ?, category = ?, subcategory = ?, description = ?,
-        equipment = ?, muscle_groups = ?, difficulty = ?, updated_at = ?
+        equipment = ?, muscle_groups = ?, difficulty = ?,
+        default_sets = ?, default_reps_min = ?, default_reps_max = ?, default_duration_seconds = ?, rest_time = ?,
+        updated_at = ?
       WHERE id = ?`,
       [
         data.name ?? exercise.name,
@@ -130,7 +149,12 @@ export const exerciseService = {
         data.description ?? exercise.description,
         JSON.stringify(data.equipment ?? exercise.equipment),
         JSON.stringify(data.muscleGroups ?? exercise.muscleGroups),
-        data.difficulty ?? exercise.difficulty ?? null, // Include difficulty
+        data.difficulty ?? exercise.difficulty ?? null,
+        data.defaultSets ?? exercise.defaultSets ?? null, // Added
+        data.defaultRepsMin ?? exercise.defaultRepsMin ?? null, // Added
+        data.defaultRepsMax ?? exercise.defaultRepsMax ?? null, // Added
+        data.defaultDurationSeconds ?? exercise.defaultDurationSeconds ?? null, // Added
+        data.restTime ?? exercise.restTime ?? null, // Added
         updatedAt,
         id,
       ]

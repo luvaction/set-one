@@ -1,14 +1,7 @@
-import {
-  WorkoutSession,
-  WorkoutRecord,
-  CreateWorkoutSessionData,
-  WorkoutExercise,
-  CompletedSet,
-} from "@/models";
+import { Routine, WorkoutExercise, WorkoutRecord, WorkoutSession } from "@/models";
 import { getSingleItem, runSql } from "./db/sqlite";
-import { Routine } from "@/models";
-import { routineService } from "./routine";
 import { profileService } from "./profile";
+import { routineService } from "./routine";
 import { workoutRecordService } from "./workoutRecord";
 
 const generateId = (): string => {
@@ -21,8 +14,8 @@ const now = (): string => new Date().toISOString();
 // 로컬 시간대 기준으로 날짜를 YYYY-MM-DD 형식으로 변환
 const toLocalDateString = (date: Date): string => {
   const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 };
 
@@ -30,7 +23,8 @@ const toLocalDateString = (date: Date): string => {
 const convertRoutineToWorkoutExercises = (routine: Routine): WorkoutExercise[] => {
   return routine.exercises.map((exercise) => {
     // sets가 없거나 유효하지 않으면 기본값 3 사용
-    const numSets = exercise.sets && exercise.sets > 0 ? exercise.sets : 3;
+    console.log("convertRoutineToWorkoutExercises: exercise.sets before numSets calculation:", exercise.sets);
+    const numSets = exercise.sets || 1; // Ensure at least 1 set, as routine-builder already handles this.
 
     // reps 정보가 없으면 기본값 사용 (10-12 회)
     const hasRepsInfo = exercise.repsMin !== undefined || exercise.repsMax !== undefined || exercise.durationSeconds !== undefined;
@@ -104,7 +98,7 @@ const rowToSession = (row: ActiveSessionRow): WorkoutSession => {
   return {
     id: row.id,
     userId: row.user_id,
-    routineId: row.routine_id ?? '',
+    routineId: row.routine_id ?? "",
     routineName: row.routine_name,
     status: row.status as "in_progress" | "completed" | "stopped",
     startTime: row.start_time,
@@ -120,9 +114,7 @@ const rowToSession = (row: ActiveSessionRow): WorkoutSession => {
 export const workoutSessionService = {
   // 활성 세션 가져오기
   async getActiveSession(): Promise<WorkoutSession | null> {
-    const row = await getSingleItem<ActiveSessionRow>(
-      'SELECT * FROM active_session LIMIT 1'
-    );
+    const row = await getSingleItem<ActiveSessionRow>("SELECT * FROM active_session LIMIT 1");
     return row ? rowToSession(row) : null;
   },
 
@@ -164,20 +156,7 @@ export const workoutSessionService = {
         exercises_data, current_exercise_index, total_duration, paused_duration,
         created_at, updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        id,
-        userId,
-        routine.id,
-        routine.name,
-        "in_progress",
-        newSession.startTime,
-        JSON.stringify(exercises),
-        0,
-        0,
-        0,
-        createdAt,
-        updatedAt,
-      ]
+      [id, userId, routine.id, routine.name, "in_progress", newSession.startTime, JSON.stringify(exercises), 0, 0, 0, createdAt, updatedAt]
     );
 
     // 루틴의 lastUsed 업데이트
@@ -245,20 +224,14 @@ export const workoutSessionService = {
     };
 
     // 운동 완료 여부 확인
-    const allSetsCompleted = session.exercises[exerciseIndex].sets.every(
-      (set) => set.isCompleted
-    );
+    const allSetsCompleted = session.exercises[exerciseIndex].sets.every((set) => set.isCompleted);
     session.exercises[exerciseIndex].isCompleted = allSetsCompleted;
 
     return await this.updateSession(session);
   },
 
   // 세트 완료 취소
-  async uncompleteSet(
-    sessionId: string,
-    exerciseIndex: number,
-    setIndex: number
-  ): Promise<WorkoutSession> {
+  async uncompleteSet(sessionId: string, exerciseIndex: number, setIndex: number): Promise<WorkoutSession> {
     const session = await this.getActiveSession();
     if (!session || session.id !== sessionId) {
       throw new Error("Active session not found");
@@ -272,11 +245,7 @@ export const workoutSessionService = {
   },
 
   // 운동 시간 업데이트
-  async updateExerciseDuration(
-    sessionId: string,
-    exerciseIndex: number,
-    duration: number
-  ): Promise<WorkoutSession> {
+  async updateExerciseDuration(sessionId: string, exerciseIndex: number, duration: number): Promise<WorkoutSession> {
     const session = await this.getActiveSession();
     if (!session || session.id !== sessionId) {
       throw new Error("Active session not found");
@@ -321,7 +290,7 @@ export const workoutSessionService = {
     }
 
     // 활성 세션 삭제
-    await runSql('DELETE FROM active_session WHERE id = ?', [sessionId]);
+    await runSql("DELETE FROM active_session WHERE id = ?", [sessionId]);
 
     return record;
   },
@@ -351,13 +320,13 @@ export const workoutSessionService = {
     });
 
     // 활성 세션 삭제
-    await runSql('DELETE FROM active_session WHERE id = ?', [sessionId]);
+    await runSql("DELETE FROM active_session WHERE id = ?", [sessionId]);
 
     return record;
   },
 
   // 활성 세션 삭제 (저장 없이)
   async deleteActiveSession(): Promise<void> {
-    await runSql('DELETE FROM active_session');
+    await runSql("DELETE FROM active_session");
   },
 };
