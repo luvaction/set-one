@@ -5,6 +5,7 @@ import { exerciseService, storage } from "@/services";
 import { profileService } from "@/services/profile";
 import { workoutRecordService } from "@/services/workoutRecord";
 import { Ionicons } from "@expo/vector-icons";
+import Constants from "expo-constants"; // Added import
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -338,7 +339,7 @@ export default function ProfileScreen() {
           <View style={[styles.infoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <View style={styles.infoRow}>
               <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>{t("profile.appVersion")}</Text>
-              <Text style={[styles.infoValue, { color: colors.text }]}>1.0.0</Text>
+              <Text style={[styles.infoValue, { color: colors.text }]}>{Constants.expoConfig?.version ?? 'N/A'}</Text>
             </View>
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
@@ -608,16 +609,14 @@ export default function ProfileScreen() {
             <Text style={[styles.modalTitle, { color: colors.text }]}>Language / 언어</Text>
 
             <Pressable
-              style={[styles.languageOption, { borderColor: colors.border }, i18n.language === "ko" && { backgroundColor: colors.primary + "20", borderColor: colors.primary }]}
-              onPress={() => changeLanguage("ko")}
+              style={[styles.languageOption, { borderColor: colors.border }, i18n.language === "ko" && { backgroundColor: colors.primary + "20", borderColor: colors.primary }]}              onPress={() => changeLanguage("ko")}
             >
               <Text style={[styles.languageText, { color: colors.text }, i18n.language === "ko" && { color: colors.primary, fontWeight: "600" }]}>한국어</Text>
               {i18n.language === "ko" && <Ionicons name="checkmark" size={24} color={colors.primary} />}
             </Pressable>
 
             <Pressable
-              style={[styles.languageOption, { borderColor: colors.border }, i18n.language === "en" && { backgroundColor: colors.primary + "20", borderColor: colors.primary }]}
-              onPress={() => changeLanguage("en")}
+              style={[styles.languageOption, { borderColor: colors.border }, i18n.language === "en" && { backgroundColor: colors.primary + "20", borderColor: colors.primary }]}              onPress={() => changeLanguage("en")}
             >
               <Text style={[styles.languageText, { color: colors.text }, i18n.language === "en" && { color: colors.primary, fontWeight: "600" }]}>English</Text>
               {i18n.language === "en" && <Ionicons name="checkmark" size={24} color={colors.primary} />}
