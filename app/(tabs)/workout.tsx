@@ -128,8 +128,6 @@ type RestTimerState = {
   isRunning: boolean;
 };
 
-
-
 // reps에서 최솟값 추출 (기본값으로 사용)
 const getMinReps = (targetReps?: number, targetRepsMin?: number, targetRepsMax?: number, targetDurationSeconds?: number): number => {
   if (targetDurationSeconds) {
@@ -699,7 +697,10 @@ export default function WorkoutScreen() {
                         {set.isCompleted ? (
                           <View style={styles.completedInfo}>
                             <Text style={[styles.completedText, { color: colors.primary }]}>
-                              ✓ {set.actualDurationSeconds !== undefined && set.actualDurationSeconds > 0 ? `${formatTime(set.actualDurationSeconds)}` : t("history.reps", { reps: set.actualReps })}
+                              ✓{" "}
+                              {set.actualDurationSeconds !== undefined && set.actualDurationSeconds > 0
+                                ? `${formatTime(set.actualDurationSeconds)}`
+                                : t("history.reps", { reps: set.actualReps })}
                               {set.weight > 0 && ` (${set.weight}kg)`}
                               {set.elapsedTimeSeconds !== undefined && set.elapsedTimeSeconds > 0 && ` (${formatTime(set.elapsedTimeSeconds)})`}
                             </Text>
@@ -793,7 +794,7 @@ export default function WorkoutScreen() {
                   <Text style={[styles.modalLabel, { color: colors.textSecondary, marginBottom: 15 }]}>
                     {t("workoutSession.setInfo", {
                       number: completingSet.setIndex + 1,
-                      target: formatReps(t, completingSet.targetReps, completingSet.targetRepsMin, completingSet.targetRepsMax, completingSet.targetDurationSeconds),
+                      target: formatReps(completingSet.targetReps, completingSet.targetRepsMin, completingSet.targetRepsMax, completingSet.targetDurationSeconds),
                     })}
                   </Text>
 
