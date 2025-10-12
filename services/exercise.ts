@@ -215,10 +215,15 @@ export const exerciseService = {
     return exercises.filter((e) => e.category === category);
   },
 
-  // 사용자 커스텀 운동만 가져오기
+  // 커스텀 운동만 가져오기
   async getCustomExercises(): Promise<Exercise[]> {
     const rows = await getMultipleItems<CustomExerciseRow>('SELECT * FROM custom_exercises');
     return rows.map(rowToExercise);
+  },
+
+  // 모든 커스텀 운동 삭제
+  async deleteAllCustomExercises(): Promise<void> {
+    await runSql('DELETE FROM custom_exercises');
   },
 
   // 기본 운동을 복사해서 커스텀 운동으로 생성

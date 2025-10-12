@@ -1,7 +1,7 @@
 import { useTheme } from "@/contexts/ThemeContext";
 import { saveLanguage } from "@/i18n/config";
 import { CreateProfileData } from "@/models";
-import { storage } from "@/services";
+import { exerciseService, storage } from "@/services";
 import { profileService } from "@/services/profile";
 import { workoutRecordService } from "@/services/workoutRecord";
 import { Ionicons } from "@expo/vector-icons";
@@ -157,20 +157,8 @@ export default function ProfileScreen() {
         onPress: async () => {
           try {
             // 커스텀 운동 스토리지 비우기
-            await storage.removeItem("@set1/custom_exercises");
+            await exerciseService.deleteAllCustomExercises();
 
-            // 사이타마 푸시업만 추가
-            const saitamaPushup = {
-              id: `ex_custom_${Date.now()}_saitama`,
-              name: "사이타마 푸시업",
-              category: "bodyweight",
-              muscleGroups: ["가슴", "삼두", "어깨"],
-              isCustom: true,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            };
-
-            await storage.setArray("@set1/custom_exercises", [saitamaPushup]);
             Alert.alert(t("common.confirm"), t("profile.resetCustomExercisesSuccess"));
           } catch (error) {
             console.error("Failed to clear custom exercises:", error);
