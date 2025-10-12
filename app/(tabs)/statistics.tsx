@@ -596,14 +596,14 @@ export default function StatisticsScreen() {
         )}
 
         {/* 임시 데이터 생성 버튼 (개발 모드) */}
-        {/* {showMockButton && (
+        {showMockButton && (
           <View style={styles.section}>
             <TouchableOpacity style={[styles.mockButton, { backgroundColor: colors.primary }]} onPress={handleGenerateMockData}>
               <Ionicons name="flask" size={20} color="#fff" />
               <Text style={styles.mockButtonText}>임시 데이터 생성 (테스트용)</Text>
             </TouchableOpacity>
           </View>
-        )} */}
+        )}
 
         {/* 운동별 통계 - 세트 수 추이 */}
         {exerciseStats.length > 0 && (

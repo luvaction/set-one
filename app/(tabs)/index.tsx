@@ -118,6 +118,7 @@ export default function HomeScreen() {
 
   const loadInsights = async () => {
     try {
+      console.log("Calling statisticsService.getInsights()...");
       const insightsData = await statisticsService.getInsights();
       setInsights(insightsData);
     } catch (error) {
@@ -136,14 +137,25 @@ export default function HomeScreen() {
 
   const loadLastUsedRoutine = async () => {
     try {
-      const userRoutines = await routineService.getUserRoutines();
-      const sortedRoutines = userRoutines.filter((r) => r.lastUsed).sort((a, b) => new Date(b.lastUsed!).getTime() - new Date(a.lastUsed!).getTime());
+      // 1. '내 루틴'과 '추천 루틴'을 모두 가져옵니다.
+      const [userRoutines, recommendedRoutines] = await Promise.all([routineService.getUserRoutines(), routineService.getRecommendedRoutines()]);
+      const allRoutines = [...userRoutines, ...recommendedRoutines];
 
-      if (sortedRoutines.length > 0) {
-        setLastUsedRoutine(sortedRoutines[0]);
+      // 2. 모든 루틴 중에서 'lastUsed' 기록이 있는 것들을 찾아 최신순으로 정렬합니다.
+      const sortedByLastUsed = allRoutines.filter((r) => r.lastUsed).sort((a, b) => new Date(b.lastUsed!).getTime() - new Date(a.lastUsed!).getTime());
+
+      if (sortedByLastUsed.length > 0) {
+        // 3. 가장 최근에 사용한 루틴이 있으면 그것을 설정합니다.
+        setLastUsedRoutine(sortedByLastUsed[0]);
+      } else if (recommendedRoutines.length > 0) {
+        // 4. 사용 기록이 전혀 없으면, 추천 루틴의 첫 번째 항목을 기본값으로 설정합니다.
+        setLastUsedRoutine(recommendedRoutines[0]);
+      } else {
+        // 5. 추천 루틴도 없으면 null로 설정합니다.
+        setLastUsedRoutine(null);
       }
     } catch (error) {
-      console.error("Failed to load last used routine:", error);
+      console.error("Failed to load start workout routine:", error);
     }
   };
 
@@ -182,7 +194,14 @@ export default function HomeScreen() {
     if (lastUsedRoutine) {
       await handlePlayRoutine(lastUsedRoutine);
     } else {
-      router.push("/(tabs)/routines");
+      // 마지막 사용 루틴이 없으면 추천 루틴 중 첫 번째를 가져옴
+      const recommended = await routineService.getRecommendedRoutines();
+      if (recommended.length > 0) {
+        await handlePlayRoutine(recommended[0]);
+      } else {
+        // 추천 루틴도 없으면 루틴 선택 화면으로 이동
+        router.push("/(tabs)/routines");
+      }
     }
   };
 
@@ -234,7 +253,7 @@ export default function HomeScreen() {
           <Ionicons name="play-circle" size={32} color={colors.buttonText} />
           <View style={styles.quickStartText}>
             <Text style={[styles.quickStartTitle, { color: colors.buttonText }]}>{t("home.startWorkout")}</Text>
-            <Text style={[styles.quickStartSubtitle, { color: colors.buttonText, opacity: 0.8 }]}>{lastUsedRoutine ? `${lastUsedRoutine.name}` : t("home.selectRoutine")}</Text>
+            <Text style={[styles.quickStartSubtitle, { color: colors.buttonText, opacity: 0.8 }]}>{lastUsedRoutine ? getRoutineName(t, lastUsedRoutine.id, lastUsedRoutine.name) : t("home.selectRoutine")}</Text>
           </View>
         </View>
         <Ionicons name="chevron-forward" size={24} color={colors.buttonText} />

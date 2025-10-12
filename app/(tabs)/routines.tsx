@@ -15,19 +15,7 @@ import DraggableFlatList, { RenderItemParams, ScaleDecorator, ShadowDecorator } 
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { styles } from "../style/Routine.styles";
 
-// reps를 표시용 문자열로 변환하는 헬퍼 함수
-const formatReps = (repsMin?: number, repsMax?: number, durationSeconds?: number): string => {
-  if (durationSeconds) {
-    return `${durationSeconds}초`;
-  }
-  if (repsMin && repsMax) {
-    if (repsMin === repsMax) {
-      return `${repsMin}`;
-    }
-    return `${repsMin}-${repsMax}`;
-  }
-  return ""; // Fallback
-};
+
 
 const categories = [
   { id: "all", nameKey: "category.all", icon: "grid" },
@@ -467,6 +455,22 @@ const getDifficultyKey = (difficulty: string) => {
 export default function RoutinesScreen() {
   const { colors } = useTheme();
   const { t } = useTranslation();
+
+  const formatReps = (repsMin?: number, repsMax?: number, durationSeconds?: number): string => {
+    if (durationSeconds) {
+      return t("workoutSession.secondsUnit", { count: durationSeconds });
+    }
+    if (repsMin && repsMax) {
+      if (repsMin === repsMax) {
+        return t("workoutSession.repsUnit", { count: repsMin });
+      }
+      return `${repsMin}-${repsMax}`;
+    }
+    if (repsMin) {
+        return t("workoutSession.repsUnit", { count: repsMin });
+    }
+    return ""; // Fallback
+  };
   const [selectedTab, setSelectedTab] = useState<"library" | "my" | "recommended">("library");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedPurpose, setSelectedPurpose] = useState("all");

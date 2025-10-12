@@ -50,24 +50,28 @@ const koreanToExerciseId: Record<string, string> = {
 
 // 번역 헬퍼 함수
 const getExerciseName = (t: any, exerciseId: string, exerciseName?: string) => {
+  let id = exerciseId;
+  // exerciseId에 한글 이름이 들어간 경우 ID로 변환
+  if (koreanToExerciseId[id]) {
+    id = koreanToExerciseId[id];
+  }
+
   // exerciseId가 없거나 비어있으면 한글 이름에서 ID 추론 시도
-  if (!exerciseId && exerciseName) {
+  if (!id && exerciseName) {
     const inferredId = koreanToExerciseId[exerciseName];
     if (inferredId) {
-      return t(`exercises.${inferredId}`);
+      id = inferredId;
     }
-    // 추론 실패하면 원래 이름 반환
-    return exerciseName;
   }
 
   // 커스텀 운동이면 실제 이름 반환 (번역 불필요)
-  if (exerciseId && exerciseId.startsWith("ex_custom_")) {
-    return exerciseName || exerciseId;
+  if (id && id.startsWith("ex_custom_")) {
+    return exerciseName || id;
   }
 
   // 기본 운동은 번역 키 사용
-  if (exerciseId) {
-    return t(`exercises.${exerciseId}`);
+  if (id) {
+    return t(`exercises.${id}`);
   }
 
   // fallback
@@ -94,6 +98,15 @@ const getRoutineName = (t: any, routineId?: string, routineName?: string) => {
     return t(`routines.${koreanRoutineMap[routineName]}`);
   }
 
+  // 루틴 이름이 기본 운동 이름과 일치할 경우 (단일 운동 루틴일 가능성, 번역 강제 적용)
+  if (routineName) {
+    const exerciseId = koreanToExerciseId[routineName];
+    if (exerciseId) {
+      // 해당 운동의 번역 키를 사용하여 표시 (예: t('exercises.bodyweightDips') -> "Bodyweight Dips")
+      return t(`exercises.${exerciseId}`);
+    }
+  }
+
   // 일반 루틴은 이름 그대로 반환
   return routineName || "";
 };
@@ -115,23 +128,7 @@ type RestTimerState = {
   isRunning: boolean;
 };
 
-// reps를 표시용 문자열로 변환하는 헬퍼 함수
-const formatReps = (reps?: number, repsMin?: number, repsMax?: number, durationSeconds?: number): string => {
-  if (durationSeconds) {
-    return `${durationSeconds}초`;
-  }
-  if (reps) {
-    // If a single rep value is provided
-    return `${reps}`;
-  }
-  if (repsMin && repsMax) {
-    if (repsMin === repsMax) {
-      return `${repsMin}`;
-    }
-    return `${repsMin}-${repsMax}`;
-  }
-  return ""; // Fallback
-};
+
 
 // reps에서 최솟값 추출 (기본값으로 사용)
 const getMinReps = (targetReps?: number, targetRepsMin?: number, targetRepsMax?: number, targetDurationSeconds?: number): number => {
@@ -150,6 +147,24 @@ const getMinReps = (targetReps?: number, targetRepsMin?: number, targetRepsMax?:
 export default function WorkoutScreen() {
   const { colors } = useTheme();
   const { t } = useTranslation();
+
+  // reps를 표시용 문자열로 변환하는 헬퍼 함수
+  const formatReps = (reps?: number, repsMin?: number, repsMax?: number, durationSeconds?: number): string => {
+    if (durationSeconds) {
+      return t("workoutSession.secondsUnit", { count: durationSeconds });
+    }
+    if (reps) {
+      // If a single rep value is provided
+      return t("workoutSession.repsUnit", { count: reps });
+    }
+    if (repsMin && repsMax) {
+      if (repsMin === repsMax) {
+        return t("workoutSession.repsUnit", { count: repsMin });
+      }
+      return `${repsMin}-${repsMax} ${t("routines.reps")}`;
+    }
+    return ""; // Fallback
+  };
   const [activeSession, setActiveSession] = useState<WorkoutSession | null>(null);
   const [myRoutines, setMyRoutines] = useState<Routine[]>([]);
   const [recommendedRoutines, setRecommendedRoutines] = useState<Routine[]>([]);
@@ -684,7 +699,7 @@ export default function WorkoutScreen() {
                         {set.isCompleted ? (
                           <View style={styles.completedInfo}>
                             <Text style={[styles.completedText, { color: colors.primary }]}>
-                              ✓ {set.actualDurationSeconds !== undefined && set.actualDurationSeconds > 0 ? `${formatTime(set.actualDurationSeconds)}` : `${set.actualReps}회`}
+                              ✓ {set.actualDurationSeconds !== undefined && set.actualDurationSeconds > 0 ? `${formatTime(set.actualDurationSeconds)}` : t("history.reps", { reps: set.actualReps })}
                               {set.weight > 0 && ` (${set.weight}kg)`}
                               {set.elapsedTimeSeconds !== undefined && set.elapsedTimeSeconds > 0 && ` (${formatTime(set.elapsedTimeSeconds)})`}
                             </Text>
@@ -778,7 +793,7 @@ export default function WorkoutScreen() {
                   <Text style={[styles.modalLabel, { color: colors.textSecondary, marginBottom: 15 }]}>
                     {t("workoutSession.setInfo", {
                       number: completingSet.setIndex + 1,
-                      target: formatReps(completingSet.targetReps, completingSet.targetRepsMin, completingSet.targetRepsMax, completingSet.targetDurationSeconds),
+                      target: formatReps(t, completingSet.targetReps, completingSet.targetRepsMin, completingSet.targetRepsMax, completingSet.targetDurationSeconds),
                     })}
                   </Text>
 

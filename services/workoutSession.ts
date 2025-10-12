@@ -159,8 +159,10 @@ export const workoutSessionService = {
       [id, userId, routine.id, routine.name, "in_progress", newSession.startTime, JSON.stringify(exercises), 0, 0, 0, createdAt, updatedAt]
     );
 
-    // 루틴의 lastUsed 업데이트
-    await routineService.updateLastUsed(routine.id);
+    // 루틴의 lastUsed 업데이트 (임시 루틴이 아닌 경우에만)
+    if (!routine.id.startsWith("temp_routine_")) {
+      await routineService.updateLastUsed(routine.id);
+    }
 
     return newSession;
   },

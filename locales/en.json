@@ -191,8 +191,6 @@
     "periodWeek": "Weekly",
     "periodMonth": "Monthly",
     "periodDay": "Daily",
-    "periodWeek": "Weekly",
-    "periodMonth": "Monthly",
     "periodYear": "Yearly",
     "noTrendData": "Not enough data to show trend",
     "weightTrend": "Weight Trend",
@@ -359,7 +357,9 @@
     "recordBodyWeightOptional": "Optionally record your body weight after the workout.",
     "bodyWeightKg": "Body Weight (kg)",
     "bodyWeightPlaceholder": "e.g. 70",
-    "restBetweenExercises": "Rest Between Exercises"
+    "restBetweenExercises": "Rest Between Exercises",
+    "repsUnit": "{{count}} reps",
+    "secondsUnit": "{{count}}s"
   },
   "category": {
     "all": "All",
