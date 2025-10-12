@@ -19,6 +19,7 @@ export interface RoutineExercise {
   difficulty?: string; // 난이도
   restTime?: number; // 휴식 시간 (초)
   restTimeAfterExercise?: number; // 이 운동 후 휴식 시간 (초)
+  sequence?: number; // 루틴 내 운동 순서
 }
 
 // 루틴에 포함된 운동 (상세 형태 - 나중에 사용)
@@ -38,6 +39,7 @@ export interface Routine extends BaseEntity {
   category?: string; // 루틴 카테고리 (예: "상체", "하체", "전신")
   lastUsed?: string; // 마지막 사용 날짜
   duration?: string; // 예상 소요 시간 (예: "20분", "45분")
+  sequence?: number; // 루틴 목록에서의 순서
 }
 
 export type CreateRoutineData = Omit<

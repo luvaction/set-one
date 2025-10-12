@@ -1,7 +1,7 @@
 import { openDatabaseAsync, SQLiteDatabase } from "expo-sqlite";
 
 const DATABASE_NAME = "set1.db";
-const DB_VERSION = 2; // 1. 앱의 현재 데이터베이스 버전을 정의합니다. (구조가 변경되었으므로 올립니다)
+const DB_VERSION = 4; // 1. 앱의 현재 데이터베이스 버전을 정의합니다. (구조가 변경되었으므로 올립니다)
 let db: SQLiteDatabase | null = null;
 
 /**
@@ -48,6 +48,69 @@ async function migrateDbV1ToV2(database: SQLiteDatabase) {
 }
 
 /**
+ * 데이터베이스 버전 2에서 3으로 마이그레이션합니다.
+ * - `routines` 테이블에 `sequence` 컬럼을 추가하고 기존 데이터를 채웁니다.
+ * @param database - SQLiteDatabase 인스턴스
+ */
+async function migrateDbV2ToV3(database: SQLiteDatabase) {
+  console.log("Migrating database from version 2 to 3...");
+  try {
+    console.log("[DB_DEBUG] Attempting to ALTER TABLE routines ADD COLUMN sequence...");
+    // Add sequence column to routines table
+    await database.execAsync('ALTER TABLE routines ADD COLUMN sequence INTEGER;');
+    console.log("[DB_DEBUG] ALTER TABLE routines ADD COLUMN sequence successful.");
+    console.log("Added 'sequence' column to 'routines' table.");
+
+    // Populate sequence for existing user routines
+    const userRoutines = await database.getAllAsync<{ id: string }>(
+      'SELECT id FROM routines WHERE is_recommended = 0 OR is_recommended IS NULL ORDER BY created_at ASC;',
+      []
+    );
+
+    for (let i = 0; i < userRoutines.length; i++) {
+      const routine = userRoutines[i];
+      await database.runAsync('UPDATE routines SET sequence = ? WHERE id = ?;', [i, routine.id]);
+    }
+    console.log("Populated 'sequence' for existing user routines.");
+    console.log("Migration to version 3 completed successfully.");
+  } catch (error) {
+    console.error("[DB_DEBUG] Error during migrateDbV2ToV3:", error);
+    console.warn("A migration step for V3 might have failed (this can be normal if columns already exist):", error);
+  }
+}
+
+/**
+ * 데이터베이스 버전 3에서 4로 마이그레이션합니다.
+ * - `routines` 테이블에 `sequence` 컬럼을 추가하고 기존 데이터를 채웁니다. (이전 마이그레이션에서 누락되었을 경우)
+ * @param database - SQLiteDatabase 인스턴스
+ */
+async function migrateDbV3ToV4(database: SQLiteDatabase) {
+  console.log("Migrating database from version 3 to 4...");
+  try {
+    console.log("[DB_DEBUG] Attempting to ALTER TABLE routines ADD COLUMN sequence for V4...");
+    // Add sequence column to routines table
+    await database.execAsync('ALTER TABLE routines ADD COLUMN sequence INTEGER;');
+    console.log("[DB_DEBUG] ALTER TABLE routines ADD COLUMN sequence for V4 successful.");
+
+    // Populate sequence for existing user routines
+    const userRoutines = await database.getAllAsync<{ id: string }>(
+      'SELECT id FROM routines WHERE is_recommended = 0 OR is_recommended IS NULL ORDER BY created_at ASC;',
+      []
+    );
+
+    for (let i = 0; i < userRoutines.length; i++) {
+      const routine = userRoutines[i];
+      await database.runAsync('UPDATE routines SET sequence = ? WHERE id = ?;', [i, routine.id]);
+    }
+    console.log("Populated 'sequence' for existing user routines for V4.");
+    console.log("Migration to version 4 completed successfully.");
+  } catch (error) {
+    console.error("[DB_DEBUG] Error during migrateDbV3ToV4:", error);
+    console.warn("A migration step for V4 might have failed (this can be normal if columns already exist):", error);
+  }
+}
+
+/**
  * 데이터베이스를 초기화하고, 필요한 경우 스키마 마이그레이션을 수행합니다.
  */
 export const initDb = async () => {
@@ -70,7 +133,7 @@ export const initDb = async () => {
     // 데이터베이스의 현재 버전을 가져옵니다.
     const versionResult = await db.getFirstAsync<{ user_version: number }>(
       "PRAGMA user_version;",
-      [] // 👇 [수정 2] 두 번째 인수로 빈 배열 [] 추가
+      []
     );
     const user_version = versionResult?.user_version ?? 0; // 👇 [수정 3] 결과가 null일 경우 0으로 안전하게 처리
     console.log(`Current DB version: ${user_version}, Required DB version: ${DB_VERSION}`);
@@ -80,15 +143,25 @@ export const initDb = async () => {
       console.log("Database schema is outdated. Starting migration...");
 
       if (user_version < 2) {
-        await migrateDbV1ToV2(db); // db가 null이 아님이 보장된 상태에서 호출
+        await migrateDbV1ToV2(localDb); // db가 null이 아님이 보장된 상태에서 호출
       }
 
-      await db.execAsync(`PRAGMA user_version = ${DB_VERSION};`);
+      if (user_version < 3) {
+        console.log("[DB_DEBUG] Calling migrateDbV2ToV3...");
+        await migrateDbV2ToV3(localDb);
+      }
+
+      if (user_version < 4) {
+        console.log("[DB_DEBUG] Calling migrateDbV3ToV4...");
+        await migrateDbV3ToV4(localDb);
+      }
+
+      await localDb.execAsync(`PRAGMA user_version = ${DB_VERSION};`);
       console.log(`Database version successfully updated to ${DB_VERSION}`);
     }
 
     // 모든 테이블 생성 (신규 설치 유저 및 마이그레이션 안전장치)
-    await db.execAsync(`
+    await localDb.execAsync(`
       PRAGMA journal_mode = WAL;
       
       CREATE TABLE IF NOT EXISTS profiles (
@@ -102,7 +175,7 @@ export const initDb = async () => {
       );
       CREATE TABLE IF NOT EXISTS hidden_exercises ( exercise_id TEXT PRIMARY KEY NOT NULL, created_at INTEGER NOT NULL );
       CREATE TABLE IF NOT EXISTS routines (
-        id TEXT PRIMARY KEY NOT NULL, user_id TEXT NOT NULL, name TEXT NOT NULL, description TEXT, is_recommended INTEGER, category TEXT, last_used TEXT, duration TEXT,
+        id TEXT PRIMARY KEY NOT NULL, user_id TEXT NOT NULL, name TEXT NOT NULL, description TEXT, is_recommended INTEGER, category TEXT, last_used TEXT, duration TEXT, sequence INTEGER,
         created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL
       );
       CREATE TABLE IF NOT EXISTS routine_exercises (

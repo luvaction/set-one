@@ -3,8 +3,8 @@ import { CreateRoutineData, RoutineExercise } from "@/models";
 import { routineService } from "@/services/routine";
 import { getOrCreateUserId } from "@/utils/userIdHelper";
 import { Ionicons } from "@expo/vector-icons";
-import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { router, useLocalSearchParams, useFocusEffect } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from "react-native-draggable-flatlist";
@@ -244,6 +244,7 @@ type Exercise = {
   targetMuscle: string;
   difficulty: string;
   restTime?: number;
+  sequence?: number;
 };
 
 export default function RoutineBuilderScreen() {
@@ -259,20 +260,32 @@ export default function RoutineBuilderScreen() {
   const [searchQuery, setSearchQuery] = useState("");
 
   // 수정 모드: 기존 루틴 데이터 불러오기
+  // This effect handles adding a pre-selected exercise when navigating from another screen.
+  // It should only run when `preSelectedExercise` changes.
   useEffect(() => {
-    if (isEditing && params.routineId) {
-      loadRoutine();
-    } else if (params.preSelectedExercise) {
-      // 미리 선택된 운동이 있으면 추가
+    if (params.preSelectedExercise) {
       try {
         const preSelected = JSON.parse(params.preSelectedExercise as string);
-        setSelectedExercises([preSelected]);
-        console.log("preSelectedExercise loaded:", [preSelected]); // Added log
+        // To prevent adding it multiple times, we check if the list is empty.
+        // This assumes we only pre-select for a new routine.
+        if (selectedExercises.length === 0) {
+          setSelectedExercises([preSelected]);
+        }
       } catch (error) {
         console.error("Failed to parse preSelectedExercise:", error);
       }
     }
-  }, [params.routineId, params.preSelectedExercise]);
+  }, [params.preSelectedExercise]);
+
+  useFocusEffect(
+    useCallback(() => {
+      // This effect runs every time the screen is focused.
+      // It's used to reload the routine data when editing to see the latest changes.
+      if (isEditing && params.routineId) {
+        loadRoutine();
+      }
+    }, [isEditing, params.routineId])
+  );
 
   const loadRoutine = async () => {
     try {
@@ -280,8 +293,9 @@ export default function RoutineBuilderScreen() {
       if (routine) {
         routineNameRef.current = routine.name;
         routineDescriptionRef.current = routine.description || "";
+        const sortedExercises = routine.exercises.sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0));
         setSelectedExercises(
-          routine.exercises.map((ex) => ({
+          sortedExercises.map((ex) => ({
             id: ex.id,
             name: ex.name,
             sets: ex.sets,
@@ -292,6 +306,7 @@ export default function RoutineBuilderScreen() {
             targetMuscle: ex.targetMuscle || "",
             difficulty: ex.difficulty || "",
             restTime: ex.restTime, // New
+            sequence: ex.sequence,
           }))
         );
       }
@@ -439,7 +454,7 @@ export default function RoutineBuilderScreen() {
       const routineData: CreateRoutineData = {
         name: routineNameRef.current,
         description: routineDescriptionRef.current,
-        exercises: selectedExercises.map((ex) => {
+        exercises: selectedExercises.map((ex, index) => {
           const routineExercise: RoutineExercise = {
             id: ex.id,
             name: ex.name,
@@ -451,6 +466,7 @@ export default function RoutineBuilderScreen() {
             targetMuscle: ex.targetMuscle,
             difficulty: getDifficultyKey(ex.difficulty),
             restTime: ex.restTime,
+            sequence: index,
           };
           return routineExercise;
         }),

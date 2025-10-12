@@ -22,6 +22,7 @@ interface RoutineRow {
   category: string | null;
   last_used: string | null;
   duration: string | null;
+  sequence: number | null;
   created_at: number;
   updated_at: number;
 }
@@ -56,6 +57,7 @@ const rowToRoutineExercise = (row: RoutineExerciseRow): RoutineExercise => {
     targetMuscle: row.target_muscle ?? undefined,
     difficulty: row.difficulty ?? undefined,
     restTime: row.rest_time ?? undefined,
+    sequence: row.order,
   };
 };
 
@@ -76,6 +78,7 @@ const rowToRoutine = async (row: RoutineRow): Promise<Routine> => {
     category: row.category ?? undefined,
     lastUsed: row.last_used ?? undefined,
     duration: row.duration ?? undefined,
+    sequence: row.sequence ?? undefined,
     createdAt: new Date(row.created_at).toISOString(),
     updatedAt: new Date(row.updated_at).toISOString(),
   };
@@ -107,7 +110,7 @@ const saveRoutineExercises = async (routineId: string, exercises: RoutineExercis
         ex.targetMuscle ?? null,
         ex.difficulty ?? null,
         ex.restTime ?? null,
-        i,
+        ex.sequence ?? i,
         createdAt,
         updatedAt,
       ]
@@ -119,7 +122,7 @@ export const routineService = {
   // 모든 루틴 가져오기 (추천 + 사용자)
   async getAllRoutines(): Promise<Routine[]> {
     const userRoutineRows = await getMultipleItems<RoutineRow>(
-      'SELECT * FROM routines WHERE is_recommended = 0'
+      'SELECT * FROM routines WHERE is_recommended = 0 ORDER BY sequence ASC, created_at ASC'
     );
 
     const userRoutines = await Promise.all(userRoutineRows.map(rowToRoutine));
@@ -165,11 +168,14 @@ export const routineService = {
     const createdAt = nowTimestamp();
     const updatedAt = createdAt;
 
+    const maxSequenceResult = await getSingleItem<{ max_sequence: number }>( 'SELECT MAX(sequence) as max_sequence FROM routines WHERE is_recommended = 0' );
+    const newSequence = (maxSequenceResult?.max_sequence ?? -1) + 1;
+
     await runSql(
       `INSERT INTO routines (
         id, user_id, name, description, is_recommended, category, last_used, duration,
-        created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        sequence, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         userId,
@@ -179,6 +185,7 @@ export const routineService = {
         data.category ?? null,
         data.lastUsed ?? null,
         data.duration ?? null,
+        newSequence,
         createdAt,
         updatedAt,
       ]
@@ -191,6 +198,7 @@ export const routineService = {
       id,
       userId,
       ...data,
+      sequence: newSequence,
       isRecommended: false,
       createdAt: new Date(createdAt).toISOString(),
       updatedAt: new Date(updatedAt).toISOString(),
@@ -256,7 +264,7 @@ export const routineService = {
   // 사용자 루틴만 가져오기
   async getUserRoutines(): Promise<Routine[]> {
     const rows = await getMultipleItems<RoutineRow>(
-      'SELECT * FROM routines WHERE is_recommended = 0'
+      'SELECT * FROM routines WHERE is_recommended = 0 ORDER BY sequence ASC, created_at ASC'
     );
     return Promise.all(rows.map(rowToRoutine));
   },
@@ -328,10 +336,18 @@ export const routineService = {
     return await this.updateRoutine(routineId, { exercises: updatedExercises });
   },
 
-  // 루틴 순서 변경 (현재는 지원하지 않음 - 나중에 구현 가능)
+  // 루틴 순서 변경
   async reorderRoutines(routineIds: string[]): Promise<void> {
-    // SQLite에서는 루틴의 순서를 별도 컬럼으로 관리하지 않음
-    // 필요시 order 컬럼 추가 필요
-    console.warn('reorderRoutines is not implemented for SQLite');
+    try {
+      for (let i = 0; i < routineIds.length; i++) {
+        const routineId = routineIds[i];
+        const newSequence = i;
+        await runSql('UPDATE routines SET sequence = ? WHERE id = ?', [newSequence, routineId]);
+      }
+      console.log('Routines reordered successfully.');
+    } catch (error) {
+      console.error('Failed to reorder routines:', error);
+      throw error; // Re-throw the error to be handled by the caller
+    }
   },
 };
