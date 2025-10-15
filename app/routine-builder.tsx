@@ -1,5 +1,6 @@
 import { useTheme } from "@/contexts/ThemeContext";
-import { CreateRoutineData, RoutineExercise } from "@/models";
+import { CreateRoutineData, Exercise, RoutineExercise } from "@/models";
+import { exerciseService } from "@/services";
 import { routineService } from "@/services/routine";
 import { getOrCreateUserId } from "@/utils/userIdHelper";
 import { Ionicons } from "@expo/vector-icons";
@@ -36,7 +37,8 @@ const getExerciseName = (t: any, exerciseId: string, exerciseName?: string) => {
   return t(`exercises.${exerciseId}`);
 };
 
-const getMuscleGroupKey = (targetMuscle: string) => {
+const getMuscleGroupKey = (targetMuscle: string | undefined) => {
+  if (!targetMuscle) return "fullBody";
   const map: Record<string, string> = {
     가슴: "chest",
     삼두: "triceps",
@@ -54,7 +56,8 @@ const getMuscleGroupKey = (targetMuscle: string) => {
   return map[targetMuscle] || targetMuscle;
 };
 
-const getDifficultyKey = (difficulty: string) => {
+const getDifficultyKey = (difficulty: string | undefined) => {
+  if (!difficulty) return "beginner";
   const map: Record<string, string> = {
     초급: "beginner",
     중급: "intermediate",
@@ -94,146 +97,7 @@ const parseRepsInput = (input: string): ParsedReps => {
   return {}; // Fallback for unparseable input
 };
 
-interface DefaultExercise {
-  id: string;
-  name: string;
-  category: string;
-  targetMuscle: string;
-  difficulty: string;
-  defaultSets: number;
-  defaultRepsMin?: number;
-  defaultRepsMax?: number;
-  defaultDurationSeconds?: number;
-  restTime?: number;
-}
-
-// 운동 데이터 (routines.tsx에서 가져온 것과 동일)
-const exercises: Record<string, DefaultExercise> = {
-  // 푸시업 계열 (맨몸)
-  regularPushup: {
-    id: "regularPushup",
-    name: "일반 푸시업",
-    category: "bodyweight",
-    targetMuscle: "가슴",
-    difficulty: "초급",
-    defaultSets: 3,
-    defaultRepsMin: 10,
-    defaultRepsMax: 15,
-    restTime: 60,
-  },
-  diamondPushup: {
-    id: "diamondPushup",
-    name: "다이아몬드 푸시업",
-    category: "bodyweight",
-    targetMuscle: "삼두",
-    difficulty: "중급",
-    defaultSets: 3,
-    defaultRepsMin: 8,
-    defaultRepsMax: 12,
-    restTime: 60,
-  },
-  widePushup: {
-    id: "widePushup",
-    name: "와이드 푸시업",
-    category: "bodyweight",
-    targetMuscle: "가슴",
-    difficulty: "초급",
-    defaultSets: 3,
-    defaultRepsMin: 10,
-    defaultRepsMax: 15,
-    restTime: 60,
-  },
-  inclinePushup: {
-    id: "inclinePushup",
-    name: "인클라인 푸시업",
-    category: "bodyweight",
-    targetMuscle: "가슴",
-    difficulty: "초급",
-    defaultSets: 3,
-    defaultRepsMin: 15,
-    defaultRepsMax: 20,
-    restTime: 60,
-  },
-
-  // 풀업/친업 계열 (맨몸)
-  regularPullup: {
-    id: "regularPullup",
-    name: "풀업",
-    category: "bodyweight",
-    targetMuscle: "등",
-    difficulty: "중급",
-    defaultSets: 3,
-    defaultRepsMin: 5,
-    defaultRepsMax: 10,
-    restTime: 90,
-  },
-  chinup: { id: "chinup", name: "친업", category: "bodyweight", targetMuscle: "이두", difficulty: "중급", defaultSets: 3, defaultRepsMin: 6, defaultRepsMax: 10, restTime: 90 },
-
-  // 스쿼트 계열 (맨몸)
-  bodyweightSquat: {
-    id: "bodyweightSquat",
-    name: "바디웨이트 스쿼트",
-    category: "bodyweight",
-    targetMuscle: "하체",
-    difficulty: "초급",
-    defaultSets: 3,
-    defaultRepsMin: 15,
-    defaultRepsMax: 20,
-    restTime: 60,
-  },
-  jumpSquat: {
-    id: "jumpSquat",
-    name: "점프 스쿼트",
-    category: "bodyweight",
-    targetMuscle: "하체",
-    difficulty: "중급",
-    defaultSets: 3,
-    defaultRepsMin: 10,
-    defaultRepsMax: 15,
-    restTime: 60,
-  },
-
-  // 플랭크 계열 (맨몸)
-  regularPlank: { id: "regularPlank", name: "플랭크", category: "bodyweight", targetMuscle: "코어", difficulty: "초급", defaultSets: 3, defaultDurationSeconds: 60, restTime: 45 },
-  sidePlank: { id: "sidePlank", name: "사이드 플랭크", category: "bodyweight", targetMuscle: "코어", difficulty: "중급", defaultSets: 3, defaultDurationSeconds: 45, restTime: 45 },
-
-  // 웨이트
-  flatBenchPress: {
-    id: "flatBenchPress",
-    name: "플랫 벤치프레스",
-    category: "weights",
-    targetMuscle: "가슴",
-    difficulty: "중급",
-    defaultSets: 3,
-    defaultRepsMin: 8,
-    defaultRepsMax: 12,
-    restTime: 90,
-  },
-  inclineBenchPress: {
-    id: "inclineBenchPress",
-    name: "인클라인 벤치프레스",
-    category: "weights",
-    targetMuscle: "가슴 상부",
-    difficulty: "중급",
-    defaultSets: 3,
-    defaultRepsMin: 8,
-    defaultRepsMax: 12,
-    restTime: 90,
-  },
-  dumbbellFly: {
-    id: "dumbbellFly",
-    name: "덤벨 플라이",
-    category: "weights",
-    targetMuscle: "가슴",
-    difficulty: "초급",
-    defaultSets: 3,
-    defaultRepsMin: 10,
-    defaultRepsMax: 15,
-    restTime: 60,
-  },
-};
-
-type Exercise = {
+type SelectedExercise = {
   id: string;
   name: string;
   sets: number;
@@ -241,8 +105,8 @@ type Exercise = {
   repsMax?: number;
   durationSeconds?: number;
   targetWeight?: number;
-  targetMuscle: string;
-  difficulty: string;
+  targetMuscle?: string;
+  difficulty?: string;
   restTime?: number;
   sequence?: number;
 };
@@ -255,9 +119,22 @@ export default function RoutineBuilderScreen() {
 
   const routineNameRef = useRef((params.name as string) || "");
   const routineDescriptionRef = useRef("");
-  const [selectedExercises, setSelectedExercises] = useState<Exercise[]>([]);
+  const [selectedExercises, setSelectedExercises] = useState<SelectedExercise[]>([]);
   const [showExerciseLibrary, setShowExerciseLibrary] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [allExercises, setAllExercises] = useState<Exercise[]>([]);
+
+  useEffect(() => {
+    const loadAllExercises = async () => {
+      try {
+        const exercisesFromDb = await exerciseService.getAllExercises();
+        setAllExercises(exercisesFromDb);
+      } catch (error) {
+        console.error("Failed to load all exercises:", error);
+      }
+    };
+    loadAllExercises();
+  }, []);
 
   // 수정 모드: 기존 루틴 데이터 불러오기
   // This effect handles adding a pre-selected exercise when navigating from another screen.
@@ -316,27 +193,28 @@ export default function RoutineBuilderScreen() {
     }
   };
 
-  const exerciseList = Object.values(exercises);
-  const filteredExercises = exerciseList.filter(
-    (exercise) => exercise.name.toLowerCase().includes(searchQuery.toLowerCase()) || exercise.targetMuscle.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredExercises = allExercises.filter((exercise) => {
+    const translatedName = getExerciseName(t, exercise.id, exercise.name);
+    const muscleGroups = exercise.muscleGroups?.map((m) => t(`muscleGroups.${getMuscleGroupKey(m)}`)).join(", ") || "";
+    return translatedName.toLowerCase().includes(searchQuery.toLowerCase()) || muscleGroups.toLowerCase().includes(searchQuery.toLowerCase());
+  });
 
-  const addExercise = (exercise: DefaultExercise) => {
-    const newExercise: Exercise = {
+  const addExercise = (exercise: Exercise) => {
+    const newExercise: SelectedExercise = {
       id: exercise.id,
       name: exercise.name,
-      sets: exercise.defaultSets,
+      sets: exercise.defaultSets || 3,
       repsMin: exercise.defaultRepsMin,
       repsMax: exercise.defaultRepsMax,
       durationSeconds: exercise.defaultDurationSeconds,
-      targetMuscle: exercise.targetMuscle,
-      difficulty: getDifficultyKey(exercise.difficulty), // Convert to English key
+      targetMuscle: exercise.muscleGroups?.[0],
+      difficulty: exercise.difficulty,
       restTime: exercise.restTime,
     };
     const updatedExercises = [...selectedExercises, newExercise];
     setSelectedExercises(updatedExercises);
-    console.log("addExercise: updated selectedExercises", updatedExercises);
     setShowExerciseLibrary(false);
+    setSearchQuery("");
   };
 
   const removeExercise = (index: number) => {
@@ -370,7 +248,7 @@ export default function RoutineBuilderScreen() {
     setSelectedExercises(updated);
   };
 
-  const renderExerciseItem = ({ item, getIndex, drag, isActive }: RenderItemParams<Exercise>) => {
+  const renderExerciseItem = ({ item, getIndex, drag, isActive }: RenderItemParams<SelectedExercise>) => {
     const index = getIndex();
     const safeIndex = index ?? -1; // null 또는 undefined인 경우 -1 사용 (배열 인덱스 오류 방지)
     const displayIndex = safeIndex !== -1 ? safeIndex + 1 : 1;
@@ -522,25 +400,26 @@ export default function RoutineBuilderScreen() {
                 <View style={styles.exerciseInfo}>
                   <Text style={[styles.exerciseName, { color: colors.text }]}>{getExerciseName(t, exercise.id, exercise.name)}</Text>
                   <View style={styles.exerciseTags}>
-                    <View
-                      style={[
-                        styles.muscleTag,
-                        exercise.targetMuscle === "가슴" && styles.chestTag,
-                        exercise.targetMuscle === "등" && styles.backTag,
-                        exercise.targetMuscle === "하체" && styles.legTag,
-                        exercise.targetMuscle === "코어" && styles.coreTag,
-                        exercise.targetMuscle === "삼두" && styles.tricepsTag,
-                        exercise.targetMuscle === "가슴 상부" && styles.chestTag,
-                        exercise.targetMuscle === "이두" && styles.bicepsTag,
-                      ]}
-                    >
-                      <Text style={[styles.muscleTagText, { color: colors.text }]}>{t(`muscleGroups.${getMuscleGroupKey(exercise.targetMuscle)}`)}</Text>
-                    </View>
-                    <Text style={[styles.difficultyText, { color: colors.textSecondary }]}>{t(`difficulty.${getDifficultyKey(exercise.difficulty)}`)}</Text>
+                    {exercise.muscleGroups && exercise.muscleGroups.length > 0 && (
+                      <View
+                        style={[
+                          styles.muscleTag,
+                          // You can add more specific styling based on muscle group if needed
+                          { backgroundColor: colors.primary + "20" },
+                        ]}
+                      >
+                        <Text style={[styles.muscleTagText, { color: colors.text }]}>
+                          {exercise.muscleGroups.map((m) => t(`muscleGroups.${getMuscleGroupKey(m)}`)).join(", ")}
+                        </Text>
+                      </View>
+                    )}
+                    {exercise.difficulty && (
+                      <Text style={[styles.difficultyText, { color: colors.textSecondary }]}>{t(`difficulty.${getDifficultyKey(exercise.difficulty)}`)}</Text>
+                    )}
                   </View>
                   <Text style={[styles.defaultSets, { color: colors.textSecondary }]}>
                     {t("routineBuilder.recommendedFormat", {
-                      sets: exercise.defaultSets,
+                      sets: exercise.defaultSets || 3,
                       reps: formatReps(exercise.defaultRepsMin, exercise.defaultRepsMax, exercise.defaultDurationSeconds),
                     })}
                   </Text>
