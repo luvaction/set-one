@@ -1,13 +1,15 @@
+import { ExerciseLibrary } from "@/components/ui/ExerciseLibrary";
 import { useTheme } from "@/contexts/ThemeContext";
 import { CreateRoutineData, Exercise, RoutineExercise } from "@/models";
 import { exerciseService } from "@/services";
 import { routineService } from "@/services/routine";
+import { getDifficultyKey } from "@/utils/translationHelpers";
 import { getOrCreateUserId } from "@/utils/userIdHelper";
 import { Ionicons } from "@expo/vector-icons";
-import { router, useLocalSearchParams, useFocusEffect } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, Text, TextInput, TouchableOpacity, View } from "react-native";
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from "react-native-draggable-flatlist";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -25,45 +27,6 @@ const formatReps = (repsMin?: number, repsMax?: number, durationSeconds?: number
     return `${repsMin}-${repsMax}`;
   }
   return ""; // Fallback
-};
-
-// 번역 헬퍼 함수들
-const getExerciseName = (t: any, exerciseId: string, exerciseName?: string) => {
-  // 커스텀 운동이면 실제 이름 반환 (번역 불필요)
-  if (exerciseId.startsWith("ex_custom_")) {
-    return exerciseName || exerciseId;
-  }
-  // 기본 운동은 번역 키 사용
-  return t(`exercises.${exerciseId}`);
-};
-
-const getMuscleGroupKey = (targetMuscle: string | undefined) => {
-  if (!targetMuscle) return "fullBody";
-  const map: Record<string, string> = {
-    가슴: "chest",
-    삼두: "triceps",
-    등: "back",
-    이두: "biceps",
-    하체: "legs",
-    코어: "core",
-    "가슴 상부": "chestUpper",
-    "가슴 하부": "chestLower",
-    "등/하체": "backLegs",
-    햄스트링: "hamstring",
-    전신: "fullBody",
-    어깨: "shoulder",
-  };
-  return map[targetMuscle] || targetMuscle;
-};
-
-const getDifficultyKey = (difficulty: string | undefined) => {
-  if (!difficulty) return "beginner";
-  const map: Record<string, string> = {
-    초급: "beginner",
-    중급: "intermediate",
-    고급: "advanced",
-  };
-  return map[difficulty] || difficulty;
 };
 
 // 문자열을 reps 객체로 파싱하는 헬퍼 함수
@@ -121,7 +84,6 @@ export default function RoutineBuilderScreen() {
   const routineDescriptionRef = useRef("");
   const [selectedExercises, setSelectedExercises] = useState<SelectedExercise[]>([]);
   const [showExerciseLibrary, setShowExerciseLibrary] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [allExercises, setAllExercises] = useState<Exercise[]>([]);
 
   useEffect(() => {
@@ -193,12 +155,6 @@ export default function RoutineBuilderScreen() {
     }
   };
 
-  const filteredExercises = allExercises.filter((exercise) => {
-    const translatedName = getExerciseName(t, exercise.id, exercise.name);
-    const muscleGroups = exercise.muscleGroups?.map((m) => t(`muscleGroups.${getMuscleGroupKey(m)}`)).join(", ") || "";
-    return translatedName.toLowerCase().includes(searchQuery.toLowerCase()) || muscleGroups.toLowerCase().includes(searchQuery.toLowerCase());
-  });
-
   const addExercise = (exercise: Exercise) => {
     const newExercise: SelectedExercise = {
       id: exercise.id,
@@ -214,7 +170,6 @@ export default function RoutineBuilderScreen() {
     const updatedExercises = [...selectedExercises, newExercise];
     setSelectedExercises(updatedExercises);
     setShowExerciseLibrary(false);
-    setSearchQuery("");
   };
 
   const removeExercise = (index: number) => {
@@ -378,56 +333,7 @@ export default function RoutineBuilderScreen() {
             <Text style={[styles.headerTitle, { color: colors.text }]}>{t("routineBuilder.selectExercise")}</Text>
             <View style={styles.headerSpacer} />
           </View>
-
-          <View style={[styles.searchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Ionicons name="search" size={20} color={colors.textSecondary} />
-            <TextInput
-              style={[styles.searchInput, { color: colors.text }]}
-              placeholder={t("routineBuilder.searchExercise")}
-              placeholderTextColor={colors.textSecondary}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-          </View>
-
-          <ScrollView style={styles.exerciseLibrary}>
-            {filteredExercises.map((exercise) => (
-              <TouchableOpacity
-                key={exercise.id}
-                style={[styles.exerciseCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
-                onPress={() => addExercise(exercise)}
-              >
-                <View style={styles.exerciseInfo}>
-                  <Text style={[styles.exerciseName, { color: colors.text }]}>{getExerciseName(t, exercise.id, exercise.name)}</Text>
-                  <View style={styles.exerciseTags}>
-                    {exercise.muscleGroups && exercise.muscleGroups.length > 0 && (
-                      <View
-                        style={[
-                          styles.muscleTag,
-                          // You can add more specific styling based on muscle group if needed
-                          { backgroundColor: colors.primary + "20" },
-                        ]}
-                      >
-                        <Text style={[styles.muscleTagText, { color: colors.text }]}>
-                          {exercise.muscleGroups.map((m) => t(`muscleGroups.${getMuscleGroupKey(m)}`)).join(", ")}
-                        </Text>
-                      </View>
-                    )}
-                    {exercise.difficulty && (
-                      <Text style={[styles.difficultyText, { color: colors.textSecondary }]}>{t(`difficulty.${getDifficultyKey(exercise.difficulty)}`)}</Text>
-                    )}
-                  </View>
-                  <Text style={[styles.defaultSets, { color: colors.textSecondary }]}>
-                    {t("routineBuilder.recommendedFormat", {
-                      sets: exercise.defaultSets || 3,
-                      reps: formatReps(exercise.defaultRepsMin, exercise.defaultRepsMax, exercise.defaultDurationSeconds),
-                    })}
-                  </Text>
-                </View>
-                <Ionicons name="add-circle" size={24} color={colors.primary} />
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+          <ExerciseLibrary allExercises={allExercises} onAddExercise={addExercise} onPlayExercise={() => {}} onLongPressExercise={() => {}} onAddCustomExercise={() => {}} />
         </SafeAreaView>
       </GestureHandlerRootView>
     );
