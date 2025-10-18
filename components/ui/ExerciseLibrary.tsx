@@ -14,11 +14,13 @@ const ExerciseCard = ({
     onPlay,
     onAdd,
     onLongPress,
+    hidePlayButton,
   }: {
     exercise: Exercise;
     onPlay: (e: Exercise) => void;
     onAdd: (e: Exercise) => void;
     onLongPress: (e: Exercise) => void;
+    hidePlayButton?: boolean;
   }) => {
     const { colors } = useTheme();
     const { t } = useTranslation();
@@ -62,9 +64,11 @@ const ExerciseCard = ({
           </Text>
         </View>
         <View style={styles.exerciseCardActions}>
-          <TouchableOpacity style={styles.playIconButton} onPress={() => onPlay(exercise)}>
-            <Ionicons name="play-circle" size={28} color={colors.primary} />
-          </TouchableOpacity>
+          {!hidePlayButton && (
+            <TouchableOpacity style={styles.playIconButton} onPress={() => onPlay(exercise)}>
+              <Ionicons name="play-circle" size={28} color={colors.primary} />
+            </TouchableOpacity>
+          )}
           <TouchableOpacity style={styles.addToRoutineButton} onPress={() => onAdd(exercise)}>
             <Ionicons name="add-circle" size={24} color={colors.primary} />
           </TouchableOpacity>
@@ -84,6 +88,8 @@ interface ExerciseLibraryProps {
   onAddExercise: (exercise: Exercise) => void;
   onLongPressExercise: (exercise: Exercise) => void;
   onAddCustomExercise: () => void;
+  hidePlayButton?: boolean;
+  hideCustomExerciseButton?: boolean;
 }
 
 export const ExerciseLibrary = ({
@@ -92,6 +98,8 @@ export const ExerciseLibrary = ({
   onAddExercise,
   onLongPressExercise,
   onAddCustomExercise,
+  hidePlayButton = false,
+  hideCustomExerciseButton = false,
 }: ExerciseLibraryProps) => {
   const { colors } = useTheme();
   const { t } = useTranslation();
@@ -153,12 +161,14 @@ export const ExerciseLibrary = ({
       </View>
 
       {/* 커스텀 운동 추가 버튼 */}
-      <View style={styles.customExerciseButtonContainer}>
-        <TouchableOpacity style={[styles.customExerciseButton, { backgroundColor: colors.primary }]} onPress={onAddCustomExercise}>
-          <Ionicons name="add-circle" size={20} color={colors.buttonText} />
-          <Text style={[styles.customExerciseButtonText, { color: colors.buttonText }]}>{t("routines.addCustomExercise")}</Text>
-        </TouchableOpacity>
-      </View>
+      {!hideCustomExerciseButton && (
+        <View style={styles.customExerciseButtonContainer}>
+          <TouchableOpacity style={[styles.customExerciseButton, { backgroundColor: colors.primary }]} onPress={onAddCustomExercise}>
+            <Ionicons name="add-circle" size={20} color={colors.buttonText} />
+            <Text style={[styles.customExerciseButtonText, { color: colors.buttonText }]}>{t("routines.addCustomExercise")}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* 난이도 필터 */}
       <View style={styles.filterContainer}>
@@ -202,6 +212,7 @@ export const ExerciseLibrary = ({
                   onPlay={onPlayExercise}
                   onAdd={onAddExercise}
                   onLongPress={onLongPressExercise}
+                  hidePlayButton={hidePlayButton}
                 />
               ))
             ) : (
@@ -245,6 +256,7 @@ export const ExerciseLibrary = ({
                               onPlay={onPlayExercise}
                               onAdd={onAddExercise}
                               onLongPress={onLongPressExercise}
+                              hidePlayButton={hidePlayButton}
                             />
                           ))}
                         </View>
@@ -276,6 +288,7 @@ export const ExerciseLibrary = ({
                         onPlay={onPlayExercise}
                         onAdd={onAddExercise}
                         onLongPress={onLongPressExercise}
+                        hidePlayButton={hidePlayButton}
                       />
                     ))}
                   </View>

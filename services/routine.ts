@@ -168,8 +168,12 @@ export const routineService = {
     const createdAt = nowTimestamp();
     const updatedAt = createdAt;
 
-    const maxSequenceResult = await getSingleItem<{ max_sequence: number }>( 'SELECT MAX(sequence) as max_sequence FROM routines WHERE is_recommended = 0' );
-    const newSequence = (maxSequenceResult?.max_sequence ?? -1) + 1;
+    // 새 루틴이 맨 위에 오도록 기존 루틴들의 sequence를 +1
+    await runSql(
+      'UPDATE routines SET sequence = sequence + 1 WHERE is_recommended = 0'
+    );
+
+    const newSequence = 0; // 새 루틴은 항상 맨 위(sequence = 0)
 
     await runSql(
       `INSERT INTO routines (

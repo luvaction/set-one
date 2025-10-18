@@ -194,6 +194,9 @@ export const styles = StyleSheet.create({
   tricepsTag: {
     backgroundColor: "#98D8C8" + "20",
   },
+  hamstringTag: {
+    backgroundColor: "#F39C12" + "20",
+  },
   muscleTagText: {
     fontSize: 10,
 

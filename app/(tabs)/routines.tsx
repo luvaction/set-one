@@ -49,7 +49,7 @@ export default function RoutinesScreen() {
   const [showCustomExerciseModal, setShowCustomExerciseModal] = useState(false);
   const [customExerciseName, setCustomExerciseName] = useState("");
   const [customExerciseCategory, setCustomExerciseCategory] = useState("bodyweight");
-  const [customExerciseMuscle, setCustomExerciseMuscle] = useState("");
+  const [customExerciseMuscle, setCustomExerciseMuscle] = useState("가슴");
   const [customExerciseDifficulty, setCustomExerciseDifficulty] = useState("초급");
   const [customExerciseDefaultSets, setCustomExerciseDefaultSets] = useState("3");
   const [customExerciseDefaultRepsMin, setCustomExerciseDefaultRepsMin] = useState("10");
@@ -65,7 +65,7 @@ export default function RoutinesScreen() {
     setShowCustomExerciseModal(false);
     setEditingExerciseId(null);
     setCustomExerciseName("");
-    setCustomExerciseMuscle("");
+    setCustomExerciseMuscle("가슴");
     setCustomExerciseCategory("bodyweight");
     setCustomExerciseDifficulty("초급");
     setCustomExerciseDefaultSets("3");
@@ -453,6 +453,10 @@ export default function RoutinesScreen() {
                           exercise.targetMuscle === "하체" && styles.legTag,
                           exercise.targetMuscle === "코어" && styles.coreTag,
                           exercise.targetMuscle === "삼두" && styles.tricepsTag,
+                          exercise.targetMuscle === "어깨" && styles.shoulderTag,
+                          exercise.targetMuscle === "이두" && styles.bicepsTag,
+                          exercise.targetMuscle === "전신" && styles.fullBodyTag,
+                          exercise.targetMuscle === "햄스트링" && styles.hamstringTag,
                         ]}
                       >
                         <Text style={[styles.muscleTagText, { color: colors.text }]}>{t(`muscleGroups.${getMuscleGroupKey(exercise.targetMuscle)}`)}</Text>
@@ -714,6 +718,10 @@ export default function RoutinesScreen() {
                                         exercise.targetMuscle === "하체" && styles.legTag,
                                         exercise.targetMuscle === "코어" && styles.coreTag,
                                         exercise.targetMuscle === "삼두" && styles.tricepsTag,
+                                        exercise.targetMuscle === "어깨" && styles.shoulderTag,
+                                        exercise.targetMuscle === "이두" && styles.bicepsTag,
+                                        exercise.targetMuscle === "전신" && styles.fullBodyTag,
+                                        exercise.targetMuscle === "햄스트링" && styles.hamstringTag,
                                       ]}
                                     >
                                       <Text style={[styles.muscleTagText, { color: colors.text }]}>{t(`muscleGroups.${getMuscleGroupKey(exercise.targetMuscle)}`)}</Text>
@@ -816,6 +824,10 @@ export default function RoutinesScreen() {
                                                 exercise.targetMuscle === "하체" && styles.legTag,
                                                 exercise.targetMuscle === "코어" && styles.coreTag,
                                                 exercise.targetMuscle === "삼두" && styles.tricepsTag,
+                                                exercise.targetMuscle === "어깨" && styles.shoulderTag,
+                                                exercise.targetMuscle === "이두" && styles.bicepsTag,
+                                                exercise.targetMuscle === "전신" && styles.fullBodyTag,
+                                                exercise.targetMuscle === "햄스트링" && styles.hamstringTag,
                                               ]}
                                             >
                                               <Text style={[styles.muscleTagText, { color: colors.text }]}>{t(`muscleGroups.${getMuscleGroupKey(exercise.targetMuscle)}`)}</Text>
@@ -922,14 +934,134 @@ export default function RoutinesScreen() {
 
                     {/* 운동 부위 */}
                     <Text style={[styles.inputLabel, { color: colors.text }]}>{t("routines.exerciseMuscleGroup")}</Text>
-                    <TextInput
-                      style={[styles.modalInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-                      value={customExerciseMuscle}
-                      onChangeText={setCustomExerciseMuscle}
-                      placeholder={t("routines.exerciseMuscleGroupPlaceholder")}
-                      placeholderTextColor={colors.textSecondary}
-                      returnKeyType="done"
-                    />
+                    <View style={styles.categoryButtons}>
+                      <TouchableOpacity
+                        style={[
+                          styles.modalCategoryButton,
+                          { backgroundColor: colors.background, borderColor: colors.border },
+                          customExerciseMuscle === "가슴" && { backgroundColor: colors.primary, borderColor: colors.primary },
+                        ]}
+                        onPress={() => setCustomExerciseMuscle("가슴")}
+                      >
+                        <Text style={[styles.modalCategoryButtonText, { color: colors.text }, customExerciseMuscle === "가슴" && { color: colors.buttonText }]}>
+                          {t("muscleGroups.chest")}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.modalCategoryButton,
+                          { backgroundColor: colors.background, borderColor: colors.border },
+                          customExerciseMuscle === "등" && { backgroundColor: colors.primary, borderColor: colors.primary },
+                        ]}
+                        onPress={() => setCustomExerciseMuscle("등")}
+                      >
+                        <Text style={[styles.modalCategoryButtonText, { color: colors.text }, customExerciseMuscle === "등" && { color: colors.buttonText }]}>
+                          {t("muscleGroups.back")}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.modalCategoryButton,
+                          { backgroundColor: colors.background, borderColor: colors.border },
+                          customExerciseMuscle === "하체" && { backgroundColor: colors.primary, borderColor: colors.primary },
+                        ]}
+                        onPress={() => setCustomExerciseMuscle("하체")}
+                      >
+                        <Text style={[styles.modalCategoryButtonText, { color: colors.text }, customExerciseMuscle === "하체" && { color: colors.buttonText }]}>
+                          {t("muscleGroups.legs")}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                    <View style={styles.categoryButtons}>
+                      <TouchableOpacity
+                        style={[
+                          styles.modalCategoryButton,
+                          { backgroundColor: colors.background, borderColor: colors.border },
+                          customExerciseMuscle === "어깨" && { backgroundColor: colors.primary, borderColor: colors.primary },
+                        ]}
+                        onPress={() => setCustomExerciseMuscle("어깨")}
+                      >
+                        <Text style={[styles.modalCategoryButtonText, { color: colors.text }, customExerciseMuscle === "어깨" && { color: colors.buttonText }]}>
+                          {t("muscleGroups.shoulder")}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.modalCategoryButton,
+                          { backgroundColor: colors.background, borderColor: colors.border },
+                          customExerciseMuscle === "이두" && { backgroundColor: colors.primary, borderColor: colors.primary },
+                        ]}
+                        onPress={() => setCustomExerciseMuscle("이두")}
+                      >
+                        <Text style={[styles.modalCategoryButtonText, { color: colors.text }, customExerciseMuscle === "이두" && { color: colors.buttonText }]}>
+                          {t("muscleGroups.biceps")}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.modalCategoryButton,
+                          { backgroundColor: colors.background, borderColor: colors.border },
+                          customExerciseMuscle === "삼두" && { backgroundColor: colors.primary, borderColor: colors.primary },
+                        ]}
+                        onPress={() => setCustomExerciseMuscle("삼두")}
+                      >
+                        <Text style={[styles.modalCategoryButtonText, { color: colors.text }, customExerciseMuscle === "삼두" && { color: colors.buttonText }]}>
+                          {t("muscleGroups.triceps")}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                    <View style={styles.categoryButtons}>
+                      <TouchableOpacity
+                        style={[
+                          styles.modalCategoryButton,
+                          { backgroundColor: colors.background, borderColor: colors.border },
+                          customExerciseMuscle === "코어" && { backgroundColor: colors.primary, borderColor: colors.primary },
+                        ]}
+                        onPress={() => setCustomExerciseMuscle("코어")}
+                      >
+                        <Text style={[styles.modalCategoryButtonText, { color: colors.text }, customExerciseMuscle === "코어" && { color: colors.buttonText }]}>
+                          {t("muscleGroups.core")}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.modalCategoryButton,
+                          { backgroundColor: colors.background, borderColor: colors.border },
+                          customExerciseMuscle === "팔" && { backgroundColor: colors.primary, borderColor: colors.primary },
+                        ]}
+                        onPress={() => setCustomExerciseMuscle("팔")}
+                      >
+                        <Text style={[styles.modalCategoryButtonText, { color: colors.text }, customExerciseMuscle === "팔" && { color: colors.buttonText }]}>
+                          {t("muscleGroups.arms")}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.modalCategoryButton,
+                          { backgroundColor: colors.background, borderColor: colors.border },
+                          customExerciseMuscle === "햄스트링" && { backgroundColor: colors.primary, borderColor: colors.primary },
+                        ]}
+                        onPress={() => setCustomExerciseMuscle("햄스트링")}
+                      >
+                        <Text style={[styles.modalCategoryButtonText, { color: colors.text }, customExerciseMuscle === "햄스트링" && { color: colors.buttonText }]}>
+                          {t("muscleGroups.hamstring")}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                    <View style={styles.categoryButtons}>
+                      <TouchableOpacity
+                        style={[
+                          styles.modalCategoryButton,
+                          { backgroundColor: colors.background, borderColor: colors.border },
+                          customExerciseMuscle === "전신" && { backgroundColor: colors.primary, borderColor: colors.primary },
+                        ]}
+                        onPress={() => setCustomExerciseMuscle("전신")}
+                      >
+                        <Text style={[styles.modalCategoryButtonText, { color: colors.text }, customExerciseMuscle === "전신" && { color: colors.buttonText }]}>
+                          {t("muscleGroups.fullBody")}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
 
                     {/* 난이도 선택 */}
                     <Text style={[styles.inputLabel, { color: colors.text }]}>{t("routines.difficulty")}</Text>

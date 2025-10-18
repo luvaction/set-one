@@ -333,7 +333,7 @@ export default function RoutineBuilderScreen() {
             <Text style={[styles.headerTitle, { color: colors.text }]}>{t("routineBuilder.selectExercise")}</Text>
             <View style={styles.headerSpacer} />
           </View>
-          <ExerciseLibrary allExercises={allExercises} onAddExercise={addExercise} onPlayExercise={() => {}} onLongPressExercise={() => {}} onAddCustomExercise={() => {}} />
+          <ExerciseLibrary allExercises={allExercises} onAddExercise={addExercise} onPlayExercise={() => {}} onLongPressExercise={() => {}} onAddCustomExercise={() => {}} hidePlayButton={true} hideCustomExerciseButton={true} />
         </SafeAreaView>
       </GestureHandlerRootView>
     );

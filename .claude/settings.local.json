@@ -19,7 +19,8 @@
       "Bash(npm uninstall:*)",
       "Bash(npx tsc:*)",
       "Bash(echo $?)",
-      "Bash(npx eslint:*)"
+      "Bash(npx eslint:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
