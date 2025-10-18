@@ -23,7 +23,31 @@ const recommendedRoutineGroups = {
     nameKey: "routineGroups.beginner",
     icon: "school",
     descriptionKey: "routineGroups.beginnerDesc",
-    routines: ["초보자 전신 운동", "홈트레이닝"],
+    routines: ["초보자 전신 운동", "초보자 홈트 입문", "홈트레이닝", "침대 옆에서 5분"],
+  },
+  home_workout: {
+    nameKey: "routineGroups.homeWorkout",
+    icon: "home",
+    descriptionKey: "routineGroups.homeWorkoutDesc",
+    routines: ["층간소음 ZERO 하체", "풀업바 없이 등운동", "좁은 공간 전신"],
+  },
+  quick_workout: {
+    nameKey: "routineGroups.quickWorkout",
+    icon: "flash",
+    descriptionKey: "routineGroups.quickWorkoutDesc",
+    routines: ["코어 집중 7분", "20분 칼로리 킬러"],
+  },
+  challenge: {
+    nameKey: "routineGroups.challenge",
+    icon: "trophy",
+    descriptionKey: "routineGroups.challengeDesc",
+    routines: ["30일 푸시업 챌린지", "풀업 마스터 프로그램"],
+  },
+  advanced: {
+    nameKey: "routineGroups.advanced",
+    icon: "barbell",
+    descriptionKey: "routineGroups.advancedDesc",
+    routines: ["맨몸 근력 고급"],
   },
   muscle_gain: {
     nameKey: "routineGroups.muscleGain",

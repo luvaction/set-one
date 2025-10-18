@@ -20,7 +20,8 @@
       "Bash(npx tsc:*)",
       "Bash(echo $?)",
       "Bash(npx eslint:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
