@@ -11,7 +11,7 @@ export default function TabLayout() {
 
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]} edges={["top", "bottom"]}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.surface }]} edges={["top", "bottom"]}>
         <Tabs
           screenOptions={{
             headerShown: false,
