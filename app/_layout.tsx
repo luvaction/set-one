@@ -14,17 +14,19 @@ export const unstable_settings = {
 };
 
 function RootLayoutNav() {
-  const { theme } = useTheme();
+  const { theme, colors } = useTheme();
 
   return (
-    <NavigationThemeProvider value={theme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="routine-builder" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-      </Stack>
-      <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-    </NavigationThemeProvider>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <NavigationThemeProvider value={theme === 'dark' ? DarkTheme : DefaultTheme}>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="routine-builder" options={{ headerShown: false }} />
+          <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+        </Stack>
+        <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
+      </NavigationThemeProvider>
+    </View>
   );
 }
 

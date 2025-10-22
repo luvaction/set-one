@@ -1,9 +1,9 @@
+import { useTheme } from "@/contexts/ThemeContext";
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
-import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
-import { StyleSheet } from "react-native";
-import { useTheme } from "@/contexts/ThemeContext";
 import { useTranslation } from "react-i18next";
+import { StyleSheet, View } from "react-native";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
 export default function TabLayout() {
   const { colors } = useTheme();
@@ -11,18 +11,19 @@ export default function TabLayout() {
 
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.surface }]} edges={["top", "bottom"]}>
-        <Tabs
-          screenOptions={{
-            headerShown: false,
-            tabBarStyle: {
-              backgroundColor: colors.surface,
-              borderTopColor: colors.border,
-              borderTopWidth: 1,
-              height: 60,
-              paddingBottom: 8,
-              paddingTop: 8,
-            },
+      <View style={{ flex: 1, backgroundColor: colors.surface }}>
+        <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]} edges={["top"]}>
+          <Tabs
+            screenOptions={{
+              headerShown: false,
+              tabBarStyle: {
+                backgroundColor: colors.surface,
+                borderTopColor: colors.border,
+                borderTopWidth: 1,
+                height: 60,
+                paddingBottom: 8,
+                paddingTop: 0,
+              },
             tabBarActiveTintColor: colors.primary,
             tabBarInactiveTintColor: colors.tabIconDefault,
             tabBarLabelStyle: {
@@ -72,8 +73,9 @@ export default function TabLayout() {
           href: null,
         }}
       />
-        </Tabs>
-      </SafeAreaView>
+          </Tabs>
+        </SafeAreaView>
+      </View>
     </SafeAreaProvider>
   );
 }
