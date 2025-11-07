@@ -3,11 +3,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { StyleSheet, View } from "react-native";
-import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function TabLayout() {
   const { colors } = useTheme();
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
 
   return (
     <SafeAreaProvider>
@@ -20,9 +21,9 @@ export default function TabLayout() {
                 backgroundColor: colors.surface,
                 borderTopColor: colors.border,
                 borderTopWidth: 1,
-                height: 60,
-                paddingBottom: 8,
-                paddingTop: 0,
+                height: 60 + insets.bottom,
+                paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
+                paddingTop: 8,
               },
             tabBarActiveTintColor: colors.primary,
             tabBarInactiveTintColor: colors.tabIconDefault,

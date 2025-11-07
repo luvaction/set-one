@@ -18,7 +18,9 @@
     "viewAll": "View All",
     "optional": "Optional",
     "copy": "(Copy)",
-    "success": "Success"
+    "success": "Success",
+    "notification": "Notice",
+    "error": "Error"
   },
   "home": {
     "greeting": "Hello!",
@@ -111,6 +113,7 @@
     "manageCustomExercise": "Manage Custom Exercise",
     "startWorkoutFailed": "Failed to start workout.",
     "exerciseAddedToRoutine": "Added \"{{exercise}}\" to \"{{routine}}\".",
+    "exerciseAlreadyInRoutine": "\"{{exercise}}\" is already in \"{{routine}}\".",
     "routineCopied": "\"{{name}}\" added to My Routines.",
     "routineCopyFailed": "Failed to copy routine.",
     "routineDeleted": "Routine deleted.",

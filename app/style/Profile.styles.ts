@@ -86,15 +86,17 @@ export const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
+    justifyContent: "flex-end",
     alignItems: "center",
   },
   keyboardAvoidingView: {
-    width: "90%",
+    width: "100%",
   },
   modalContent: {
-    borderRadius: 16,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     padding: 24,
+    paddingBottom: 40,
     maxHeight: "90%",
   },
   modalTitle: {
@@ -155,10 +157,11 @@ export const styles = StyleSheet.create({
     fontWeight: "600",
   },
   languageModalContent: {
-    borderRadius: 16,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     padding: 24,
-    width: "80%",
-    maxWidth: 350,
+    paddingBottom: 40,
+    width: "100%",
   },
   languageOption: {
     flexDirection: "row",

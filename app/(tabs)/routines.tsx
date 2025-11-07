@@ -306,10 +306,28 @@ export default function RoutinesScreen() {
 
       setShowAddToRoutineModal(false);
       await loadData(); // 목록 새로고침
-      Alert.alert("성공", `"${getExerciseName(t, selectedExerciseForAdd.id, selectedExerciseForAdd.name)}"을(를) "${routineName}" 루틴에 추가했습니다.`);
+      Alert.alert(
+        t("common.success"),
+        t("routines.exerciseAddedToRoutine", {
+          exercise: getExerciseName(t, selectedExerciseForAdd.id, selectedExerciseForAdd.name),
+          routine: routineName,
+        })
+      );
     } catch (error: any) {
-      console.error("Failed to add exercise to routine:", error);
-      Alert.alert("오류", error.message || "운동 추가에 실패했습니다.");
+      // 중복 운동인 경우 친화적인 메시지 표시
+      if (error.message && error.message.includes("already exists")) {
+        setShowAddToRoutineModal(false);
+        Alert.alert(
+          t("common.notification"),
+          t("routines.exerciseAlreadyInRoutine", {
+            exercise: getExerciseName(t, selectedExerciseForAdd.id, selectedExerciseForAdd.name),
+            routine: routineName,
+          })
+        );
+      } else {
+        console.error("Failed to add exercise to routine:", error);
+        Alert.alert(t("common.error"), error.message || t("routines.addExerciseFailed"));
+      }
     }
   }; // 추천 루틴을 내 루틴으로 복사
 
@@ -897,7 +915,11 @@ export default function RoutinesScreen() {
             <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
               <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
                 <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-                  <Text style={[styles.modalTitle, { color: colors.text }]}>{selectedExerciseForAdd?.name} 추가</Text>
+                  <Text style={[styles.modalTitle, { color: colors.text }]}>
+                    {t("routines.addExerciseTitle", {
+                      name: selectedExerciseForAdd ? getExerciseName(t, selectedExerciseForAdd.id, selectedExerciseForAdd.name) : "",
+                    })}
+                  </Text>
                   <TouchableOpacity style={styles.modalCloseButton} onPress={() => setShowAddToRoutineModal(false)}>
                     <Ionicons name="close" size={24} color={colors.textSecondary} />
                   </TouchableOpacity>
@@ -906,13 +928,13 @@ export default function RoutinesScreen() {
                 <View style={styles.modalOptions}>
                   <TouchableOpacity style={[styles.modalOption, { backgroundColor: colors.background }]} onPress={addToNewRoutine}>
                     <Ionicons name="add-circle" size={24} color={colors.primary} />
-                    <Text style={[styles.modalOptionText, { color: colors.text }]}>새 루틴 만들기</Text>
+                    <Text style={[styles.modalOptionText, { color: colors.text }]}>{t("routines.createNewRoutine")}</Text>
                   </TouchableOpacity>
 
                   {filteredMyRoutines.length > 0 && (
                     <>
                       <View style={[styles.modalDivider, { backgroundColor: colors.border }]} />
-                      <Text style={[styles.modalSectionTitle, { color: colors.textSecondary }]}>기존 루틴에 추가</Text>
+                      <Text style={[styles.modalSectionTitle, { color: colors.textSecondary }]}>{t("routines.addToExistingRoutine")}</Text>
                       {filteredMyRoutines.map((routine) => (
                         <TouchableOpacity
                           key={routine.id}
@@ -922,7 +944,9 @@ export default function RoutinesScreen() {
                           <Ionicons name="list" size={20} color={colors.textSecondary} />
                           <View style={styles.routineOptionContent}>
                             <Text style={[styles.modalOptionText, { color: colors.text }]}>{routine.name}</Text>
-                            <Text style={[styles.routineExerciseCount, { color: colors.textSecondary }]}>{routine.exercises.length}개 운동</Text>
+                            <Text style={[styles.routineExerciseCount, { color: colors.textSecondary }]}>
+                              {t("routines.exerciseCount", { count: routine.exercises.length })}
+                            </Text>
                           </View>
                         </TouchableOpacity>
                       ))}

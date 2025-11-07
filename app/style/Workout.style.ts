@@ -281,14 +281,16 @@ export const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    justifyContent: "center",
+    justifyContent: "flex-end",
     alignItems: "center",
     backgroundColor: "rgba(0, 0, 0, 0.6)",
   },
   setCompleteModal: {
-    width: "85%",
-    borderRadius: 12,
-    padding: 20,
+    width: "100%",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 24,
+    paddingBottom: 40,
   },
   modalTitleSmall: {
     fontSize: 20,

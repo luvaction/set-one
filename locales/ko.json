@@ -18,7 +18,9 @@
     "viewAll": "전체보기",
     "optional": "선택사항",
     "copy": "(사본)",
-    "success": "성공"
+    "success": "성공",
+    "notification": "알림",
+    "error": "오류"
   },
   "home": {
     "greeting": "안녕하세요!",
@@ -111,6 +113,7 @@
     "manageCustomExercise": "커스텀 운동 관리",
     "startWorkoutFailed": "운동 시작에 실패했습니다.",
     "exerciseAddedToRoutine": "\"{{exercise}}\"을(를) \"{{routine}}\" 루틴에 추가했습니다.",
+    "exerciseAlreadyInRoutine": "\"{{exercise}}\"은(는) 이미 \"{{routine}}\" 루틴에 추가되어 있습니다.",
     "routineCopied": "\"{{name}}\"이(가) 내 루틴에 추가되었습니다.",
     "routineCopyFailed": "루틴 복사에 실패했습니다.",
     "routineDeleted": "루틴이 삭제되었습니다.",
