@@ -94,6 +94,13 @@ const DEFAULT_EXERCISES_RECORD: Record<string, Omit<Exercise, "id" | "isCustom" 
   crabWalk: { name: "크랩 워크", category: "cardio", muscleGroups: ["전신"], difficulty: "초급", defaultSets: 3, defaultDurationSeconds: 30 },
   inchworm: { name: "인치웜", category: "bodyweight", muscleGroups: ["전신"], difficulty: "초급", defaultSets: 3, defaultRepsMin: 8, defaultRepsMax: 12 },
   teasers: { name: "티저", category: "bodyweight", muscleGroups: ["코어"], difficulty: "중급", defaultSets: 3, defaultRepsMin: 8, defaultRepsMax: 12 },
+
+  // 책상/사무실 운동
+  wallPushup: { name: "벽 푸시업", category: "bodyweight", muscleGroups: ["가슴"], difficulty: "초급", defaultSets: 3, defaultRepsMin: 15, defaultRepsMax: 20 },
+  chairSquat: { name: "의자 스쿼트", category: "bodyweight", muscleGroups: ["하체"], difficulty: "초급", defaultSets: 3, defaultRepsMin: 12, defaultRepsMax: 15 },
+  neckStretch: { name: "목 스트레칭", category: "stretch", muscleGroups: ["목"], difficulty: "초급", defaultSets: 2, defaultDurationSeconds: 30 },
+  seatedTwist: { name: "앉아서 몸통 비틀기", category: "stretch", muscleGroups: ["코어"], difficulty: "초급", defaultSets: 2, defaultRepsMin: 10, defaultRepsMax: 15 },
+  wristCircles: { name: "손목 돌리기", category: "stretch", muscleGroups: ["팔"], difficulty: "초급", defaultSets: 2, defaultRepsMin: 10, defaultRepsMax: 10 },
 };
 
 export const DEFAULT_EXERCISES: Omit<Exercise, "createdAt" | "updatedAt">[] = Object.entries(DEFAULT_EXERCISES_RECORD).map(([id, exerciseData]) => ({

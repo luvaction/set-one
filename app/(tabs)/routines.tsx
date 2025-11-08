@@ -23,7 +23,13 @@ const recommendedRoutineGroups = {
     nameKey: "routineGroups.beginner",
     icon: "school",
     descriptionKey: "routineGroups.beginnerDesc",
-    routines: ["초보자 전신 운동", "초보자 홈트 입문", "홈트레이닝", "침대 옆에서 5분"],
+    routines: ["초보자 전신 운동", "초보자 홈트 입문", "홈트레이닝"],
+  },
+  daily_refresh: {
+    nameKey: "routineGroups.dailyRefresh",
+    icon: "cafe",
+    descriptionKey: "routineGroups.dailyRefreshDesc",
+    routines: ["책상 앞 리프레쉬 10분", "침대 옆에서 5분"],
   },
   home_workout: {
     nameKey: "routineGroups.homeWorkout",

@@ -68,6 +68,8 @@
     "routine_pullup_master_description": "Step-by-step program to master pull-ups",
     "routine_advanced_bodyweight": "Advanced Bodyweight",
     "routine_advanced_bodyweight_description": "Advanced bodyweight strength training routine",
+    "routine_desk_refresh_10min": "Desk Refresh 10min",
+    "routine_desk_refresh_10min_description": "10-minute routine to refresh your body at your desk",
     "createRoutine": "Create New Routine",
     "routineName": "Routine Name",
     "routineNamePlaceholder": "Enter routine name",
@@ -450,7 +452,13 @@
     "highKnees": "High Knees",
     "hamstringStretch": "Hamstring Stretch",
     "shoulderStretch": "Shoulder Stretch",
-    "chestStretch": "Chest Stretch"
+    "chestStretch": "Chest Stretch",
+    "benchDips": "Bench Dips",
+    "wallPushup": "Wall Push-up",
+    "chairSquat": "Chair Squat",
+    "neckStretch": "Neck Stretch",
+    "seatedTwist": "Seated Torso Twist",
+    "wristCircles": "Wrist Circles"
   },
   "routineTemplates": {
     "beginnerBodyweight": "Beginner Bodyweight Routine",
@@ -463,6 +471,8 @@
   "routineGroups": {
     "beginner": "For Beginners",
     "beginnerDesc": "Routines for those just starting their fitness journey",
+    "dailyRefresh": "Daily Refresh",
+    "dailyRefreshDesc": "Simple routines to refresh your body and boost energy throughout the day",
     "homeWorkout": "Home Workouts",
     "homeWorkoutDesc": "Effective routines without equipment at home",
     "quickWorkout": "Quick & Intense",

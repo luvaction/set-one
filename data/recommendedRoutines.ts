@@ -319,4 +319,21 @@ export const RECOMMENDED_ROUTINES: Omit<Routine, "createdAt" | "updatedAt">[] = 
       { id: "handstandHold", name: "핸드스탠드 홀드", sets: 3, durationSeconds: 20, targetMuscle: "어깨", difficulty: "고급", restTime: 90 },
     ],
   },
+  {
+    id: "routine_desk_refresh_10min",
+    userId: "system",
+    name: "책상 앞 리프레쉬 10분",
+    description: "routines.routine_desk_refresh_10min_description",
+    category: "홈트",
+    isRecommended: true,
+    exercises: [
+      { id: "wallPushup", name: "벽 푸시업", sets: 2, repsMin: 15, repsMax: 20, targetMuscle: "가슴", difficulty: "초급", restTime: 30 },
+      { id: "chairSquat", name: "의자 스쿼트", sets: 2, repsMin: 12, repsMax: 15, targetMuscle: "하체", difficulty: "초급", restTime: 30 },
+      { id: "benchDips", name: "벤치 딥스", sets: 2, repsMin: 10, repsMax: 12, targetMuscle: "삼두", difficulty: "초급", restTime: 30 },
+      { id: "seatedTwist", name: "앉아서 몸통 비틀기", sets: 2, repsMin: 10, repsMax: 15, targetMuscle: "코어", difficulty: "초급", restTime: 20 },
+      { id: "neckStretch", name: "목 스트레칭", sets: 1, durationSeconds: 30, targetMuscle: "목", difficulty: "초급", restTime: 0 },
+      { id: "shoulderStretch", name: "어깨 스트레칭", sets: 1, durationSeconds: 30, targetMuscle: "어깨", difficulty: "초급", restTime: 0 },
+      { id: "wristCircles", name: "손목 돌리기", sets: 2, repsMin: 10, repsMax: 10, targetMuscle: "팔", difficulty: "초급", restTime: 0 },
+    ],
+  },
 ];
