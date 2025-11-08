@@ -1,7 +1,7 @@
 import { openDatabaseAsync, SQLiteDatabase } from "expo-sqlite";
 
 const DATABASE_NAME = "set1.db";
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 let db: SQLiteDatabase | null = null;
 
 /**
@@ -73,7 +73,7 @@ async function migrateDbV2ToV3(database: SQLiteDatabase) {
  * V4에만 해당하는 새로운 스키마 변경이 없다면 이 함수는 비워두는 것이 안전합니다.
  * 만약 V4 변경사항이 있다면 여기에 추가하십시오.
  */
-async function migrateDbV3ToV4(database: SQLiteDatabase) {
+async function migrateDbV3ToV4(_database: SQLiteDatabase) {
   console.log("Migrating database from version 3 to 4...");
   try {
     // V4에 필요한 스키마 변경이 있다면 여기에 코드를 작성합니다.
@@ -81,6 +81,30 @@ async function migrateDbV3ToV4(database: SQLiteDatabase) {
     console.log("No schema changes for V4. Migration completed successfully.");
   } catch (error) {
     console.error("[DB_DEBUG] Error during migrateDbV3ToV4:", error);
+  }
+}
+
+/**
+ * 데이터베이스 버전 4에서 5로 마이그레이션합니다.
+ * weight_records 테이블을 추가하여 프로필 체중 기록을 추적합니다.
+ */
+async function migrateDbV4ToV5(database: SQLiteDatabase) {
+  console.log("Migrating database from version 4 to 5...");
+  try {
+    await database.execAsync(`
+      CREATE TABLE IF NOT EXISTS weight_records (
+        id TEXT PRIMARY KEY NOT NULL,
+        user_id TEXT NOT NULL,
+        weight REAL NOT NULL,
+        date TEXT NOT NULL,
+        source TEXT NOT NULL,
+        created_at INTEGER NOT NULL
+      );
+    `);
+    console.log("weight_records table created successfully.");
+    console.log("Migration to version 5 completed successfully.");
+  } catch (error) {
+    console.error("[DB_DEBUG] Error during migrateDbV4ToV5:", error);
   }
 }
 
@@ -166,6 +190,9 @@ export const initDb = async () => {
       }
       if (user_version < 4) {
         await migrateDbV3ToV4(localDb);
+      }
+      if (user_version < 5) {
+        await migrateDbV4ToV5(localDb);
       }
 
       await localDb.execAsync(`PRAGMA user_version = ${DB_VERSION};`);

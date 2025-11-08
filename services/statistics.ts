@@ -1,5 +1,6 @@
 import { WorkoutRecord } from "@/models";
 import { workoutRecordService } from "./workoutRecord";
+import { weightRecordService } from "./weightRecord";
 
 export interface CoreStats {
   currentStreak: number; // 연속 운동 일수
@@ -774,11 +775,16 @@ export const statisticsService = {
 
   // 체중 추이 데이터
   async getWeightTrendData(t: (key: string, params?: any) => string, period: TrendPeriod, range?: number): Promise<WeightTrendData[]> {
+    // 1. 운동 기록에서 체중 데이터 가져오기
     const records = await workoutRecordService.getAllRecords();
     const completedRecordsWithWeight = records.filter((r) => r.status === "completed" && r.bodyWeight !== undefined && r.bodyWeight > 0);
 
+    // 2. 프로필 체중 기록 가져오기
+    const weightRecords = await weightRecordService.getAllWeightRecords();
+
     const periodData: Record<string, { totalWeight: number; count: number }> = {};
 
+    // 운동 기록의 체중 데이터 처리
     completedRecordsWithWeight.forEach((record) => {
       const date = new Date(record.date);
       let periodKey = "";
@@ -800,6 +806,31 @@ export const statisticsService = {
       }
 
       periodData[periodKey].totalWeight += record.bodyWeight!;
+      periodData[periodKey].count++;
+    });
+
+    // 프로필 체중 기록 처리
+    weightRecords.forEach((record) => {
+      const date = new Date(record.date);
+      let periodKey = "";
+
+      if (period === "week") {
+        const weekNumber = this.getWeekNumber(date);
+        periodKey = `${date.getFullYear()}-W${weekNumber}`;
+      } else if (period === "month") {
+        periodKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      } else if (period === "day") {
+        periodKey = date.toISOString().split("T")[0];
+      } else {
+        // year: aggregate by year
+        periodKey = `${date.getFullYear()}`;
+      }
+
+      if (!periodData[periodKey]) {
+        periodData[periodKey] = { totalWeight: 0, count: 0 };
+      }
+
+      periodData[periodKey].totalWeight += record.weight;
       periodData[periodKey].count++;
     });
 

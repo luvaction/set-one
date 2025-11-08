@@ -4,6 +4,8 @@ import { CreateProfileData } from "@/models";
 import { exerciseService, storage } from "@/services";
 import { profileService } from "@/services/profile";
 import { workoutRecordService } from "@/services/workoutRecord";
+import { weightRecordService } from "@/services/weightRecord";
+import { getOrCreateUserId } from "@/utils/userIdHelper";
 import { Ionicons } from "@expo/vector-icons";
 import Constants from "expo-constants"; // Added import
 import { useEffect, useState } from "react";
@@ -75,13 +77,28 @@ export default function ProfileScreen() {
 
   const handleSave = async () => {
     try {
-      // profileService.saveProfile will handle ID generation
       const profileToSave = { ...editingProfile };
-      console.log("Saving profile with weeklyGoal:", profileToSave.weeklyGoal);
-
       const savedProfile = await profileService.saveProfile(profileToSave);
       setProfile(savedProfile);
-      console.log("Saved profile weeklyGoal:", savedProfile.weeklyGoal);
+
+      // 체중이 입력되어 있으면 (0보다 크면) weight_records에 기록
+      // 같은 날에 여러 번 저장하면 마지막 값으로 업데이트됨
+      if (editingProfile.weight > 0) {
+        try {
+          const userId = await getOrCreateUserId();
+          const today = new Date().toISOString().split("T")[0];
+          const hasRecord = await weightRecordService.hasWeightRecordForDate(userId, today);
+
+          if (hasRecord) {
+            await weightRecordService.updateWeightRecordForDate(userId, today, editingProfile.weight);
+          } else {
+            await weightRecordService.createWeightRecord(userId, editingProfile.weight, "profile");
+          }
+        } catch (weightError) {
+          console.error("Failed to save weight record:", weightError);
+        }
+      }
+
       setShowEditModal(false);
     } catch (error) {
       console.error("Failed to save profile:", error);

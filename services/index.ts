@@ -8,3 +8,4 @@ export * from "./exercise";
 export * from "./routine";
 export { workoutRecordService } from "./workoutRecord";
 export { workoutSessionService } from "./workoutSession";
+export { weightRecordService } from "./weightRecord";
