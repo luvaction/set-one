@@ -2,12 +2,13 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { Routine, WorkoutSession } from "@/models";
 import { routineService } from "@/services/routine";
 import { workoutSessionService } from "@/services/workoutSession";
+import { weightRecordService } from "@/services/weightRecord";
 import { getOrCreateUserId } from "@/utils/userIdHelper";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Alert, Modal, Pressable, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
 import { styles } from "../style/Workout.style";
 
 // 한글 이름 -> exerciseId 역매핑
@@ -465,8 +466,26 @@ export default function WorkoutScreen() {
     workoutStartTimeRef.current = 0;
     setTotalElapsedTime(0);
 
-    // 체중 입력 모달 표시
-    setShowBodyWeightInputModal(true);
+    try {
+      // 오늘 체중 기록이 이미 있는지 확인
+      const userId = await getOrCreateUserId();
+      const today = new Date().toISOString().split("T")[0];
+      const hasWeightToday = await weightRecordService.hasWeightRecordForDate(userId, today);
+
+      if (hasWeightToday) {
+        // 이미 오늘 체중 기록이 있으면 모달 없이 바로 완료
+        await workoutSessionService.completeSession(activeSession.id, undefined);
+        setActiveSession(null);
+        Alert.alert(t("workoutSession.congratulations"), t("workoutSession.workoutCompletedMessage"));
+      } else {
+        // 오늘 체중 기록이 없으면 체중 입력 모달 표시
+        setShowBodyWeightInputModal(true);
+      }
+    } catch (error) {
+      console.error("Failed to check weight record:", error);
+      // 에러가 발생해도 체중 입력 모달 표시
+      setShowBodyWeightInputModal(true);
+    }
   };
 
   const handleSaveCompletedWorkout = async () => {
@@ -476,6 +495,18 @@ export default function WorkoutScreen() {
       const bodyWeight = parseFloat(bodyWeightInput) || undefined;
 
       await workoutSessionService.completeSession(activeSession.id, bodyWeight);
+
+      // 체중이 입력되었으면 체중 기록 저장
+      if (bodyWeight && bodyWeight > 0) {
+        try {
+          const userId = await getOrCreateUserId();
+          await weightRecordService.createWeightRecord(userId, bodyWeight, "workout");
+        } catch (weightError) {
+          console.error("Failed to save weight record:", weightError);
+          // 체중 기록 저장 실패해도 운동 완료는 성공으로 처리
+        }
+      }
+
       setActiveSession(null);
       setShowBodyWeightInputModal(false);
       setBodyWeightInput("");
@@ -780,107 +811,143 @@ export default function WorkoutScreen() {
 
         {/* ✅ 추가된 부분: 세트 완료 입력 모달 */}
         <Modal visible={showSetCompleteModal} animationType="fade" transparent={true} onRequestClose={() => setShowSetCompleteModal(false)}>
-          <View style={styles.modalOverlay}>
-            <View style={[styles.setCompleteModal, { backgroundColor: colors.surface }]}>
-              <Text style={[styles.modalTitleSmall, { color: colors.text }]}>{t("workoutSession.setCompleteRecord")}</Text>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+              <View style={styles.modalOverlay}>
+                <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+                  <View style={[styles.setCompleteModal, { backgroundColor: colors.surface }]}>
+                    <Text style={[styles.modalTitleSmall, { color: colors.text }]}>{t("workoutSession.setCompleteRecord")}</Text>
 
-              {completingSet && activeSession && (
-                <View style={styles.modalContent}>
-                  <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>
-                    {getExerciseName(t, activeSession.exercises[completingSet.exerciseIndex].exerciseId, activeSession.exercises[completingSet.exerciseIndex].exerciseName)}
-                  </Text>
+                    {completingSet && activeSession && (
+                      <View style={styles.modalContent}>
+                        <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>
+                          {getExerciseName(t, activeSession.exercises[completingSet.exerciseIndex].exerciseId, activeSession.exercises[completingSet.exerciseIndex].exerciseName)}
+                        </Text>
 
-                  {/* 오류 발생 위치 수정 완료 */}
-                  <Text style={[styles.modalLabel, { color: colors.textSecondary, marginBottom: 15 }]}>
-                    {t("workoutSession.setInfo", {
-                      number: completingSet.setIndex + 1,
-                      target: formatReps(completingSet.targetReps, completingSet.targetRepsMin, completingSet.targetRepsMax, completingSet.targetDurationSeconds),
-                    })}
-                  </Text>
+                        {/* 오류 발생 위치 수정 완료 */}
+                        <Text style={[styles.modalLabel, { color: colors.textSecondary, marginBottom: 15 }]}>
+                          {t("workoutSession.setInfo", {
+                            number: completingSet.setIndex + 1,
+                            target: formatReps(completingSet.targetReps, completingSet.targetRepsMin, completingSet.targetRepsMax, completingSet.targetDurationSeconds),
+                          })}
+                        </Text>
 
-                  {/* 횟수 입력 */}
-                  {completingSet.targetDurationSeconds === undefined ? (
-                    <View>
-                      <Text style={[styles.inputLabel, { color: colors.text }]}>{t("workoutSession.actualReps")}</Text>
-                      <TextInput
-                        style={[styles.modalInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-                        value={actualReps}
-                        onChangeText={setActualReps}
-                        keyboardType="numeric"
-                        placeholder={t("workoutSession.repsRequired")}
-                        placeholderTextColor={colors.textSecondary}
-                        maxLength={3}
-                      />
+                        {/* 횟수 입력 */}
+                        {completingSet.targetDurationSeconds === undefined ? (
+                          <View>
+                            <Text style={[styles.inputLabel, { color: colors.text }]}>{t("workoutSession.actualReps")}</Text>
+                            <TextInput
+                              style={[styles.modalInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                              value={actualReps}
+                              onChangeText={setActualReps}
+                              keyboardType="numeric"
+                              placeholder={t("workoutSession.repsRequired")}
+                              placeholderTextColor={colors.textSecondary}
+                              maxLength={3}
+                            />
+                          </View>
+                        ) : (
+                          <View>
+                            <Text style={[styles.inputLabel, { color: colors.text }]}>{t("workoutSession.actualDuration")}</Text>
+                            <TextInput
+                              style={[styles.modalInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                              value={actualDurationSeconds}
+                              onChangeText={setActualDurationSeconds}
+                              keyboardType="numeric"
+                              placeholder={t("workoutSession.durationRequired")}
+                              placeholderTextColor={colors.textSecondary}
+                              maxLength={3}
+                            />
+                          </View>
+                        )}
+
+                        {/* 무게 입력 */}
+                        <Text style={[styles.inputLabel, { color: colors.text, marginTop: 15 }]}>{t("workoutSession.weightKg")}</Text>
+                        <TextInput
+                          style={[styles.modalInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                          value={weight}
+                          onChangeText={setWeight}
+                          keyboardType="numeric"
+                          placeholder={t("workoutSession.weightOptional")}
+                          placeholderTextColor={colors.textSecondary}
+                          maxLength={6}
+                        />
+                      </View>
+                    )}
+
+                    <View style={styles.modalActions}>
+                      <Pressable
+                        style={[styles.modalCancelButton, { borderColor: colors.border }]}
+                        onPress={() => {
+                          Keyboard.dismiss();
+                          setShowSetCompleteModal(false);
+                        }}
+                      >
+                        <Text style={[styles.modalCancelButtonText, { color: colors.text }]}>{t("common.cancel")}</Text>
+                      </Pressable>
+                      <Pressable
+                        style={[styles.modalSaveButton, { backgroundColor: colors.primary }]}
+                        onPress={() => {
+                          Keyboard.dismiss();
+                          handleSaveSetComplete();
+                        }}
+                      >
+                        <Text style={[styles.modalSaveButtonText, { color: colors.buttonText }]}>{t("common.save")}</Text>
+                      </Pressable>
                     </View>
-                  ) : (
-                    <View>
-                      <Text style={[styles.inputLabel, { color: colors.text }]}>{t("workoutSession.actualDuration")}</Text>
-                      <TextInput
-                        style={[styles.modalInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-                        value={actualDurationSeconds}
-                        onChangeText={setActualDurationSeconds}
-                        keyboardType="numeric"
-                        placeholder={t("workoutSession.durationRequired")}
-                        placeholderTextColor={colors.textSecondary}
-                        maxLength={3}
-                      />
-                    </View>
-                  )}
-
-                  {/* 무게 입력 */}
-                  <Text style={[styles.inputLabel, { color: colors.text, marginTop: 15 }]}>{t("workoutSession.weightKg")}</Text>
-                  <TextInput
-                    style={[styles.modalInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-                    value={weight}
-                    onChangeText={setWeight}
-                    keyboardType="numeric"
-                    placeholder={t("workoutSession.weightOptional")}
-                    placeholderTextColor={colors.textSecondary}
-                    maxLength={6}
-                  />
-                </View>
-              )}
-
-              <View style={styles.modalActions}>
-                <Pressable style={[styles.modalCancelButton, { borderColor: colors.border }]} onPress={() => setShowSetCompleteModal(false)}>
-                  <Text style={[styles.modalCancelButtonText, { color: colors.text }]}>{t("common.cancel")}</Text>
-                </Pressable>
-                <Pressable style={[styles.modalSaveButton, { backgroundColor: colors.primary }]} onPress={handleSaveSetComplete}>
-                  <Text style={[styles.modalSaveButtonText, { color: colors.buttonText }]}>{t("common.save")}</Text>
-                </Pressable>
+                  </View>
+                </TouchableWithoutFeedback>
               </View>
-            </View>
-          </View>
+            </TouchableWithoutFeedback>
+          </KeyboardAvoidingView>
         </Modal>
 
         {/* 운동 완료 시 체중 입력 모달 */}
         <Modal visible={showBodyWeightInputModal} animationType="fade" transparent={true} onRequestClose={() => setShowBodyWeightInputModal(false)}>
-          <View style={styles.modalOverlay}>
-            <View style={[styles.setCompleteModal, { backgroundColor: colors.surface }]}>
-              <Text style={[styles.modalTitleSmall, { color: colors.text }]}>{t("workoutSession.recordBodyWeight")}</Text>
-              <Text style={[styles.modalSubtitle, { color: colors.textSecondary, marginBottom: 15 }]}>{t("workoutSession.recordBodyWeightOptional")}</Text>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+              <View style={styles.modalOverlay}>
+                <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+                  <View style={[styles.setCompleteModal, { backgroundColor: colors.surface }]}>
+                    <Text style={[styles.modalTitleSmall, { color: colors.text }]}>{t("workoutSession.recordBodyWeight")}</Text>
+                    <Text style={[styles.modalSubtitle, { color: colors.textSecondary, marginBottom: 15 }]}>{t("workoutSession.recordBodyWeightOptional")}</Text>
 
-              <Text style={[styles.inputLabel, { color: colors.text }]}>{t("workoutSession.bodyWeightKg")}</Text>
-              <TextInput
-                style={[styles.modalInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-                value={bodyWeightInput}
-                onChangeText={setBodyWeightInput}
-                keyboardType="numeric"
-                placeholder={t("workoutSession.bodyWeightPlaceholder")}
-                placeholderTextColor={colors.textSecondary}
-                maxLength={6}
-              />
+                    <Text style={[styles.inputLabel, { color: colors.text }]}>{t("workoutSession.bodyWeightKg")}</Text>
+                    <TextInput
+                      style={[styles.modalInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                      value={bodyWeightInput}
+                      onChangeText={setBodyWeightInput}
+                      keyboardType="numeric"
+                      placeholder={t("workoutSession.bodyWeightPlaceholder")}
+                      placeholderTextColor={colors.textSecondary}
+                      maxLength={6}
+                    />
 
-              <View style={styles.modalActions}>
-                <Pressable style={[styles.modalCancelButton, { borderColor: colors.border }]} onPress={() => setShowBodyWeightInputModal(false)}>
-                  <Text style={[styles.modalCancelButtonText, { color: colors.text }]}>{t("common.cancel")}</Text>
-                </Pressable>
-                <Pressable style={[styles.modalSaveButton, { backgroundColor: colors.primary }]} onPress={handleSaveCompletedWorkout}>
-                  <Text style={[styles.modalSaveButtonText, { color: colors.buttonText }]}>{t("common.save")}</Text>
-                </Pressable>
+                    <View style={styles.modalActions}>
+                      <Pressable
+                        style={[styles.modalCancelButton, { borderColor: colors.border }]}
+                        onPress={() => {
+                          Keyboard.dismiss();
+                          setShowBodyWeightInputModal(false);
+                        }}
+                      >
+                        <Text style={[styles.modalCancelButtonText, { color: colors.text }]}>{t("common.cancel")}</Text>
+                      </Pressable>
+                      <Pressable
+                        style={[styles.modalSaveButton, { backgroundColor: colors.primary }]}
+                        onPress={() => {
+                          Keyboard.dismiss();
+                          handleSaveCompletedWorkout();
+                        }}
+                      >
+                        <Text style={[styles.modalSaveButtonText, { color: colors.buttonText }]}>{t("common.save")}</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                </TouchableWithoutFeedback>
               </View>
-            </View>
-          </View>
+            </TouchableWithoutFeedback>
+          </KeyboardAvoidingView>
         </Modal>
       </View>
     );

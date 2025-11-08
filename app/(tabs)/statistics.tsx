@@ -17,7 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Alert, Dimensions, Modal, RefreshControl, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Dimensions, Keyboard, KeyboardAvoidingView, Modal, Platform, RefreshControl, ScrollView, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
 import { LineChart, PieChart } from "react-native-chart-kit";
 import { getStyles } from "../style/Statistics.styles";
 
@@ -1007,141 +1007,154 @@ export default function StatisticsScreen() {
 
       {/* 범위 선택 모달 */}
       <Modal animationType="fade" transparent={true} visible={rangeModalVisible} onRequestClose={() => setRangeModalVisible(false)}>
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setRangeModalVisible(false)}>
-          <TouchableOpacity activeOpacity={1} style={[styles.modalContent, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Text style={[styles.modalLabel, { color: colors.text, fontSize: 18, fontWeight: "700", marginBottom: 20 }]}>{t("statistics.selectRange")}</Text>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
+          <TouchableWithoutFeedback
+            onPress={() => {
+              Keyboard.dismiss();
+              setRangeModalVisible(false);
+            }}
+          >
+            <View style={styles.modalOverlay}>
+              <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+                <View style={[styles.modalContent, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                  <Text style={[styles.modalLabel, { color: colors.text, fontSize: 18, fontWeight: "700", marginBottom: 20 }]}>{t("statistics.selectRange")}</Text>
 
-            <View style={{ width: "100%", gap: 16, marginBottom: 20 }}>
-              {/* 입력 레이블 */}
-              <Text style={{ fontSize: 14, fontWeight: "600", color: colors.text, marginBottom: -8 }}>
-                {(rangeModalType === "sets" ? trendPeriod : weightTrendPeriod) === "day" && t("statistics.rangeInputLabel.day")}
-                {(rangeModalType === "sets" ? trendPeriod : weightTrendPeriod) === "week" && t("statistics.rangeInputLabel.week")}
-                {(rangeModalType === "sets" ? trendPeriod : weightTrendPeriod) === "month" && t("statistics.rangeInputLabel.month")}
-              </Text>
+                  <View style={{ width: "100%", gap: 16, marginBottom: 20 }}>
+                    {/* 입력 레이블 */}
+                    <Text style={{ fontSize: 14, fontWeight: "600", color: colors.text, marginBottom: -8 }}>
+                      {(rangeModalType === "sets" ? trendPeriod : weightTrendPeriod) === "day" && t("statistics.rangeInputLabel.day")}
+                      {(rangeModalType === "sets" ? trendPeriod : weightTrendPeriod) === "week" && t("statistics.rangeInputLabel.week")}
+                      {(rangeModalType === "sets" ? trendPeriod : weightTrendPeriod) === "month" && t("statistics.rangeInputLabel.month")}
+                    </Text>
 
-              {/* TextInput */}
-              <TextInput
-                style={{
-                  paddingVertical: 14,
-                  paddingHorizontal: 16,
-                  borderRadius: 12,
-                  borderWidth: 2,
-                  borderColor: rangeError ? "#FF5252" : colors.primary,
-                  backgroundColor: colors.surface,
-                  fontSize: 16,
-                  fontWeight: "600",
-                  color: colors.text,
-                  textAlign: "center",
-                }}
-                value={tempRangeValue}
-                onChangeText={(text) => {
-                  setTempRangeValue(text);
-                  setRangeError(""); // Clear error when user types
-                }}
-                keyboardType="numeric"
-                placeholder={
-                  (rangeModalType === "sets" ? trendPeriod : weightTrendPeriod) === "day"
-                    ? "7"
-                    : (rangeModalType === "sets" ? trendPeriod : weightTrendPeriod) === "week"
-                    ? "2"
-                    : "3"
-                }
-                placeholderTextColor={colors.textSecondary}
-              />
+                    {/* TextInput */}
+                    <TextInput
+                      style={{
+                        paddingVertical: 14,
+                        paddingHorizontal: 16,
+                        borderRadius: 12,
+                        borderWidth: 2,
+                        borderColor: rangeError ? "#FF5252" : colors.primary,
+                        backgroundColor: colors.surface,
+                        fontSize: 16,
+                        fontWeight: "600",
+                        color: colors.text,
+                        textAlign: "center",
+                      }}
+                      value={tempRangeValue}
+                      onChangeText={(text) => {
+                        setTempRangeValue(text);
+                        setRangeError(""); // Clear error when user types
+                      }}
+                      keyboardType="numeric"
+                      placeholder={
+                        (rangeModalType === "sets" ? trendPeriod : weightTrendPeriod) === "day"
+                          ? "7"
+                          : (rangeModalType === "sets" ? trendPeriod : weightTrendPeriod) === "week"
+                          ? "2"
+                          : "3"
+                      }
+                      placeholderTextColor={colors.textSecondary}
+                    />
 
-              {/* 힌트 텍스트 */}
-              <Text style={{ fontSize: 12, color: rangeError ? "#FF5252" : colors.textSecondary, textAlign: "center" }}>
-                {rangeError ||
-                  ((rangeModalType === "sets" ? trendPeriod : weightTrendPeriod) === "day" && t("statistics.rangeHint.day")) ||
-                  ((rangeModalType === "sets" ? trendPeriod : weightTrendPeriod) === "week" && t("statistics.rangeHint.week")) ||
-                  ((rangeModalType === "sets" ? trendPeriod : weightTrendPeriod) === "month" && t("statistics.rangeHint.month"))}
-              </Text>
+                    {/* 힌트 텍스트 */}
+                    <Text style={{ fontSize: 12, color: rangeError ? "#FF5252" : colors.textSecondary, textAlign: "center" }}>
+                      {rangeError ||
+                        ((rangeModalType === "sets" ? trendPeriod : weightTrendPeriod) === "day" && t("statistics.rangeHint.day")) ||
+                        ((rangeModalType === "sets" ? trendPeriod : weightTrendPeriod) === "week" && t("statistics.rangeHint.week")) ||
+                        ((rangeModalType === "sets" ? trendPeriod : weightTrendPeriod) === "month" && t("statistics.rangeHint.month"))}
+                    </Text>
+                  </View>
+
+                  {/* 버튼 그룹 */}
+                  <View style={{ flexDirection: "row", gap: 12, width: "100%" }}>
+                    {/* 취소 버튼 */}
+                    <TouchableOpacity
+                      style={[
+                        styles.modalCloseButton,
+                        {
+                          backgroundColor: colors.border + "40",
+                          flex: 1,
+                        },
+                      ]}
+                      onPress={() => {
+                        Keyboard.dismiss();
+                        setRangeModalVisible(false);
+                        setRangeError("");
+                      }}
+                    >
+                      <Text style={[styles.modalCloseButtonText, { color: colors.text }]}>{t("common.cancel")}</Text>
+                    </TouchableOpacity>
+
+                    {/* 확인 버튼 */}
+                    <TouchableOpacity
+                      style={[
+                        styles.modalCloseButton,
+                        {
+                          backgroundColor: colors.primary,
+                          flex: 1,
+                        },
+                      ]}
+                      onPress={() => {
+                        const currentPeriod = rangeModalType === "sets" ? trendPeriod : weightTrendPeriod;
+                        const value = parseInt(tempRangeValue, 10);
+
+                        // Validate input
+                        if (isNaN(value) || tempRangeValue.trim() === "") {
+                          setRangeError(t("statistics.rangeError.invalidNumber") || "유효한 숫자를 입력해주세요");
+                          return;
+                        }
+
+                        // Check min/max based on period
+                        let min = 0;
+                        let max = 0;
+                        if (currentPeriod === "day") {
+                          min = 7;
+                          max = 30;
+                        } else if (currentPeriod === "week") {
+                          min = 2;
+                          max = 12;
+                        } else if (currentPeriod === "month") {
+                          min = 3;
+                          max = 24;
+                        }
+
+                        if (value < min || value > max) {
+                          setRangeError(
+                            currentPeriod === "day"
+                              ? t("statistics.rangeError.outOfRange", { min: 7, max: 30 }) || `7일에서 30일 사이의 값을 입력해주세요`
+                              : currentPeriod === "week"
+                              ? t("statistics.rangeError.outOfRange", { min: 2, max: 12 }) || `2주에서 12주 사이의 값을 입력해주세요`
+                              : t("statistics.rangeError.outOfRange", { min: 3, max: 24 }) || `3개월에서 24개월 사이의 값을 입력해주세요`
+                          );
+                          return;
+                        }
+
+                        // Apply value
+                        if (currentPeriod === "day") {
+                          if (rangeModalType === "sets") setDayRange(value);
+                          else setWeightDayRange(value);
+                        } else if (currentPeriod === "week") {
+                          if (rangeModalType === "sets") setWeekRange(value);
+                          else setWeightWeekRange(value);
+                        } else if (currentPeriod === "month") {
+                          if (rangeModalType === "sets") setMonthRange(value);
+                          else setWeightMonthRange(value);
+                        }
+
+                        Keyboard.dismiss();
+                        setRangeModalVisible(false);
+                        setRangeError("");
+                      }}
+                    >
+                      <Text style={[styles.modalCloseButtonText, { color: colors.buttonText }]}>{t("common.confirm")}</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </TouchableWithoutFeedback>
             </View>
-
-            {/* 버튼 그룹 */}
-            <View style={{ flexDirection: "row", gap: 12, width: "100%" }}>
-              {/* 취소 버튼 */}
-              <TouchableOpacity
-                style={[
-                  styles.modalCloseButton,
-                  {
-                    backgroundColor: colors.border + "40",
-                    flex: 1,
-                  },
-                ]}
-                onPress={() => {
-                  setRangeModalVisible(false);
-                  setRangeError("");
-                }}
-              >
-                <Text style={[styles.modalCloseButtonText, { color: colors.text }]}>{t("common.cancel")}</Text>
-              </TouchableOpacity>
-
-              {/* 확인 버튼 */}
-              <TouchableOpacity
-                style={[
-                  styles.modalCloseButton,
-                  {
-                    backgroundColor: colors.primary,
-                    flex: 1,
-                  },
-                ]}
-                onPress={() => {
-                  const currentPeriod = rangeModalType === "sets" ? trendPeriod : weightTrendPeriod;
-                  const value = parseInt(tempRangeValue, 10);
-
-                  // Validate input
-                  if (isNaN(value) || tempRangeValue.trim() === "") {
-                    setRangeError(t("statistics.rangeError.invalidNumber") || "유효한 숫자를 입력해주세요");
-                    return;
-                  }
-
-                  // Check min/max based on period
-                  let min = 0;
-                  let max = 0;
-                  if (currentPeriod === "day") {
-                    min = 7;
-                    max = 30;
-                  } else if (currentPeriod === "week") {
-                    min = 2;
-                    max = 12;
-                  } else if (currentPeriod === "month") {
-                    min = 3;
-                    max = 24;
-                  }
-
-                  if (value < min || value > max) {
-                    setRangeError(
-                      currentPeriod === "day"
-                        ? t("statistics.rangeError.outOfRange", { min: 7, max: 30 }) || `7일에서 30일 사이의 값을 입력해주세요`
-                        : currentPeriod === "week"
-                        ? t("statistics.rangeError.outOfRange", { min: 2, max: 12 }) || `2주에서 12주 사이의 값을 입력해주세요`
-                        : t("statistics.rangeError.outOfRange", { min: 3, max: 24 }) || `3개월에서 24개월 사이의 값을 입력해주세요`
-                    );
-                    return;
-                  }
-
-                  // Apply value
-                  if (currentPeriod === "day") {
-                    if (rangeModalType === "sets") setDayRange(value);
-                    else setWeightDayRange(value);
-                  } else if (currentPeriod === "week") {
-                    if (rangeModalType === "sets") setWeekRange(value);
-                    else setWeightWeekRange(value);
-                  } else if (currentPeriod === "month") {
-                    if (rangeModalType === "sets") setMonthRange(value);
-                    else setWeightMonthRange(value);
-                  }
-
-                  setRangeModalVisible(false);
-                  setRangeError("");
-                }}
-              >
-                <Text style={[styles.modalCloseButtonText, { color: colors.buttonText }]}>{t("common.confirm")}</Text>
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
-        </TouchableOpacity>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );

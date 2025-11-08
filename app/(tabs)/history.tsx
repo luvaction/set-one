@@ -5,7 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Alert, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Alert, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, TouchableWithoutFeedback, View } from "react-native";
 import { Calendar, DateData } from "react-native-calendars";
 import { styles } from "../style/History.styles";
 import StatisticsScreen from "./statistics";
@@ -350,60 +350,75 @@ export default function HistoryScreen() {
       )}
 
       <Modal visible={showEditModal} transparent animationType="slide" onRequestClose={() => setShowEditModal(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>{t("history.editRecord")}</Text>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={styles.modalOverlay}>
+              <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+                <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+                  <Text style={[styles.modalTitle, { color: colors.text }]}>{t("history.editRecord")}</Text>
 
-            {currentRecord && (
-              <>
-                <View style={styles.modalInfoRow}>
-                  <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>
-                    {t("history.routine")}: {getRoutineName(t, currentRecord.routineId, currentRecord.routineName)}
-                  </Text>
-                  <View style={[styles.statusBadge, { backgroundColor: currentRecord.status === "completed" ? colors.primary + "20" : colors.textSecondary + "20" }]}>
-                    <Text style={[styles.statusText, { color: currentRecord.status === "completed" ? colors.primary : colors.textSecondary }]}>
-                      {currentRecord.status === "completed" ? t("history.completed") : t("history.stopped")}
-                    </Text>
+                  {currentRecord && (
+                    <>
+                      <View style={styles.modalInfoRow}>
+                        <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>
+                          {t("history.routine")}: {getRoutineName(t, currentRecord.routineId, currentRecord.routineName)}
+                        </Text>
+                        <View style={[styles.statusBadge, { backgroundColor: currentRecord.status === "completed" ? colors.primary + "20" : colors.textSecondary + "20" }]}>
+                          <Text style={[styles.statusText, { color: currentRecord.status === "completed" ? colors.primary : colors.textSecondary }]}>
+                            {currentRecord.status === "completed" ? t("history.completed") : t("history.stopped")}
+                          </Text>
+                        </View>
+                      </View>
+                      <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>
+                        {t("history.time")}: {t("history.duration", { minutes: currentRecord.duration })}
+                      </Text>
+                      <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>{t("history.completionRate", { rate: currentRecord.completionRate })}</Text>
+                      {currentRecord.totalVolume !== undefined && currentRecord.totalVolume > 0 && (
+                        <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>
+                          {t("history.totalVolume")}: {t("history.volume", { volume: currentRecord.totalVolume })}
+                        </Text>
+                      )}
+
+                      <Text style={[styles.modalLabel, { color: colors.textSecondary, marginTop: 12 }]}>{t("history.memo")}</Text>
+                      <TextInput
+                        style={[styles.memoInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                        value={memo}
+                        onChangeText={setMemo}
+                        placeholder={t("history.memoPlaceholder")}
+                        placeholderTextColor={colors.textSecondary}
+                        multiline
+                      />
+                    </>
+                  )}
+
+                  <View style={styles.modalButtons}>
+                    <Pressable style={[styles.modalButton, styles.deleteButton, { backgroundColor: "#FF5252" }]} onPress={handleDeleteRecord}>
+                      <Ionicons name="trash-outline" size={18} color="#FFFFFF" />
+                    </Pressable>
+                    <Pressable
+                      style={[styles.modalButton, styles.cancelButton, { backgroundColor: colors.background, borderColor: colors.border }]}
+                      onPress={() => {
+                        Keyboard.dismiss();
+                        setShowEditModal(false);
+                      }}
+                    >
+                      <Text style={[styles.cancelButtonText, { color: colors.text }]}>{t("common.cancel")}</Text>
+                    </Pressable>
+                    <Pressable
+                      style={[styles.modalButton, styles.saveButton, { backgroundColor: colors.primary }]}
+                      onPress={() => {
+                        Keyboard.dismiss();
+                        handleSaveRecord();
+                      }}
+                    >
+                      <Text style={[styles.saveButtonText, { color: colors.buttonText }]}>{t("common.save")}</Text>
+                    </Pressable>
                   </View>
                 </View>
-                <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>
-                  {t("history.time")}: {t("history.duration", { minutes: currentRecord.duration })}
-                </Text>
-                <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>{t("history.completionRate", { rate: currentRecord.completionRate })}</Text>
-                {currentRecord.totalVolume !== undefined && currentRecord.totalVolume > 0 && (
-                  <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>
-                    {t("history.totalVolume")}: {t("history.volume", { volume: currentRecord.totalVolume })}
-                  </Text>
-                )}
-
-                <Text style={[styles.modalLabel, { color: colors.textSecondary, marginTop: 12 }]}>{t("history.memo")}</Text>
-                <TextInput
-                  style={[styles.memoInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-                  value={memo}
-                  onChangeText={setMemo}
-                  placeholder={t("history.memoPlaceholder")}
-                  placeholderTextColor={colors.textSecondary}
-                  multiline
-                />
-              </>
-            )}
-
-            <View style={styles.modalButtons}>
-              <Pressable style={[styles.modalButton, styles.deleteButton, { backgroundColor: "#FF5252" }]} onPress={handleDeleteRecord}>
-                <Ionicons name="trash-outline" size={18} color="#FFFFFF" />
-              </Pressable>
-              <Pressable
-                style={[styles.modalButton, styles.cancelButton, { backgroundColor: colors.background, borderColor: colors.border }]}
-                onPress={() => setShowEditModal(false)}
-              >
-                <Text style={[styles.cancelButtonText, { color: colors.text }]}>{t("common.cancel")}</Text>
-              </Pressable>
-              <Pressable style={[styles.modalButton, styles.saveButton, { backgroundColor: colors.primary }]} onPress={handleSaveRecord}>
-                <Text style={[styles.saveButtonText, { color: colors.buttonText }]}>{t("common.save")}</Text>
-              </Pressable>
+              </TouchableWithoutFeedback>
             </View>
-          </View>
-        </View>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
