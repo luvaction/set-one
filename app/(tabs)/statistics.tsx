@@ -13,6 +13,7 @@ import {
   WeightTrendData,
 } from "@/services/statistics";
 import { generateMockWorkoutData } from "@/utils/generateMockData";
+import { formatWeight, getWeightUnit, type UnitSystem } from "@/utils/unitConversion";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
@@ -168,6 +169,7 @@ export default function StatisticsScreen() {
       color: string;
     }>;
   } | null>(null);
+  const [unitSystem, setUnitSystem] = useState<UnitSystem>("metric");
 
   // 체중 추이 로드 함수 분리
   const loadWeightTrends = async () => {
@@ -201,6 +203,7 @@ export default function StatisticsScreen() {
       setExerciseTypeDistribution(exerciseTypes);
       setInsights(insightsData);
       setWeeklyGoal(profileData?.weeklyGoal || null);
+      setUnitSystem(profileData?.unitSystem || "metric");
 
       // 체중 추이도 새로고침
       await loadWeightTrends();
@@ -505,7 +508,11 @@ export default function StatisticsScreen() {
                     }),
                     datasets: [
                       {
-                        data: weightTrendData.map((data) => data.averageWeight),
+                        data: weightTrendData.map((data) =>
+                          unitSystem === "imperial"
+                            ? parseFloat(formatWeight(data.averageWeight, unitSystem))
+                            : data.averageWeight
+                        ),
                         color: (_opacity = 1) => colors.primary,
                         strokeWidth: 2,
                       },
@@ -548,13 +555,14 @@ export default function StatisticsScreen() {
                   withHorizontalLines={true}
                   fromZero={false}
                   onDataPointClick={({ index }) => {
+                    const weightKg = weightTrendData[index].averageWeight;
                     setSelectedChartData({
                       type: "weight",
                       label: weightTrendData[index].periodLabel,
                       items: [
                         {
                           exerciseName: t("statistics.weightTrend"),
-                          value: `${weightTrendData[index].averageWeight.toFixed(1)}kg`,
+                          value: `${formatWeight(weightKg, unitSystem)} ${getWeightUnit(unitSystem)}`,
                           color: colors.primary,
                         },
                       ],
@@ -583,10 +591,10 @@ export default function StatisticsScreen() {
                   </View>
                   <View style={styles.prStats}>
                     <Text style={[styles.prValue, { color: colors.primary }]}>
-                      {pr.weight}kg × {pr.reps}
+                      {formatWeight(pr.weight, unitSystem)} {getWeightUnit(unitSystem)} × {pr.reps}
                     </Text>
                     <Text style={[styles.prTotal, { color: colors.textSecondary }]}>
-                      {pr.weight * pr.reps}kg {t("statistics.totalAmount")}
+                      {formatWeight(pr.weight * pr.reps, unitSystem)} {getWeightUnit(unitSystem)} {t("statistics.totalAmount")}
                     </Text>
                   </View>
                 </View>

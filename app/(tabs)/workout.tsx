@@ -3,7 +3,9 @@ import { Routine, WorkoutSession } from "@/models";
 import { routineService } from "@/services/routine";
 import { workoutSessionService } from "@/services/workoutSession";
 import { weightRecordService } from "@/services/weightRecord";
+import { profileService } from "@/services/profile";
 import { getOrCreateUserId } from "@/utils/userIdHelper";
+import { formatWeight, getWeightUnit, kgToLb, lbToKg, type UnitSystem } from "@/utils/unitConversion";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -169,6 +171,7 @@ export default function WorkoutScreen() {
   const [recommendedRoutines, setRecommendedRoutines] = useState<Routine[]>([]);
   const [showRoutineSelector, setShowRoutineSelector] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [unitSystem, setUnitSystem] = useState<UnitSystem>("metric");
 
   // 타이머 관련 상태
   const [totalElapsedTime, setTotalElapsedTime] = useState(0); // 전체 운동 시간 (초)
@@ -209,14 +212,20 @@ export default function WorkoutScreen() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [session, userRoutines, recommended] = await Promise.all([
+      const [session, userRoutines, recommended, profile] = await Promise.all([
         workoutSessionService.getActiveSession(),
         routineService.getUserRoutines(),
         routineService.getRecommendedRoutines(),
+        profileService.getProfile(),
       ]);
       setActiveSession(session);
       setMyRoutines(userRoutines);
       setRecommendedRoutines(recommended);
+
+      // 프로필에서 단위 시스템 가져오기
+      if (profile?.unitSystem) {
+        setUnitSystem(profile.unitSystem);
+      }
 
       // 세션이 있으면 타이머 시작
       if (session) {
@@ -492,7 +501,11 @@ export default function WorkoutScreen() {
     if (!activeSession) return;
 
     try {
-      const bodyWeight = parseFloat(bodyWeightInput) || undefined;
+      const bodyWeightInput_parsed = parseFloat(bodyWeightInput) || 0;
+      // 체중을 kg로 변환하여 저장 (imperial인 경우 lb -> kg)
+      const bodyWeight = bodyWeightInput_parsed > 0
+        ? (unitSystem === "imperial" ? lbToKg(bodyWeightInput_parsed) : bodyWeightInput_parsed)
+        : undefined;
 
       await workoutSessionService.completeSession(activeSession.id, bodyWeight);
 
@@ -545,14 +558,17 @@ export default function WorkoutScreen() {
     }
 
     // 무게 기본값: 목표 무게가 있으면 사용, 없으면 이전 세트의 무게 사용
+    // 무게는 kg로 저장되어 있으므로, 사용자 단위로 변환
     let defaultWeight = "";
     if (exercise.targetWeight && exercise.targetWeight > 0) {
-      defaultWeight = String(exercise.targetWeight);
+      const displayWeight = unitSystem === "imperial" ? kgToLb(exercise.targetWeight) : exercise.targetWeight;
+      defaultWeight = String(displayWeight);
     } else if (setIndex > 0) {
       // 이전 세트의 무게가 있으면 사용
       const previousSet = exercise.sets[setIndex - 1];
       if (previousSet.isCompleted && previousSet.weight > 0) {
-        defaultWeight = String(previousSet.weight);
+        const displayWeight = unitSystem === "imperial" ? kgToLb(previousSet.weight) : previousSet.weight;
+        defaultWeight = String(displayWeight);
       }
     }
     setWeight(defaultWeight);
@@ -565,7 +581,9 @@ export default function WorkoutScreen() {
 
     const reps = parseInt(actualReps) || 0;
     const duration = parseInt(actualDurationSeconds) || 0; // New
-    const weightValue = parseFloat(weight) || 0;
+    const weightInput = parseFloat(weight) || 0;
+    // 무게를 kg로 변환하여 저장 (imperial인 경우 lb -> kg)
+    const weightValue = unitSystem === "imperial" ? lbToKg(weightInput) : weightInput;
     const restDuration = restTimer?.elapsedTime || 0; // Get rest duration
     const setElapsedTime = activeSetTimer?.elapsedTime || 0; // Get elapsed time for the current set
 
@@ -732,7 +750,7 @@ export default function WorkoutScreen() {
                               {set.actualDurationSeconds !== undefined && set.actualDurationSeconds > 0
                                 ? `${formatTime(set.actualDurationSeconds)}`
                                 : t("history.reps", { reps: set.actualReps })}
-                              {set.weight > 0 && ` (${set.weight}kg)`}
+                              {set.weight > 0 && ` (${formatWeight(set.weight, unitSystem)} ${getWeightUnit(unitSystem)})`}
                               {set.elapsedTimeSeconds !== undefined && set.elapsedTimeSeconds > 0 && ` (${formatTime(set.elapsedTimeSeconds)})`}
                             </Text>
                             {set.restDurationSeconds !== undefined && set.restDurationSeconds > 0 && (
@@ -862,7 +880,9 @@ export default function WorkoutScreen() {
                         )}
 
                         {/* 무게 입력 */}
-                        <Text style={[styles.inputLabel, { color: colors.text, marginTop: 15 }]}>{t("workoutSession.weightKg")}</Text>
+                        <Text style={[styles.inputLabel, { color: colors.text, marginTop: 15 }]}>
+                          {t("workoutSession.weight")} ({getWeightUnit(unitSystem)})
+                        </Text>
                         <TextInput
                           style={[styles.modalInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
                           value={weight}
@@ -912,7 +932,9 @@ export default function WorkoutScreen() {
                     <Text style={[styles.modalTitleSmall, { color: colors.text }]}>{t("workoutSession.recordBodyWeight")}</Text>
                     <Text style={[styles.modalSubtitle, { color: colors.textSecondary, marginBottom: 15 }]}>{t("workoutSession.recordBodyWeightOptional")}</Text>
 
-                    <Text style={[styles.inputLabel, { color: colors.text }]}>{t("workoutSession.bodyWeightKg")}</Text>
+                    <Text style={[styles.inputLabel, { color: colors.text }]}>
+                      {t("workoutSession.bodyWeight")} ({getWeightUnit(unitSystem)})
+                    </Text>
                     <TextInput
                       style={[styles.modalInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
                       value={bodyWeightInput}

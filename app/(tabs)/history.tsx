@@ -1,6 +1,7 @@
 import { useTheme } from "@/contexts/ThemeContext";
 import { WorkoutRecord } from "@/models";
-import { workoutRecordService } from "@/services";
+import { workoutRecordService, profileService } from "@/services";
+import { formatWeight, getWeightUnit, type UnitSystem } from "@/utils/unitConversion";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
@@ -115,6 +116,7 @@ export default function HistoryScreen() {
   const [records, setRecords] = useState<WorkoutRecord[]>([]);
   const [currentRecord, setCurrentRecord] = useState<WorkoutRecord | null>(null);
   const [memo, setMemo] = useState("");
+  const [unitSystem, setUnitSystem] = useState<UnitSystem>("metric");
 
   useFocusEffect(
     useCallback(() => {
@@ -124,8 +126,16 @@ export default function HistoryScreen() {
 
   const loadRecords = async () => {
     try {
-      const allRecords = await workoutRecordService.getAllRecords();
+      const [allRecords, profile] = await Promise.all([
+        workoutRecordService.getAllRecords(),
+        profileService.getProfile(),
+      ]);
       setRecords(allRecords);
+
+      // 프로필에서 단위 시스템 가져오기
+      if (profile?.unitSystem) {
+        setUnitSystem(profile.unitSystem);
+      }
     } catch (error) {
       console.error("Failed to load workout records:", error);
     }
@@ -299,7 +309,9 @@ export default function HistoryScreen() {
                       {record.bodyWeight !== undefined && record.bodyWeight > 0 && (
                         <View style={styles.statItem}>
                           <Ionicons name="body-outline" size={16} color={colors.textSecondary} />
-                          <Text style={[styles.statText, { color: colors.textSecondary }]}>{t("history.bodyWeight", { weight: record.bodyWeight })}</Text>
+                          <Text style={[styles.statText, { color: colors.textSecondary }]}>
+                            {t("history.bodyWeight", { weight: `${formatWeight(record.bodyWeight, unitSystem)} ${getWeightUnit(unitSystem)}` })}
+                          </Text>
                         </View>
                       )}
                     </View>
@@ -323,7 +335,7 @@ export default function HistoryScreen() {
                                   ? set.actualDurationSeconds !== undefined && set.actualDurationSeconds > 0
                                     ? t("history.duration", { minutes: Math.round(set.actualDurationSeconds / 60) })
                                     : set.weight > 0
-                                    ? t("history.repsWithWeight", { reps: set.actualReps, weight: set.weight })
+                                    ? t("history.repsWithWeight", { reps: set.actualReps, weight: `${formatWeight(set.weight, unitSystem)} ${getWeightUnit(unitSystem)}` })
                                     : t("history.reps", { reps: set.actualReps })
                                   : "-"}
                                 {set.restDurationSeconds !== undefined && set.restDurationSeconds > 0 && ` (${t("history.rest")}: ${formatTime(set.restDurationSeconds)})`}
@@ -375,7 +387,12 @@ export default function HistoryScreen() {
                       <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>{t("history.completionRate", { rate: currentRecord.completionRate })}</Text>
                       {currentRecord.totalVolume !== undefined && currentRecord.totalVolume > 0 && (
                         <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>
-                          {t("history.totalVolume")}: {t("history.volume", { volume: currentRecord.totalVolume })}
+                          {t("history.totalVolume")}: {currentRecord.totalVolume} {getWeightUnit(unitSystem)}
+                        </Text>
+                      )}
+                      {currentRecord.bodyWeight !== undefined && currentRecord.bodyWeight > 0 && (
+                        <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>
+                          {t("history.bodyWeight", { weight: `${formatWeight(currentRecord.bodyWeight, unitSystem)} ${getWeightUnit(unitSystem)}` })}
                         </Text>
                       )}
 
