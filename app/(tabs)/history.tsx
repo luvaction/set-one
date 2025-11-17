@@ -303,7 +303,9 @@ export default function HistoryScreen() {
                       {record.totalVolume !== undefined && record.totalVolume > 0 && (
                         <View style={styles.statItem}>
                           <Ionicons name="barbell-outline" size={16} color={colors.textSecondary} />
-                          <Text style={[styles.statText, { color: colors.textSecondary }]}>{t("history.volume", { volume: record.totalVolume })}</Text>
+                          <Text style={[styles.statText, { color: colors.textSecondary }]}>
+                            {t("history.volume", { volume: `${formatWeight(record.totalVolume, unitSystem)} ${getWeightUnit(unitSystem)}` })}
+                          </Text>
                         </View>
                       )}
                       {record.bodyWeight !== undefined && record.bodyWeight > 0 && (
@@ -387,7 +389,7 @@ export default function HistoryScreen() {
                       <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>{t("history.completionRate", { rate: currentRecord.completionRate })}</Text>
                       {currentRecord.totalVolume !== undefined && currentRecord.totalVolume > 0 && (
                         <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>
-                          {t("history.totalVolume")}: {currentRecord.totalVolume} {getWeightUnit(unitSystem)}
+                          {t("history.totalVolume")}: {formatWeight(currentRecord.totalVolume, unitSystem)} {getWeightUnit(unitSystem)}
                         </Text>
                       )}
                       {currentRecord.bodyWeight !== undefined && currentRecord.bodyWeight > 0 && (
