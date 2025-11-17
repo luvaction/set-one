@@ -32,6 +32,13 @@ workout,fitness,gym,training,exercise,strength,bodyweight,tracker,routine,health
 
 ## Version 1.0.11
 
+### ✨ New Features
+
+- Imperial Unit System Support
+  - Choose between Metric (kg, cm) or Imperial (lb, ft/in) in profile settings
+  - All weight and height data automatically converts to your preferred unit
+  - Full support across workout, statistics, and history screens
+
 ### 🐛 Bug Fixes
 
 - Fixed missing translations for muscle groups (neck, arms)
@@ -56,7 +63,11 @@ workout,fitness,gym,training,exercise,strength,bodyweight,tracker,routine,health
 
 ### Update Notes
 
-This update improves multilingual support.
+This update adds Imperial unit system support and improves multilingual features.
+
+New Features:
+
+- Imperial Unit System Support: Choose between Metric or Imperial units in profile settings
 
 Improvements:
 
