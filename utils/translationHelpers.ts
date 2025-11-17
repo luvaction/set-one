@@ -17,6 +17,7 @@ export const getExerciseName = (t: TFunction, exerciseId: string, exerciseName?:
   export const getMuscleGroupKey = (targetMuscle: string | undefined) => {
     if (!targetMuscle) return "fullBody";
     const map: Record<string, string> = {
+      // 한국어 -> 키
       가슴: "chest",
       삼두: "triceps",
       등: "back",
@@ -29,6 +30,23 @@ export const getExerciseName = (t: TFunction, exerciseId: string, exerciseName?:
       햄스트링: "hamstring",
       전신: "fullBody",
       어깨: "shoulder",
+      목: "neck",
+      팔: "arms",
+      // 영어 -> 키 (영어 값이 직접 들어올 경우 대비)
+      Chest: "chest",
+      Triceps: "triceps",
+      Back: "back",
+      Biceps: "biceps",
+      Legs: "legs",
+      Core: "core",
+      "Upper Chest": "chestUpper",
+      "Lower Chest": "chestLower",
+      "Back/Legs": "backLegs",
+      Hamstring: "hamstring",
+      "Full Body": "fullBody",
+      Shoulder: "shoulder",
+      Neck: "neck",
+      Arms: "arms",
     };
     return map[targetMuscle] || targetMuscle;
   };

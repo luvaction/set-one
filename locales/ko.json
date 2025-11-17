@@ -416,7 +416,8 @@
     "backLegs": "등/하체",
     "hamstring": "햄스트링",
     "fullBody": "전신",
-    "shoulder": "어깨"
+    "shoulder": "어깨",
+    "neck": "목"
   },
   "exercises": {
     "regularPushup": "일반 푸시업",

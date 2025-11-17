@@ -416,7 +416,8 @@
     "backLegs": "Back/Legs",
     "hamstring": "Hamstring",
     "fullBody": "Full Body",
-    "shoulder": "Shoulder"
+    "shoulder": "Shoulder",
+    "neck": "Neck"
   },
   "exercises": {
     "regularPushup": "Regular Push-up",
