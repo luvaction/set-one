@@ -6,6 +6,17 @@ import { profileService } from "@/services/profile";
 import { workoutRecordService } from "@/services/workoutRecord";
 import { weightRecordService } from "@/services/weightRecord";
 import { getOrCreateUserId } from "@/utils/userIdHelper";
+import {
+  formatHeight,
+  formatWeight,
+  getHeightUnit,
+  getWeightUnit,
+  kgToLb,
+  lbToKg,
+  cmToFeetInches,
+  feetInchesToCm,
+  type UnitSystem,
+} from "@/utils/unitConversion";
 import { Ionicons } from "@expo/vector-icons";
 import Constants from "expo-constants"; // Added import
 import { useEffect, useState } from "react";
@@ -259,25 +270,19 @@ export default function ProfileScreen() {
               <View style={[styles.infoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <View style={styles.infoRow}>
                   <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>{t("profile.height")}</Text>
-                  <Text style={[styles.infoValue, { color: colors.text }]}>
-                    {profile.height} {t("profile.heightUnit")}
-                  </Text>
+                  <Text style={[styles.infoValue, { color: colors.text }]}>{formatHeight(profile.height, profile.unitSystem || "metric")}</Text>
                 </View>
                 <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
                 <View style={styles.infoRow}>
                   <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>{t("profile.weight")}</Text>
-                  <Text style={[styles.infoValue, { color: colors.text }]}>
-                    {profile.weight} {t("profile.weightUnit")}
-                  </Text>
+                  <Text style={[styles.infoValue, { color: colors.text }]}>{formatWeight(profile.weight, profile.unitSystem || "metric")}</Text>
                 </View>
                 <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
                 <View style={styles.infoRow}>
                   <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>{t("profile.targetWeight")}</Text>
-                  <Text style={[styles.infoValue, { color: colors.text }]}>
-                    {profile.targetWeight} {t("profile.weightUnit")}
-                  </Text>
+                  <Text style={[styles.infoValue, { color: colors.text }]}>{formatWeight(profile.targetWeight, profile.unitSystem || "metric")}</Text>
                 </View>
                 <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
@@ -469,39 +474,82 @@ export default function ProfileScreen() {
 
                     {/* 키 */}
                     <Text style={[styles.inputLabel, { color: colors.text }]}>
-                      {t("profile.height")} ({t("profile.heightUnit")})
+                      {t("profile.height")} ({getHeightUnit(editingProfile.unitSystem || "metric")})
                     </Text>
-                    <TextInput
-                      style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-                      value={String(editingProfile.height)}
-                      onChangeText={(text) => setEditingProfile({ ...editingProfile, height: Number(text) || 0 })}
-                      placeholder={t("profile.heightPlaceholder")}
-                      placeholderTextColor={colors.textSecondary}
-                      keyboardType="numeric"
-                    />
+                    {editingProfile.unitSystem === "imperial" ? (
+                      <View style={styles.imperialHeightRow}>
+                        <TextInput
+                          style={[styles.input, styles.imperialInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                          value={String(cmToFeetInches(editingProfile.height).feet || "")}
+                          onChangeText={(text) => {
+                            const feet = Number(text) || 0;
+                            const inches = cmToFeetInches(editingProfile.height).inches || 0;
+                            setEditingProfile({ ...editingProfile, height: feetInchesToCm(feet, inches) });
+                          }}
+                          placeholder="5"
+                          placeholderTextColor={colors.textSecondary}
+                          keyboardType="numeric"
+                        />
+                        <Text style={[styles.imperialLabel, { color: colors.text }]}>ft</Text>
+                        <TextInput
+                          style={[styles.input, styles.imperialInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                          value={String(cmToFeetInches(editingProfile.height).inches || "")}
+                          onChangeText={(text) => {
+                            const feet = cmToFeetInches(editingProfile.height).feet || 0;
+                            const inches = Number(text) || 0;
+                            setEditingProfile({ ...editingProfile, height: feetInchesToCm(feet, inches) });
+                          }}
+                          placeholder="10"
+                          placeholderTextColor={colors.textSecondary}
+                          keyboardType="numeric"
+                        />
+                        <Text style={[styles.imperialLabel, { color: colors.text }]}>in</Text>
+                      </View>
+                    ) : (
+                      <TextInput
+                        style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                        value={String(editingProfile.height)}
+                        onChangeText={(text) => setEditingProfile({ ...editingProfile, height: Number(text) || 0 })}
+                        placeholder={t("profile.heightPlaceholder")}
+                        placeholderTextColor={colors.textSecondary}
+                        keyboardType="numeric"
+                      />
+                    )}
 
                     {/* 체중 */}
                     <Text style={[styles.inputLabel, { color: colors.text }]}>
-                      {t("profile.weight")} ({t("profile.weightUnit")})
+                      {t("profile.weight")} ({getWeightUnit(editingProfile.unitSystem || "metric")})
                     </Text>
                     <TextInput
                       style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-                      value={String(editingProfile.weight)}
-                      onChangeText={(text) => setEditingProfile({ ...editingProfile, weight: Number(text) || 0 })}
-                      placeholder={t("profile.weightPlaceholder")}
+                      value={String(
+                        editingProfile.unitSystem === "imperial" ? (editingProfile.weight ? kgToLb(editingProfile.weight) : "") : editingProfile.weight || ""
+                      )}
+                      onChangeText={(text) => {
+                        const value = Number(text) || 0;
+                        const kg = editingProfile.unitSystem === "imperial" ? lbToKg(value) : value;
+                        setEditingProfile({ ...editingProfile, weight: kg });
+                      }}
+                      placeholder={editingProfile.unitSystem === "imperial" ? "150" : t("profile.weightPlaceholder")}
                       placeholderTextColor={colors.textSecondary}
                       keyboardType="numeric"
                     />
 
                     {/* 목표 체중 */}
                     <Text style={[styles.inputLabel, { color: colors.text }]}>
-                      {t("profile.targetWeight")} ({t("profile.weightUnit")})
+                      {t("profile.targetWeight")} ({getWeightUnit(editingProfile.unitSystem || "metric")})
                     </Text>
                     <TextInput
                       style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-                      value={String(editingProfile.targetWeight)}
-                      onChangeText={(text) => setEditingProfile({ ...editingProfile, targetWeight: Number(text) || 0 })}
-                      placeholder={t("profile.targetWeightPlaceholder")}
+                      value={String(
+                        editingProfile.unitSystem === "imperial" ? (editingProfile.targetWeight ? kgToLb(editingProfile.targetWeight) : "") : editingProfile.targetWeight || ""
+                      )}
+                      onChangeText={(text) => {
+                        const value = Number(text) || 0;
+                        const kg = editingProfile.unitSystem === "imperial" ? lbToKg(value) : value;
+                        setEditingProfile({ ...editingProfile, targetWeight: kg });
+                      }}
+                      placeholder={editingProfile.unitSystem === "imperial" ? "140" : t("profile.targetWeightPlaceholder")}
                       placeholderTextColor={colors.textSecondary}
                       keyboardType="numeric"
                     />
@@ -598,6 +646,41 @@ export default function ProfileScreen() {
                       placeholderTextColor={colors.textSecondary}
                       keyboardType="numeric"
                     />
+
+                    {/* 단위 시스템 */}
+                    <Text style={[styles.inputLabel, { color: colors.text }]}>{t("profile.unitSystem")}</Text>
+                    <View style={styles.buttonGroup}>
+                      <Pressable
+                        style={[
+                          styles.optionButton,
+                          { backgroundColor: colors.background, borderColor: colors.border },
+                          (editingProfile.unitSystem === "metric" || !editingProfile.unitSystem) && { backgroundColor: colors.primary, borderColor: colors.primary },
+                        ]}
+                        onPress={() => setEditingProfile({ ...editingProfile, unitSystem: "metric" })}
+                      >
+                        <Text
+                          style={[
+                            styles.optionButtonText,
+                            { color: colors.textSecondary },
+                            (editingProfile.unitSystem === "metric" || !editingProfile.unitSystem) && { color: colors.buttonText },
+                          ]}
+                        >
+                          {t("profile.metric")}
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        style={[
+                          styles.optionButton,
+                          { backgroundColor: colors.background, borderColor: colors.border },
+                          editingProfile.unitSystem === "imperial" && { backgroundColor: colors.primary, borderColor: colors.primary },
+                        ]}
+                        onPress={() => setEditingProfile({ ...editingProfile, unitSystem: "imperial" })}
+                      >
+                        <Text style={[styles.optionButtonText, { color: colors.textSecondary }, editingProfile.unitSystem === "imperial" && { color: colors.buttonText }]}>
+                          {t("profile.imperial")}
+                        </Text>
+                      </Pressable>
+                    </View>
 
                     {/* 버튼 */}
                     <View style={styles.modalButtons}>

@@ -175,4 +175,16 @@ export const styles = StyleSheet.create({
   languageText: {
     fontSize: 16,
   },
+  imperialHeightRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  imperialInput: {
+    flex: 1,
+  },
+  imperialLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
 });
