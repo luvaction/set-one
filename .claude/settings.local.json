@@ -21,7 +21,9 @@
       "Bash(echo $?)",
       "Bash(npx eslint:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(brew install:*)",
+      "Bash(magick:*)"
     ],
     "deny": [],
     "ask": []
