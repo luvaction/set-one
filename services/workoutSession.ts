@@ -78,6 +78,25 @@ const calculateTotalVolume = (exercises: WorkoutExercise[]): number => {
   }, 0);
 };
 
+// 실제 운동 시간 계산 (휴식 시간 제외, 초 단위)
+const calculateActualDuration = (exercises: WorkoutExercise[]): number => {
+  return exercises.reduce((total, exercise) => {
+    // exerciseDurationSeconds가 있으면 사용
+    if (exercise.exerciseDurationSeconds) {
+      return total + exercise.exerciseDurationSeconds;
+    }
+
+    // 없으면 세트별 elapsedTimeSeconds 합산
+    const setsDuration = exercise.sets.reduce((exTotal, set) => {
+      return set.isCompleted && set.elapsedTimeSeconds
+        ? exTotal + set.elapsedTimeSeconds
+        : exTotal;
+    }, 0);
+
+    return total + setsDuration;
+  }, 0);
+};
+
 // DB row 타입
 interface ActiveSessionRow {
   id: string;
@@ -268,8 +287,10 @@ export const workoutSessionService = {
     // 세션을 완료된 기록으로 변환
     const endTime = now();
     const startDate = new Date(session.startTime);
-    const endDate = new Date(endTime);
-    const duration = Math.floor((endDate.getTime() - startDate.getTime()) / 1000 / 60); // 분 단위
+
+    // 실제 운동 시간만 합산 (휴식 시간 제외)
+    const actualDuration = calculateActualDuration(session.exercises);
+    const duration = Math.ceil(actualDuration / 60); // 분 단위로 올림
 
     const record = await workoutRecordService.createRecord(session.userId, {
       date: toLocalDateString(startDate),
@@ -307,8 +328,10 @@ export const workoutSessionService = {
     // 세션을 중단된 기록으로 변환
     const endTime = now();
     const startDate = new Date(session.startTime);
-    const endDate = new Date(endTime);
-    const duration = Math.floor((endDate.getTime() - startDate.getTime()) / 1000 / 60); // 분 단위
+
+    // 실제 운동 시간만 합산 (휴식 시간 제외)
+    const actualDuration = calculateActualDuration(session.exercises);
+    const duration = Math.ceil(actualDuration / 60); // 분 단위로 올림
 
     const record = await workoutRecordService.createRecord(session.userId, {
       date: toLocalDateString(startDate),

@@ -750,7 +750,7 @@ export default function WorkoutScreen() {
                               {set.actualDurationSeconds !== undefined && set.actualDurationSeconds > 0
                                 ? `${formatTime(set.actualDurationSeconds)}`
                                 : t("history.reps", { reps: set.actualReps })}
-                              {set.weight > 0 && ` (${formatWeight(set.weight, unitSystem)} ${getWeightUnit(unitSystem)})`}
+                              {set.weight > 0 && ` (${formatWeight(set.weight, unitSystem)})`}
                               {set.elapsedTimeSeconds !== undefined && set.elapsedTimeSeconds > 0 && ` (${formatTime(set.elapsedTimeSeconds)})`}
                             </Text>
                             {set.restDurationSeconds !== undefined && set.restDurationSeconds > 0 && (

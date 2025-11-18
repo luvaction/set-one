@@ -168,7 +168,7 @@
     "dateRecord": "{{date}} Records",
     "sets": "{{completed}}/{{total}} sets",
     "reps": "{{reps}} reps",
-    "repsWithWeight": "{{reps}} reps × {{weight}}kg",
+    "repsWithWeight": "{{reps}} reps × {{weight}}",
     "viewStatistics": "View Workout Statistics",
     "statisticsDescription": "Track volume trends, muscle distribution, and insights",
     "goToStatistics": "View Statistics",
@@ -176,7 +176,7 @@
     "time": "Time",
     "totalVolume": "Total Volume",
     "deleteFailed": "Failed to delete record.",
-    "bodyWeight": "Body Weight: {{weight}}kg"
+    "bodyWeight": "Body Weight: {{weight}}"
   },
   "statistics": {
     "title": "Statistics",
@@ -242,7 +242,10 @@
       "invalidNumber": "Please enter a valid number",
       "outOfRange": "Please enter a value between {{min}} and {{max}}"
     },
-    "mockDataGenerated": "Mock data generation complete"
+    "mockDataGenerated": "Mock data generation complete",
+    "volumeTrend": "Volume Trend",
+    "averageReps": "Avg Reps",
+    "selectExercises": "Select Exercises"
   },
   "profile": {
     "title": "Profile",

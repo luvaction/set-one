@@ -168,7 +168,7 @@
     "dateRecord": "{{date}} 기록",
     "sets": "{{completed}}/{{total}} 세트",
     "reps": "{{reps}}회",
-    "repsWithWeight": "{{reps}}회 × {{weight}}kg",
+    "repsWithWeight": "{{reps}}회 × {{weight}}",
     "viewStatistics": "운동 통계 보기",
     "statisticsDescription": "볼륨 추이, 운동 부위 분포, 인사이트 확인",
     "goToStatistics": "통계 보러가기",
@@ -176,7 +176,7 @@
     "time": "시간",
     "totalVolume": "총 볼륨",
     "deleteFailed": "기록 삭제에 실패했습니다.",
-    "bodyWeight": "체중: {{weight}}kg"
+    "bodyWeight": "체중: {{weight}}"
   },
   "statistics": {
     "title": "통계",
@@ -242,7 +242,10 @@
       "invalidNumber": "유효한 숫자를 입력해주세요",
       "outOfRange": "{{min}}~{{max}} 범위의 값을 입력해주세요"
     },
-    "mockDataGenerated": "임시 데이터 생성 완료"
+    "mockDataGenerated": "임시 데이터 생성 완료",
+    "volumeTrend": "볼륨 추이",
+    "averageReps": "평균 반복",
+    "selectExercises": "운동 선택"
   },
   "profile": {
     "title": "MY",

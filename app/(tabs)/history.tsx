@@ -204,8 +204,6 @@ export default function HistoryScreen() {
   };
 
   const selectedDateRecords = records.filter((r) => r.date === selectedDate);
-  const totalWorkouts = records.length;
-  const totalDuration = records.reduce((sum, r) => sum + r.duration, 0);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -222,17 +220,6 @@ export default function HistoryScreen() {
 
       {activeTab === "record" ? (
         <ScrollView>
-          <View style={styles.statsContainer}>
-            <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <Text style={[styles.statValue, { color: colors.primary }]}>{totalWorkouts}</Text>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t("history.totalWorkouts")}</Text>
-            </View>
-            <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <Text style={[styles.statValue, { color: colors.primary }]}>{t("history.duration", { minutes: totalDuration })}</Text>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t("history.totalDuration")}</Text>
-            </View>
-          </View>
-
           <View style={styles.section}>
             <View style={styles.calendarHeaderWrapper}>
               <Pressable style={[styles.todayButton, { backgroundColor: colors.primary }]} onPress={goToToday}>
@@ -300,19 +287,11 @@ export default function HistoryScreen() {
                         <Ionicons name="fitness-outline" size={16} color={colors.textSecondary} />
                         <Text style={[styles.statText, { color: colors.textSecondary }]}>{t("history.completionRate", { rate: record.completionRate })}</Text>
                       </View>
-                      {record.totalVolume !== undefined && record.totalVolume > 0 && (
-                        <View style={styles.statItem}>
-                          <Ionicons name="barbell-outline" size={16} color={colors.textSecondary} />
-                          <Text style={[styles.statText, { color: colors.textSecondary }]}>
-                            {t("history.volume", { volume: `${formatWeight(record.totalVolume, unitSystem)} ${getWeightUnit(unitSystem)}` })}
-                          </Text>
-                        </View>
-                      )}
                       {record.bodyWeight !== undefined && record.bodyWeight > 0 && (
                         <View style={styles.statItem}>
                           <Ionicons name="body-outline" size={16} color={colors.textSecondary} />
                           <Text style={[styles.statText, { color: colors.textSecondary }]}>
-                            {t("history.bodyWeight", { weight: `${formatWeight(record.bodyWeight, unitSystem)} ${getWeightUnit(unitSystem)}` })}
+                            {t("history.bodyWeight", { weight: formatWeight(record.bodyWeight, unitSystem) })}
                           </Text>
                         </View>
                       )}
@@ -337,7 +316,7 @@ export default function HistoryScreen() {
                                   ? set.actualDurationSeconds !== undefined && set.actualDurationSeconds > 0
                                     ? t("history.duration", { minutes: Math.round(set.actualDurationSeconds / 60) })
                                     : set.weight > 0
-                                    ? t("history.repsWithWeight", { reps: set.actualReps, weight: `${formatWeight(set.weight, unitSystem)} ${getWeightUnit(unitSystem)}` })
+                                    ? t("history.repsWithWeight", { reps: set.actualReps, weight: formatWeight(set.weight, unitSystem) })
                                     : t("history.reps", { reps: set.actualReps })
                                   : "-"}
                                 {set.restDurationSeconds !== undefined && set.restDurationSeconds > 0 && ` (${t("history.rest")}: ${formatTime(set.restDurationSeconds)})`}
@@ -387,14 +366,9 @@ export default function HistoryScreen() {
                         {t("history.time")}: {t("history.duration", { minutes: currentRecord.duration })}
                       </Text>
                       <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>{t("history.completionRate", { rate: currentRecord.completionRate })}</Text>
-                      {currentRecord.totalVolume !== undefined && currentRecord.totalVolume > 0 && (
-                        <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>
-                          {t("history.totalVolume")}: {formatWeight(currentRecord.totalVolume, unitSystem)} {getWeightUnit(unitSystem)}
-                        </Text>
-                      )}
                       {currentRecord.bodyWeight !== undefined && currentRecord.bodyWeight > 0 && (
                         <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>
-                          {t("history.bodyWeight", { weight: `${formatWeight(currentRecord.bodyWeight, unitSystem)} ${getWeightUnit(unitSystem)}` })}
+                          {t("history.bodyWeight", { weight: formatWeight(currentRecord.bodyWeight, unitSystem) })}
                         </Text>
                       )}
 

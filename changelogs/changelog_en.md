@@ -34,28 +34,48 @@ workout,fitness,gym,training,exercise,strength,bodyweight,tracker,routine,health
 
 ### ✨ New Features
 
-- Imperial Unit System Support
+- **Volume Trend Chart**
+  - View volume (weight × reps × sets) trends for each exercise at a glance
+  - Compare multiple exercises simultaneously
+  - Filter by day/week/month/year periods
+  - Tap chart points to see detailed info (max weight, average reps, etc.)
+
+- **Imperial Unit System Support**
   - Choose between Metric (kg, cm) or Imperial (lb, ft/in) in profile settings
   - All weight and height data automatically converts to your preferred unit
   - Full support across workout, statistics, and history screens
 
+### 🎨 UI/UX Improvements
+
+- **Statistics Screen Redesign**
+  - Removed unnecessary sections, keeping only useful metrics
+  - Removed total volume accumulation display (meaningless number)
+  - Removed Personal Records (PR), Insights, and Exercise Type Distribution sections
+  - Volume trend chart shows what really matters: your progress
+
+- **History Screen Simplification**
+  - Removed total cumulative statistics (total workouts, total time)
+  - Focus on calendar and actual workout records
+
 ### 🐛 Bug Fixes
 
-- Fixed missing translations for muscle groups (neck, arms)
-  - Resolved issue where muscle groups displayed as raw translation keys in "Desk Refresh 10min" routine
-  - All muscle groups now display correctly in Korean/English
+- Fixed duplicate unit display issues
+  - Fixed "79 lb lb" duplicate units in Imperial mode
+  - Fixed "70 kgkg" duplicate display in history screen
+
+- Improved workout duration calculation
+  - Fixed unrealistic duration including rest time
+  - Now accurately tracks actual exercise time only
+
+- Fixed missing translation keys
+  - Fixed raw translation keys showing during workout session (weight/body weight input)
+  - Fixed missing translations for muscle groups (neck, arms)
 
 ### 🌐 Internationalization
 
-- Improved muscle group translation coverage
-  - Added `muscleGroups.neck` (목/Neck) translation key
-  - Enhanced Korean and English muscle group mappings
-
-### 🔧 Technical Improvements
-
-- Enhanced translation helper functions
-  - Added mappings for direct English value inputs
-  - Improved translation consistency
+- Added new translation keys
+  - Volume trend, exercise selection, and other new feature translations
+  - Improved muscle group translation coverage
 
 ---
 
@@ -63,16 +83,22 @@ workout,fitness,gym,training,exercise,strength,bodyweight,tracker,routine,health
 
 ### Update Notes
 
-This update adds Imperial unit system support and improves multilingual features.
+This update introduces the Volume Trend Chart and redesigned statistics screen for clearer progress tracking.
 
 New Features:
 
+- Volume Trend Chart: Track your exercise volume changes at a glance and compare multiple exercises
 - Imperial Unit System Support: Choose between Metric or Imperial units in profile settings
 
 Improvements:
 
-- All exercise muscle groups now display correctly in your selected language
-- Fixed translation issues on routine screens
-- Smoother multilingual user experience
+- Statistics Screen Redesign: Removed clutter, keeping only useful metrics for clear progress tracking
+- History Screen Simplification: Focus on calendar and actual workout records
+- Workout Duration Calculation: Now shows accurate exercise time excluding rest periods
+
+Bug Fixes:
+
+- Fixed duplicate unit display issues
+- Fixed missing translation keys
 
 Thank you for using Set1!
