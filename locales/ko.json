@@ -243,9 +243,18 @@
       "outOfRange": "{{min}}~{{max}} 범위의 값을 입력해주세요"
     },
     "mockDataGenerated": "임시 데이터 생성 완료",
-    "volumeTrend": "볼륨 추이",
+    "maxWeightTrend": "최대 중량 추이",
     "averageReps": "평균 반복",
-    "selectExercises": "운동 선택"
+    "selectExercises": "운동 선택",
+    "selectRoutine": "루틴 선택",
+    "bestVolume": "최고 볼륨",
+    "maxReps": "최대 횟수",
+    "repsUnit": "회",
+    "dayUnit": "일",
+    "workoutDaysTrend": "운동 일수",
+    "workoutDays": "{{count}}일 운동",
+    "workoutDaysLabel": "운동 일수",
+    "selectedCount": "개 선택됨"
   },
   "profile": {
     "title": "MY",

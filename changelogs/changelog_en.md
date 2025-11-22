@@ -30,6 +30,52 @@ workout,fitness,gym,training,exercise,strength,bodyweight,tracker,routine,health
 
 ---
 
+## Version 1.0.12
+
+### ✨ New Features
+
+- **Max Weight Trend by Exercise**
+  - Track max weight changes over time for selected exercises
+  - Compare multiple exercises simultaneously
+  - Filter by day/week/month/year periods
+
+- **Workout Days Chart**
+  - Visualize actual workout days per week/month/year as a bar chart
+  - See your workout consistency at a glance
+
+- **Personal Records (PR) Section**
+  - Track max weight, max reps, and best volume by exercise
+  - Display top 5 exercises in a ranking format
+
+### 🎨 UI/UX Improvements
+
+- **Statistics Screen Redesign**
+  - Consolidated key metrics into 3 columns (streak, weekly goal, yearly activity)
+  - Charts reorganized around practical, useful data
+  - Removed unnecessarily complex UI elements
+
+---
+
+## App Store Submission (v1.0.12)
+
+### Update Notes
+
+This update significantly improves the statistics screen with more practical and useful data.
+
+New Features:
+
+- Max Weight Trend by Exercise: Compare weight progress across multiple exercises at a glance
+- Workout Days Chart: See how consistently you've been working out with a simple bar chart
+- Personal Records (PR): View your best records by exercise in a ranking format
+
+Improvements:
+
+- Simplified Statistics UI: Removed complex UI and focused on practical data only
+
+Thank you for using Set1!
+
+---
+
 ## Version 1.0.11
 
 ### ✨ New Features

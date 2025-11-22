@@ -243,9 +243,18 @@
       "outOfRange": "Please enter a value between {{min}} and {{max}}"
     },
     "mockDataGenerated": "Mock data generation complete",
-    "volumeTrend": "Volume Trend",
+    "maxWeightTrend": "Max Weight Trend",
     "averageReps": "Avg Reps",
-    "selectExercises": "Select Exercises"
+    "selectExercises": "Select Exercises",
+    "selectRoutine": "Select Routine",
+    "bestVolume": "Best Volume",
+    "maxReps": "Max Reps",
+    "repsUnit": "",
+    "dayUnit": " days",
+    "workoutDaysTrend": "Workout Days",
+    "workoutDays": "{{count}} days",
+    "workoutDaysLabel": "Workout Days",
+    "selectedCount": " Selected"
   },
   "profile": {
     "title": "Profile",

@@ -3,14 +3,17 @@ import { profileService } from "@/services/profile";
 import {
   CoreStats,
   ExerciseStats,
+  ExercisePersonalRecord,
+  MaxWeightTrendData,
+  RoutineStats,
   statisticsService,
   TrendPeriod,
-  VolumeTrendData,
   WeekComparison,
   WeightTrendData,
+  WorkoutDaysTrendData,
 } from "@/services/statistics";
-import { generateMockWorkoutData } from "@/utils/generateMockData";
-import { formatWeight, getWeightUnit, type UnitSystem } from "@/utils/unitConversion";
+import { generateMockWorkoutData, generateLightMockData, clearMockWorkoutData } from "@/utils/generateMockData";
+import { formatWeight, type UnitSystem } from "@/utils/unitConversion";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
@@ -83,6 +86,20 @@ const getExerciseName = (t: any, exerciseId: string, exerciseName?: string) => {
   return exerciseName || "";
 };
 
+// 루틴명 번역 헬퍼 (추천 루틴은 번역 키 사용)
+const getRoutineName = (t: any, routineId: string, routineName: string) => {
+  // 추천 루틴 (routine_로 시작)이면 번역 키 사용
+  if (routineId && routineId.startsWith("routine_") && !routineId.startsWith("routine_user_")) {
+    const translated = t(`routines.${routineId}`);
+    // 번역이 존재하면 (키와 다르면) 번역 반환
+    if (translated !== `routines.${routineId}`) {
+      return translated;
+    }
+  }
+  // 사용자 루틴이거나 번역이 없으면 원래 이름 반환
+  return routineName;
+};
+
 const getExerciseTypeName = (t: any, type: string) => {
   // 'type' is already an English key like 'cardio', 'weights', 'bodyweight'
   return t(`category.${type}`);
@@ -122,7 +139,7 @@ export default function StatisticsScreen() {
   const { t, i18n, ready } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [showMockButton, setShowMockButton] = useState(true); // 테스트 버튼 표시
+  const [showMockButton] = useState(__DEV__); // 개발 모드에서만 테스트 버튼 표시
 
   const [coreStats, setCoreStats] = useState<CoreStats | null>(null);
   const [weekComparison, setWeekComparison] = useState<WeekComparison | null>(null);
@@ -130,12 +147,20 @@ export default function StatisticsScreen() {
   const [weightTrendData, setWeightTrendData] = useState<WeightTrendData[]>([]);
   const [weightTrendPeriod, setWeightTrendPeriod] = useState<TrendPeriod>("month");
 
-  // 볼륨 추이 관련 state
+  // 최대 중량 추이 관련 state
   const [exerciseStats, setExerciseStats] = useState<ExerciseStats[]>([]);
-  const [volumeTrends, setVolumeTrends] = useState<Map<string, VolumeTrendData[]>>(new Map());
-  const [volumeTrendPeriod, setVolumeTrendPeriod] = useState<TrendPeriod>("month");
+  const [maxWeightTrends, setMaxWeightTrends] = useState<Map<string, MaxWeightTrendData[]>>(new Map());
+  const [maxWeightTrendPeriod, setMaxWeightTrendPeriod] = useState<TrendPeriod>("month");
   const [selectedExercises, setSelectedExercises] = useState<Set<string>>(new Set());
   const [showExerciseSelector, setShowExerciseSelector] = useState(false);
+
+  // 운동 일수 추이 관련 state
+  const [routineStats, setRoutineStats] = useState<RoutineStats[]>([]);
+  const [workoutDaysTrend, setWorkoutDaysTrend] = useState<WorkoutDaysTrendData[]>([]);
+  const [workoutDaysTrendPeriod, setWorkoutDaysTrendPeriod] = useState<TrendPeriod>("week");
+
+  // 최고기록 관련 state
+  const [exercisePRs, setExercisePRs] = useState<ExercisePersonalRecord[]>([]);
 
   // 체중 추이 범위 선택 상태
   const [weightDayRange, setWeightDayRange] = useState(7);
@@ -173,23 +198,31 @@ export default function StatisticsScreen() {
     setWeightTrendData(trends);
   };
 
-  // 볼륨 추이 로드 함수
-  const loadVolumeTrends = async () => {
+  // 최대 중량 추이 로드 함수
+  const loadMaxWeightTrends = async () => {
     if (selectedExercises.size === 0) return;
 
     const selectedIds = Array.from(selectedExercises);
-    const trends = await statisticsService.getVolumeTrend(t, volumeTrendPeriod, selectedIds);
-    setVolumeTrends(trends);
+    const trends = await statisticsService.getMaxWeightTrend(t, maxWeightTrendPeriod, selectedIds);
+    setMaxWeightTrends(trends);
+  };
+
+  // 운동 일수 추이 로드 함수
+  const loadWorkoutDaysTrend = async () => {
+    const trend = await statisticsService.getWorkoutDaysTrend(t, workoutDaysTrendPeriod);
+    setWorkoutDaysTrend(trend);
   };
 
   // loadStatistics를 일반 함수로 변경하여 항상 최신 상태 참조
   const loadStatistics = async () => {
     try {
-      const [stats, weekComp, profileData, exStats] = await Promise.all([
+      const [stats, weekComp, profileData, exStats, rtStats, exPRs] = await Promise.all([
         statisticsService.getCoreStats(),
         statisticsService.getWeekComparison(),
         profileService.getProfile(),
         statisticsService.getExerciseStats(),
+        statisticsService.getRoutineStats(),
+        statisticsService.getExercisePersonalRecords(),
       ]);
 
       setCoreStats(stats);
@@ -197,15 +230,19 @@ export default function StatisticsScreen() {
       setWeeklyGoal(profileData?.weeklyGoal || null);
       setUnitSystem(profileData?.unitSystem || "metric");
       setExerciseStats(exStats);
+      setRoutineStats(rtStats);
+      setExercisePRs(exPRs);
 
-      // 초기 선택: 상위 3개 운동 자동 선택
+      // 초기 선택: 상위 3개 운동 자동 선택 (최대 중량 추이용)
       if (exStats.length > 0 && selectedExercises.size === 0) {
-        const topExercises = exStats.slice(0, 3).map(ex => ex.exerciseId);
+        // 중량 기록이 있는 운동만 필터링
+        const exercisesWithWeight = exStats.filter(ex => ex.maxWeight > 0);
+        const topExercises = exercisesWithWeight.slice(0, 3).map(ex => ex.exerciseId);
         setSelectedExercises(new Set(topExercises));
       }
 
-      // 체중 추이도 새로고침
-      await loadWeightTrends();
+      // 체중 추이 및 운동 일수 추이 새로고침
+      await Promise.all([loadWeightTrends(), loadWorkoutDaysTrend()]);
     } catch (error) {
       console.error("Failed to load statistics:", error);
     } finally {
@@ -222,13 +259,19 @@ export default function StatisticsScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weightTrendPeriod, weightDayRange, weightWeekRange, weightMonthRange, weightYearRange]);
 
-  // 볼륨 추이 기간 또는 선택된 운동이 변경되면 볼륨 추이 로드
+  // 최대 중량 추이 기간 또는 선택된 운동이 변경되면 로드
   useEffect(() => {
     if (selectedExercises.size > 0) {
-      loadVolumeTrends();
+      loadMaxWeightTrends();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [volumeTrendPeriod, selectedExercises]);
+  }, [maxWeightTrendPeriod, selectedExercises]);
+
+  // 운동 일수 추이 기간이 변경되면 로드
+  useEffect(() => {
+    loadWorkoutDaysTrend();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workoutDaysTrendPeriod]);
 
   useFocusEffect(
     useCallback(() => {
@@ -246,9 +289,21 @@ export default function StatisticsScreen() {
   const handleGenerateMockData = async () => {
     let generatedCount = 0;
     generatedCount = await generateMockWorkoutData();
-    setShowMockButton(false);
     loadStatistics();
     Alert.alert(t("common.success"), t("statistics.mockDataGenerated") + ` (${generatedCount} records)`);
+  };
+
+  const handleGenerateLightMockData = async () => {
+    let generatedCount = 0;
+    generatedCount = await generateLightMockData();
+    loadStatistics();
+    Alert.alert(t("common.success"), t("statistics.mockDataGenerated") + ` (${generatedCount} records)`);
+  };
+
+  const handleClearMockData = async () => {
+    await clearMockWorkoutData();
+    loadStatistics();
+    Alert.alert(t("common.success"), "테스트 데이터가 삭제되었습니다.");
   };
 
   if (loading || !ready) {
@@ -280,22 +335,88 @@ export default function StatisticsScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* 핵심 지표 카드 */}
+        {/* 핵심 지표 카드 (3열) */}
         {coreStats && (
-          <View style={styles.statsCardsContainer}>
-            <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <Text style={styles.statIcon}>🔥</Text>
-              <Text style={[styles.statValue, { color: colors.text }]}>{t("statistics.workoutDays", { count: coreStats.currentStreak })}</Text>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t("statistics.currentStreak")}</Text>
+          <View style={[styles.statsCardsContainer, { flexWrap: "nowrap" }]}>
+            <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border, flex: 1, minWidth: 0 }]}>
+              <Text style={[styles.statIcon, { fontSize: 20 }]}>🔥</Text>
+              <Text style={[styles.statValue, { color: colors.text, fontSize: 14 }]}>{coreStats.currentStreak}{t("statistics.dayUnit")}</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary, fontSize: 10 }]}>{t("statistics.currentStreak")}</Text>
             </View>
 
-
-            <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <Text style={styles.statIcon}>🎯</Text>
-              <Text style={[styles.statValue, { color: colors.text }]}>{isGoalSet ? `${goalAchievementRate?.toFixed(0)}%` : "-"}</Text>
-              <Text style={[styles.statLabel, { color: colors.textSecondary, fontSize: 11, textAlign: "center" }]}>
-                {isGoalSet ? `${t("statistics.weeklyGoalRate")}\n(${weekComparison?.thisWeek.workouts}/${weeklyGoal})` : t("statistics.goalNotSet")}
+            <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border, flex: 1, minWidth: 0 }]}>
+              <Text style={[styles.statIcon, { fontSize: 20 }]}>🎯</Text>
+              <Text style={[styles.statValue, { color: colors.text, fontSize: 14 }]}>{isGoalSet ? `${goalAchievementRate?.toFixed(0)}%` : "-"}</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary, fontSize: 10, textAlign: "center" }]}>
+                {isGoalSet ? `${t("statistics.weeklyGoalRate")}` : t("statistics.goalNotSet")}
               </Text>
+            </View>
+
+            <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border, flex: 1, minWidth: 0 }]}>
+              <Text style={[styles.statIcon, { fontSize: 20 }]}>📅</Text>
+              <Text style={[styles.statValue, { color: colors.text, fontSize: 14 }]}>{coreStats.thisYearWorkouts}{t("statistics.timesUnit")}</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary, fontSize: 10 }]}>{t("statistics.thisYearActivity")}</Text>
+            </View>
+          </View>
+        )}
+
+        {/* 최고기록 섹션 - 운동별만 표시 */}
+        {exercisePRs.length > 0 && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("statistics.personalRecords")}</Text>
+
+            <View style={{ gap: 12 }}>
+              {exercisePRs.slice(0, 5).map((pr, index) => (
+                <View
+                  key={pr.exerciseId}
+                  style={{
+                    backgroundColor: colors.surface,
+                    borderRadius: 12,
+                    padding: 16,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                  }}
+                >
+                  <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
+                    <View style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: 14,
+                      backgroundColor: index === 0 ? "#FFD700" : index === 1 ? "#C0C0C0" : index === 2 ? "#CD7F32" : colors.primary + "30",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginRight: 12,
+                    }}>
+                      <Text style={{ fontSize: 12, fontWeight: "700", color: index < 3 ? "#000" : colors.primary }}>
+                        {index + 1}
+                      </Text>
+                    </View>
+                    <Text style={{ fontSize: 15, fontWeight: "600", color: colors.text, flex: 1 }} numberOfLines={1}>
+                      {getExerciseName(t, pr.exerciseId, pr.exerciseName)}
+                    </Text>
+                  </View>
+                  <View style={{ flexDirection: "row", gap: 16 }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 11, color: colors.textSecondary, marginBottom: 4 }}>{t("statistics.maxWeight")}</Text>
+                      <Text style={{ fontSize: 16, fontWeight: "700", color: "#EF4444" }}>
+                        {formatWeight(pr.maxWeight, unitSystem)}
+                      </Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 11, color: colors.textSecondary, marginBottom: 4 }}>{t("statistics.maxReps")}</Text>
+                      <Text style={{ fontSize: 16, fontWeight: "700", color: "#6366F1" }}>
+                        {pr.maxReps}{t("statistics.repsUnit")}
+                      </Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 11, color: colors.textSecondary, marginBottom: 4 }}>{t("statistics.bestVolume")}</Text>
+                      <Text style={{ fontSize: 16, fontWeight: "700", color: "#10B981" }}>
+                        {formatWeight(pr.maxVolume, unitSystem)}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              ))}
             </View>
           </View>
         )}
@@ -341,29 +462,11 @@ export default function StatisticsScreen() {
           </View>
         )}
 
-        {/* 연간 통계 */}
-        {coreStats && (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("statistics.thisYearActivity")}</Text>
-            <View style={[styles.yearStatsCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <View style={styles.yearStatRow}>
-                <View style={styles.yearStatItem}>
-                  <Text style={[styles.yearStatValue, { color: colors.primary }]}>
-                    {coreStats.thisYearWorkouts}
-                    {t("statistics.timesUnit")}
-                  </Text>
-                  <Text style={[styles.yearStatLabel, { color: colors.textSecondary }]}>{t("statistics.totalWorkouts")}</Text>
-                </View>
-              </View>
-            </View>
-          </View>
-        )}
-
-        {/* 볼륨 추이 차트 */}
+        {/* 최대 중량 추이 차트 */}
         {exerciseStats.length > 0 && selectedExercises.size > 0 && (
           <View style={styles.section}>
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0 }]}>{t("statistics.volumeTrend")}</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0 }]}>{t("statistics.maxWeightTrend")}</Text>
               <TouchableOpacity
                 onPress={() => setShowExerciseSelector(true)}
                 style={{
@@ -380,7 +483,7 @@ export default function StatisticsScreen() {
               >
                 <Ionicons name="filter" size={16} color={colors.primary} />
                 <Text style={{ fontSize: 12, fontWeight: "600", color: colors.primary }}>
-                  {selectedExercises.size}개 선택됨
+                  {selectedExercises.size}{t("statistics.selectedCount")}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -389,20 +492,20 @@ export default function StatisticsScreen() {
               {(["day", "week", "month", "year"] as TrendPeriod[]).map((period) => (
                 <TouchableOpacity
                   key={period}
-                  style={[styles.filterButton, { borderColor: colors.border }, volumeTrendPeriod === period && { backgroundColor: colors.primary, borderColor: colors.primary }]}
-                  onPress={() => setVolumeTrendPeriod(period)}
+                  style={[styles.filterButton, { borderColor: colors.border }, maxWeightTrendPeriod === period && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                  onPress={() => setMaxWeightTrendPeriod(period)}
                 >
-                  <Text style={[styles.filterButtonText, { color: volumeTrendPeriod === period ? (theme === "dark" ? colors.buttonText : "#fff") : colors.text }]}>
+                  <Text style={[styles.filterButtonText, { color: maxWeightTrendPeriod === period ? (theme === "dark" ? colors.buttonText : "#fff") : colors.text }]}>
                     {t(`statistics.period${period.charAt(0).toUpperCase() + period.slice(1)}`)}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
 
-            {volumeTrends.size === 0 || Array.from(volumeTrends.values()).every(data => data.length === 0) ? (
+            {maxWeightTrends.size === 0 || Array.from(maxWeightTrends.values()).every(data => data.length === 0) ? (
               <View style={[styles.chartContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <View style={styles.emptyChartContainer}>
-                  <Ionicons name="bar-chart-outline" size={48} color={colors.textSecondary} />
+                  <Ionicons name="trending-up-outline" size={48} color={colors.textSecondary} />
                   <Text style={[styles.emptyChartText, { color: colors.textSecondary }]}>{t("statistics.noTrendData")}</Text>
                 </View>
               </View>
@@ -430,14 +533,7 @@ export default function StatisticsScreen() {
                           borderColor: color + "40",
                         }}
                       >
-                        <View
-                          style={{
-                            width: 14,
-                            height: 14,
-                            borderRadius: 7,
-                            backgroundColor: color,
-                          }}
-                        />
+                        <View style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: color }} />
                         <Text style={{ fontSize: 13, fontWeight: "600", color: colors.text }}>
                           {getExerciseName(t, exercise.exerciseId, exercise.exerciseName)}
                         </Text>
@@ -450,7 +546,7 @@ export default function StatisticsScreen() {
                   data={{
                     labels: (() => {
                       const firstExercise = Array.from(selectedExercises)[0];
-                      const trends = volumeTrends.get(firstExercise) || [];
+                      const trends = maxWeightTrends.get(firstExercise) || [];
                       return trends.map((data, index) => {
                         const maxLabels = 7;
                         const labelSkip = trends.length > maxLabels ? Math.ceil(trends.length / maxLabels) : 1;
@@ -458,11 +554,13 @@ export default function StatisticsScreen() {
                       });
                     })(),
                     datasets: Array.from(selectedExercises).map((exerciseId, idx) => {
-                      const trends = volumeTrends.get(exerciseId) || [];
+                      const trends = maxWeightTrends.get(exerciseId) || [];
                       const chartColors = ["#6366F1", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6"];
                       const color = chartColors[idx % chartColors.length];
                       return {
-                        data: trends.map(t => unitSystem === "imperial" ? t.totalVolume * 2.20462 : t.totalVolume),
+                        data: trends.length > 0
+                          ? trends.map(t => unitSystem === "imperial" ? t.maxWeight * 2.20462 : t.maxWeight)
+                          : [0],
                         color: (_opacity = 1) => color,
                         strokeWidth: 3,
                       };
@@ -479,25 +577,12 @@ export default function StatisticsScreen() {
                     decimalPlaces: 0,
                     color: (_opacity = 1) => colors.primary,
                     labelColor: (_opacity = 1) => colors.text,
-                    style: {
-                      borderRadius: 16,
-                    },
-                    propsForDots: {
-                      r: "4",
-                      strokeWidth: "2",
-                      stroke: colors.surface,
-                    },
-                    propsForBackgroundLines: {
-                      strokeDasharray: "0",
-                      stroke: colors.border + "40",
-                      strokeWidth: 1,
-                    },
+                    style: { borderRadius: 16 },
+                    propsForDots: { r: "4", strokeWidth: "2", stroke: colors.surface },
+                    propsForBackgroundLines: { strokeDasharray: "0", stroke: colors.border + "40", strokeWidth: 1 },
                   }}
                   bezier
-                  style={{
-                    marginVertical: 8,
-                    borderRadius: 16,
-                  }}
+                  style={{ marginVertical: 8, borderRadius: 16 }}
                   withVerticalLabels={true}
                   withHorizontalLabels={true}
                   withDots={true}
@@ -507,18 +592,14 @@ export default function StatisticsScreen() {
                   withHorizontalLines={true}
                   fromZero={false}
                   onDataPointClick={({ index }) => {
-                    // 모든 선택된 운동의 데이터를 alert로 표시
                     const items = Array.from(selectedExercises).map((exerciseId) => {
-                      const trends = volumeTrends.get(exerciseId) || [];
+                      const trends = maxWeightTrends.get(exerciseId) || [];
                       const data = trends[index];
                       const exercise = exerciseStats.find(ex => ex.exerciseId === exerciseId);
                       if (data && exercise) {
                         return {
                           name: getExerciseName(t, exerciseId, exercise.exerciseName),
-                          volume: formatWeight(data.totalVolume, unitSystem),
                           maxWeight: formatWeight(data.maxWeight, unitSystem),
-                          avgReps: data.averageReps,
-                          workouts: data.workoutCount,
                         };
                       }
                       return null;
@@ -526,23 +607,82 @@ export default function StatisticsScreen() {
 
                     if (items.length > 0) {
                       const firstExercise = Array.from(selectedExercises)[0];
-                      const trends = volumeTrends.get(firstExercise) || [];
+                      const trends = maxWeightTrends.get(firstExercise) || [];
                       const data = trends[index];
-
-                      const message = items.map(item =>
-                        `${item.name}\n` +
-                        `  ${t("statistics.totalVolume")}: ${item.volume}\n` +
-                        `  ${t("statistics.maxWeight")}: ${item.maxWeight}\n` +
-                        `  ${t("statistics.averageReps")}: ${item.avgReps}\n` +
-                        `  ${t("statistics.workoutCount")}: ${item.workouts}${t("statistics.timesUnit")}`
-                      ).join('\n\n');
-
+                      const message = items.map(item => `${item.name}: ${item.maxWeight}`).join('\n');
                       Alert.alert(data?.periodLabel || "", message);
                     }
                   }}
                 />
               </View>
             )}
+          </View>
+        )}
+
+        {/* 운동 일수 추이 (막대 그래프) */}
+        {workoutDaysTrend.length > 0 && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("statistics.workoutDaysTrend")}</Text>
+
+            {/* 기간 선택 버튼 */}
+            <View style={[styles.filterButtons, { marginBottom: 16 }]}>
+              {(["week", "month", "year"] as TrendPeriod[]).map((period) => (
+                <TouchableOpacity
+                  key={period}
+                  style={[styles.filterButton, { borderColor: colors.border }, workoutDaysTrendPeriod === period && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                  onPress={() => setWorkoutDaysTrendPeriod(period)}
+                >
+                  <Text style={[styles.filterButtonText, { color: workoutDaysTrendPeriod === period ? (theme === "dark" ? colors.buttonText : "#fff") : colors.text }]}>
+                    {t(`statistics.period${period.charAt(0).toUpperCase() + period.slice(1)}`)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <View style={[styles.chartContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              {/* 막대 그래프 */}
+              <View style={{ flexDirection: "row", alignItems: "flex-end", justifyContent: "space-around", height: 180, paddingHorizontal: 8, paddingTop: 16 }}>
+                {workoutDaysTrend.map((data, index) => {
+                  const maxDays = Math.max(...workoutDaysTrend.map(d => d.workoutDays), 1);
+                  const barHeight = (data.workoutDays / maxDays) * 140;
+                  return (
+                    <TouchableOpacity
+                      key={index}
+                      onPress={() => {
+                        Alert.alert(
+                          data.periodLabel,
+                          `${t("statistics.workoutDays", { count: data.workoutDays })}`
+                        );
+                      }}
+                      style={{ alignItems: "center", flex: 1 }}
+                    >
+                      <Text style={{ fontSize: 11, fontWeight: "700", color: colors.primary, marginBottom: 4 }}>
+                        {data.workoutDays}
+                      </Text>
+                      <View
+                        style={{
+                          width: Math.max(20, Math.min(40, (Dimensions.get("window").width - 80) / workoutDaysTrend.length - 8)),
+                          height: Math.max(4, barHeight),
+                          backgroundColor: colors.primary,
+                          borderRadius: 4,
+                        }}
+                      />
+                      <Text style={{ fontSize: 10, color: colors.textSecondary, marginTop: 6, textAlign: "center" }} numberOfLines={1}>
+                        {data.periodLabel}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {/* 범례 */}
+              <View style={{ flexDirection: "row", justifyContent: "center", marginTop: 16, gap: 16 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  <View style={{ width: 12, height: 12, backgroundColor: colors.primary, borderRadius: 2 }} />
+                  <Text style={{ fontSize: 12, color: colors.textSecondary }}>{t("statistics.workoutDaysLabel")}</Text>
+                </View>
+              </View>
+            </View>
           </View>
         )}
 
@@ -679,6 +819,51 @@ export default function StatisticsScreen() {
           </View>
         )}
 
+
+        {/* 테스트 데이터 버튼 (개발용) */}
+        {showMockButton && (
+          <View style={[styles.section, { marginTop: 20 }]}>
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary, fontSize: 12 }]}>개발자 도구</Text>
+            <View style={{ gap: 8 }}>
+              <TouchableOpacity
+                onPress={handleGenerateLightMockData}
+                style={{
+                  backgroundColor: colors.primary,
+                  paddingVertical: 12,
+                  paddingHorizontal: 16,
+                  borderRadius: 8,
+                  alignItems: "center",
+                }}
+              >
+                <Text style={{ color: colors.buttonText, fontWeight: "600" }}>가벼운 테스트 데이터 (30일)</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleGenerateMockData}
+                style={{
+                  backgroundColor: colors.border,
+                  paddingVertical: 12,
+                  paddingHorizontal: 16,
+                  borderRadius: 8,
+                  alignItems: "center",
+                }}
+              >
+                <Text style={{ color: colors.text, fontWeight: "600" }}>전체 테스트 데이터 (365일)</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleClearMockData}
+                style={{
+                  backgroundColor: "#FF5252",
+                  paddingVertical: 12,
+                  paddingHorizontal: 16,
+                  borderRadius: 8,
+                  alignItems: "center",
+                }}
+              >
+                <Text style={{ color: "#fff", fontWeight: "600" }}>테스트 데이터 삭제</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -972,7 +1157,7 @@ export default function StatisticsScreen() {
                 onPress={() => {
                   setShowExerciseSelector(false);
                   if (selectedExercises.size > 0) {
-                    loadVolumeTrends();
+                    loadMaxWeightTrends();
                   }
                 }}
               >
@@ -982,6 +1167,7 @@ export default function StatisticsScreen() {
           </View>
         </View>
       </Modal>
+
     </View>
   );
 }

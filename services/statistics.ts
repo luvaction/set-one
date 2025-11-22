@@ -102,6 +102,7 @@ export interface VolumeTrendData {
   period: string;
   periodLabel: string;
   totalVolume: number; // 총 볼륨 (무게 × 횟수 × 세트)
+  averageVolume?: number; // 평균 볼륨 (세션당)
   maxWeight: number; // 그 기간의 최대 중량
   averageReps: number; // 평균 반복 횟수
   workoutCount: number; // 운동 횟수
@@ -114,7 +115,63 @@ export interface WeightTrendData {
   recordCount: number; // 기록된 체중 횟수
 }
 
+// 실행 횟수 추이 데이터
+export interface FrequencyTrendData {
+  period: string;
+  periodLabel: string;
+  count: number; // 해당 기간의 실행 횟수
+}
+
+// 운동별 최대 중량 추이 데이터
+export interface MaxWeightTrendData {
+  period: string;
+  periodLabel: string;
+  maxWeight: number; // 해당 기간의 최대 중량
+}
+
+// 운동 일수 추이 데이터
+export interface WorkoutDaysTrendData {
+  period: string;
+  periodLabel: string;
+  workoutDays: number; // 해당 기간의 운동 일수
+  totalDays: number; // 해당 기간의 전체 일수
+}
+
 export type TrendPeriod = "week" | "month" | "year" | "day";
+
+// 루틴별 통계
+export interface RoutineStats {
+  routineId: string;
+  routineName: string;
+  totalWorkouts: number;
+  totalVolume: number;
+  totalDuration: number;
+  averageVolume: number;
+  averageDuration: number;
+  lastWorkout: string;
+}
+
+// 루틴별 최고기록
+export interface RoutinePersonalRecord {
+  routineId: string;
+  routineName: string;
+  bestVolume: number;
+  bestVolumeDate: string;
+  bestDuration: number;
+  bestDurationDate: string;
+}
+
+// 운동별 최고기록 (개선된 버전)
+export interface ExercisePersonalRecord {
+  exerciseId: string;
+  exerciseName: string;
+  maxWeight: number;
+  maxWeightDate: string;
+  maxVolume: number; // weight × reps (단일 세트)
+  maxVolumeDate: string;
+  maxReps: number;
+  maxRepsDate: string;
+}
 
 const getDayOfWeek = (dateString: string): string => {
   const days = ["일", "월", "화", "수", "목", "금", "토"];
@@ -836,10 +893,12 @@ export const statisticsService = {
       // 기간별 데이터 정리
       const trendArray: VolumeTrendData[] = Object.entries(periodData)
         .map(([periodKey, data]) => {
+          const avgVolume = data.workoutCount > 0 ? Math.round(data.totalVolume / data.workoutCount) : 0;
           return {
             period: periodKey,
             periodLabel: this.formatPeriodLabel(t, periodKey, period),
             totalVolume: Math.round(data.totalVolume),
+            averageVolume: avgVolume,
             maxWeight: data.weights.length > 0 ? Math.max(...data.weights) : 0,
             averageReps: data.reps.length > 0 ? Math.round((data.reps.reduce((sum, r) => sum + r, 0) / data.reps.length) * 10) / 10 : 0,
             workoutCount: data.workoutCount,
@@ -957,6 +1016,505 @@ export const statisticsService = {
         recentTrends = trendArray.slice(-12); // 최근 12개월
       } else if (period === "day") {
         recentTrends = trendArray.slice(-7); // 최근 7일
+      }
+    }
+
+    return recentTrends;
+  },
+
+  // 루틴별 통계 가져오기
+  async getRoutineStats(): Promise<RoutineStats[]> {
+    const records = await workoutRecordService.getAllRecords();
+    const completedRecords = records.filter((r) => r.status === "completed");
+
+    const routineMap: Record<string, {
+      routineName: string;
+      workouts: number;
+      totalVolume: number;
+      totalDuration: number;
+      lastWorkout: string;
+    }> = {};
+
+    completedRecords.forEach((record) => {
+      const routineId = record.routineId || "unknown";
+      if (!routineMap[routineId]) {
+        routineMap[routineId] = {
+          routineName: record.routineName,
+          workouts: 0,
+          totalVolume: 0,
+          totalDuration: 0,
+          lastWorkout: record.date,
+        };
+      }
+
+      routineMap[routineId].workouts++;
+      routineMap[routineId].totalVolume += record.totalVolume || 0;
+      routineMap[routineId].totalDuration += record.duration || 0;
+      if (record.date > routineMap[routineId].lastWorkout) {
+        routineMap[routineId].lastWorkout = record.date;
+      }
+    });
+
+    return Object.entries(routineMap)
+      .map(([routineId, data]) => ({
+        routineId,
+        routineName: data.routineName,
+        totalWorkouts: data.workouts,
+        totalVolume: Math.round(data.totalVolume),
+        totalDuration: data.totalDuration,
+        averageVolume: data.workouts > 0 ? Math.round(data.totalVolume / data.workouts) : 0,
+        averageDuration: data.workouts > 0 ? Math.round(data.totalDuration / data.workouts) : 0,
+        lastWorkout: data.lastWorkout,
+      }))
+      .sort((a, b) => b.totalWorkouts - a.totalWorkouts);
+  },
+
+  // 루틴별 볼륨 추이
+  async getRoutineVolumeTrend(t: (key: string, params?: any) => string, period: TrendPeriod, routineId: string, range?: number): Promise<VolumeTrendData[]> {
+    const records = await workoutRecordService.getAllRecords();
+    const completedRecords = records.filter((r) => r.status === "completed" && r.routineId === routineId);
+
+    const periodData: Record<string, { totalVolume: number; weights: number[]; reps: number[]; workoutCount: number }> = {};
+
+    completedRecords.forEach((record) => {
+      const date = new Date(record.date);
+      let periodKey = "";
+
+      if (period === "week") {
+        const weekNumber = this.getWeekNumber(date);
+        periodKey = `${date.getFullYear()}-W${weekNumber}`;
+      } else if (period === "month") {
+        periodKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      } else if (period === "day") {
+        periodKey = date.toISOString().split("T")[0];
+      } else {
+        periodKey = `${date.getFullYear()}`;
+      }
+
+      if (!periodData[periodKey]) {
+        periodData[periodKey] = { totalVolume: 0, weights: [], reps: [], workoutCount: 0 };
+      }
+
+      periodData[periodKey].totalVolume += record.totalVolume || 0;
+
+      // 운동별 무게와 횟수 집계
+      record.exercises.forEach((exercise) => {
+        exercise.sets.filter((s) => s.isCompleted).forEach((set) => {
+          if (set.weight > 0) {
+            periodData[periodKey].weights.push(set.weight);
+          }
+          if (set.actualReps > 0) {
+            periodData[periodKey].reps.push(set.actualReps);
+          }
+        });
+      });
+
+      periodData[periodKey].workoutCount++;
+    });
+
+    const trendArray: VolumeTrendData[] = Object.entries(periodData)
+      .map(([periodKey, data]) => {
+        const avgVolume = data.workoutCount > 0 ? Math.round(data.totalVolume / data.workoutCount) : 0;
+        return {
+          period: periodKey,
+          periodLabel: this.formatPeriodLabel(t, periodKey, period),
+          totalVolume: Math.round(data.totalVolume),
+          averageVolume: avgVolume,
+          maxWeight: data.weights.length > 0 ? Math.max(...data.weights) : 0,
+          averageReps: data.reps.length > 0 ? Math.round((data.reps.reduce((sum, r) => sum + r, 0) / data.reps.length) * 10) / 10 : 0,
+          workoutCount: data.workoutCount,
+        };
+      })
+      .sort((a, b) => a.period.localeCompare(b.period));
+
+    // 범위 적용
+    let recentTrends = trendArray;
+    if (range !== undefined && range > 0) {
+      recentTrends = trendArray.slice(-range);
+    } else {
+      if (period === "week") {
+        recentTrends = trendArray.slice(-12);
+      } else if (period === "month") {
+        recentTrends = trendArray.slice(-12);
+      } else if (period === "year") {
+        recentTrends = trendArray.slice(-5);
+      } else if (period === "day") {
+        recentTrends = trendArray.slice(-30);
+      }
+    }
+
+    return recentTrends;
+  },
+
+  // 루틴별 최고기록
+  async getRoutinePersonalRecords(): Promise<RoutinePersonalRecord[]> {
+    const records = await workoutRecordService.getAllRecords();
+    const completedRecords = records.filter((r) => r.status === "completed");
+
+    const routineMap: Record<string, {
+      routineName: string;
+      bestVolume: number;
+      bestVolumeDate: string;
+      bestDuration: number;
+      bestDurationDate: string;
+    }> = {};
+
+    completedRecords.forEach((record) => {
+      const routineId = record.routineId || "unknown";
+      const volume = record.totalVolume || 0;
+      const duration = record.duration || 0;
+
+      if (!routineMap[routineId]) {
+        routineMap[routineId] = {
+          routineName: record.routineName,
+          bestVolume: volume,
+          bestVolumeDate: record.date,
+          bestDuration: duration,
+          bestDurationDate: record.date,
+        };
+      } else {
+        if (volume > routineMap[routineId].bestVolume) {
+          routineMap[routineId].bestVolume = volume;
+          routineMap[routineId].bestVolumeDate = record.date;
+        }
+        if (duration > routineMap[routineId].bestDuration) {
+          routineMap[routineId].bestDuration = duration;
+          routineMap[routineId].bestDurationDate = record.date;
+        }
+      }
+    });
+
+    return Object.entries(routineMap)
+      .map(([routineId, data]) => ({
+        routineId,
+        routineName: data.routineName,
+        bestVolume: Math.round(data.bestVolume),
+        bestVolumeDate: data.bestVolumeDate,
+        bestDuration: data.bestDuration,
+        bestDurationDate: data.bestDurationDate,
+      }))
+      .filter((pr) => pr.bestVolume > 0)
+      .sort((a, b) => b.bestVolume - a.bestVolume);
+  },
+
+  // 운동별 최고기록 (개선된 버전 - 최대 중량, 최대 볼륨, 최대 횟수)
+  async getExercisePersonalRecords(): Promise<ExercisePersonalRecord[]> {
+    const records = await workoutRecordService.getAllRecords();
+    const completedRecords = records.filter((r) => r.status === "completed");
+
+    const exerciseMap: Record<string, {
+      exerciseName: string;
+      maxWeight: number;
+      maxWeightDate: string;
+      maxVolume: number;
+      maxVolumeDate: string;
+      maxReps: number;
+      maxRepsDate: string;
+    }> = {};
+
+    completedRecords.forEach((record) => {
+      record.exercises.forEach((exercise) => {
+        exercise.sets.filter((s) => s.isCompleted).forEach((set) => {
+          const exerciseId = exercise.exerciseId;
+          const volume = set.weight * (set.actualReps || 0);
+
+          if (!exerciseMap[exerciseId]) {
+            exerciseMap[exerciseId] = {
+              exerciseName: exercise.exerciseName,
+              maxWeight: 0,
+              maxWeightDate: "",
+              maxVolume: 0,
+              maxVolumeDate: "",
+              maxReps: 0,
+              maxRepsDate: "",
+            };
+          }
+
+          // 최대 중량 갱신
+          if (set.weight > exerciseMap[exerciseId].maxWeight) {
+            exerciseMap[exerciseId].maxWeight = set.weight;
+            exerciseMap[exerciseId].maxWeightDate = record.date;
+          }
+
+          // 최대 볼륨 (단일 세트) 갱신
+          if (volume > exerciseMap[exerciseId].maxVolume) {
+            exerciseMap[exerciseId].maxVolume = volume;
+            exerciseMap[exerciseId].maxVolumeDate = record.date;
+          }
+
+          // 최대 횟수 갱신
+          if ((set.actualReps || 0) > exerciseMap[exerciseId].maxReps) {
+            exerciseMap[exerciseId].maxReps = set.actualReps || 0;
+            exerciseMap[exerciseId].maxRepsDate = record.date;
+          }
+        });
+      });
+    });
+
+    return Object.entries(exerciseMap)
+      .map(([exerciseId, data]) => ({
+        exerciseId,
+        exerciseName: data.exerciseName,
+        maxWeight: data.maxWeight,
+        maxWeightDate: data.maxWeightDate,
+        maxVolume: Math.round(data.maxVolume),
+        maxVolumeDate: data.maxVolumeDate,
+        maxReps: data.maxReps,
+        maxRepsDate: data.maxRepsDate,
+      }))
+      .filter((pr) => pr.maxWeight > 0 || pr.maxReps > 0)
+      .sort((a, b) => b.maxVolume - a.maxVolume);
+  },
+
+  // 루틴별 실행 횟수 추이
+  async getRoutineFrequencyTrend(t: (key: string, params?: any) => string, period: TrendPeriod, routineId: string, range?: number): Promise<FrequencyTrendData[]> {
+    const records = await workoutRecordService.getAllRecords();
+    const completedRecords = records.filter((r) => r.status === "completed" && r.routineId === routineId);
+
+    const periodData: Record<string, number> = {};
+
+    completedRecords.forEach((record) => {
+      const date = new Date(record.date);
+      let periodKey = "";
+
+      if (period === "week") {
+        const weekNumber = this.getWeekNumber(date);
+        periodKey = `${date.getFullYear()}-W${weekNumber}`;
+      } else if (period === "month") {
+        periodKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      } else if (period === "day") {
+        periodKey = date.toISOString().split("T")[0];
+      } else {
+        periodKey = `${date.getFullYear()}`;
+      }
+
+      periodData[periodKey] = (periodData[periodKey] || 0) + 1;
+    });
+
+    const trendArray: FrequencyTrendData[] = Object.entries(periodData)
+      .map(([periodKey, count]) => ({
+        period: periodKey,
+        periodLabel: this.formatPeriodLabel(t, periodKey, period),
+        count,
+      }))
+      .sort((a, b) => a.period.localeCompare(b.period));
+
+    // 범위 적용
+    let recentTrends = trendArray;
+    if (range !== undefined && range > 0) {
+      recentTrends = trendArray.slice(-range);
+    } else {
+      if (period === "week") {
+        recentTrends = trendArray.slice(-12);
+      } else if (period === "month") {
+        recentTrends = trendArray.slice(-12);
+      } else if (period === "year") {
+        recentTrends = trendArray.slice(-5);
+      } else if (period === "day") {
+        recentTrends = trendArray.slice(-30);
+      }
+    }
+
+    return recentTrends;
+  },
+
+  // 운동별 실행 횟수 추이
+  async getExerciseFrequencyTrend(t: (key: string, params?: any) => string, period: TrendPeriod, exerciseIds: string[], range?: number): Promise<Map<string, FrequencyTrendData[]>> {
+    const records = await workoutRecordService.getAllRecords();
+    const completedRecords = records.filter((r) => r.status === "completed");
+
+    const trendMap = new Map<string, FrequencyTrendData[]>();
+
+    exerciseIds.forEach((exerciseId) => {
+      const periodData: Record<string, number> = {};
+
+      completedRecords.forEach((record) => {
+        const exercise = record.exercises.find((ex) => ex.exerciseId === exerciseId);
+        if (!exercise) return;
+
+        const completedSets = exercise.sets.filter((s) => s.isCompleted);
+        if (completedSets.length === 0) return;
+
+        const date = new Date(record.date);
+        let periodKey = "";
+
+        if (period === "week") {
+          const weekNumber = this.getWeekNumber(date);
+          periodKey = `${date.getFullYear()}-W${weekNumber}`;
+        } else if (period === "month") {
+          periodKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+        } else if (period === "day") {
+          periodKey = date.toISOString().split("T")[0];
+        } else {
+          periodKey = `${date.getFullYear()}`;
+        }
+
+        periodData[periodKey] = (periodData[periodKey] || 0) + 1;
+      });
+
+      const trendArray: FrequencyTrendData[] = Object.entries(periodData)
+        .map(([periodKey, count]) => ({
+          period: periodKey,
+          periodLabel: this.formatPeriodLabel(t, periodKey, period),
+          count,
+        }))
+        .sort((a, b) => a.period.localeCompare(b.period));
+
+      // 범위 적용
+      let recentTrends = trendArray;
+      if (range !== undefined && range > 0) {
+        recentTrends = trendArray.slice(-range);
+      } else {
+        if (period === "week") {
+          recentTrends = trendArray.slice(-12);
+        } else if (period === "month") {
+          recentTrends = trendArray.slice(-12);
+        } else if (period === "year") {
+          recentTrends = trendArray.slice(-5);
+        } else if (period === "day") {
+          recentTrends = trendArray.slice(-30);
+        }
+      }
+
+      trendMap.set(exerciseId, recentTrends);
+    });
+
+    return trendMap;
+  },
+
+  // 운동별 최대 중량 추이
+  async getMaxWeightTrend(t: (key: string, params?: any) => string, period: TrendPeriod, exerciseIds: string[], range?: number): Promise<Map<string, MaxWeightTrendData[]>> {
+    const records = await workoutRecordService.getAllRecords();
+    const completedRecords = records.filter((r) => r.status === "completed");
+
+    const trendMap = new Map<string, MaxWeightTrendData[]>();
+
+    exerciseIds.forEach((exerciseId) => {
+      const periodData: Record<string, number> = {}; // period -> maxWeight
+
+      completedRecords.forEach((record) => {
+        const exercise = record.exercises.find((ex) => ex.exerciseId === exerciseId);
+        if (!exercise) return;
+
+        const completedSets = exercise.sets.filter((s) => s.isCompleted && s.weight > 0);
+        if (completedSets.length === 0) return;
+
+        const date = new Date(record.date);
+        let periodKey = "";
+
+        if (period === "week") {
+          const weekNumber = this.getWeekNumber(date);
+          periodKey = `${date.getFullYear()}-W${weekNumber}`;
+        } else if (period === "month") {
+          periodKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+        } else if (period === "day") {
+          periodKey = date.toISOString().split("T")[0];
+        } else {
+          periodKey = `${date.getFullYear()}`;
+        }
+
+        const maxWeightInSession = Math.max(...completedSets.map(s => s.weight));
+        periodData[periodKey] = Math.max(periodData[periodKey] || 0, maxWeightInSession);
+      });
+
+      const trendArray: MaxWeightTrendData[] = Object.entries(periodData)
+        .map(([periodKey, maxWeight]) => ({
+          period: periodKey,
+          periodLabel: this.formatPeriodLabel(t, periodKey, period),
+          maxWeight,
+        }))
+        .sort((a, b) => a.period.localeCompare(b.period));
+
+      // 범위 적용
+      let recentTrends = trendArray;
+      if (range !== undefined && range > 0) {
+        recentTrends = trendArray.slice(-range);
+      } else {
+        if (period === "week") {
+          recentTrends = trendArray.slice(-12);
+        } else if (period === "month") {
+          recentTrends = trendArray.slice(-12);
+        } else if (period === "year") {
+          recentTrends = trendArray.slice(-5);
+        } else if (period === "day") {
+          recentTrends = trendArray.slice(-30);
+        }
+      }
+
+      trendMap.set(exerciseId, recentTrends);
+    });
+
+    return trendMap;
+  },
+
+  // 운동 일수 추이 (주별/월별)
+  async getWorkoutDaysTrend(t: (key: string, params?: any) => string, period: TrendPeriod, range?: number): Promise<WorkoutDaysTrendData[]> {
+    const records = await workoutRecordService.getAllRecords();
+    const completedRecords = records.filter((r) => r.status === "completed");
+
+    // 날짜별로 운동 여부 체크
+    const workoutDates = new Set(completedRecords.map(r => r.date));
+
+    const periodData: Record<string, { workoutDays: Set<string>; totalDays: number }> = {};
+
+    // 모든 운동 기록의 날짜 범위 계산
+    if (completedRecords.length === 0) return [];
+
+    const allDates = completedRecords.map(r => new Date(r.date));
+    const minDate = new Date(Math.min(...allDates.map(d => d.getTime())));
+    const maxDate = new Date();
+
+    // 날짜 범위 내 모든 날짜 순회
+    const currentDate = new Date(minDate);
+    while (currentDate <= maxDate) {
+      const dateString = currentDate.toISOString().split("T")[0];
+      let periodKey = "";
+
+      if (period === "week") {
+        const weekNumber = this.getWeekNumber(currentDate);
+        periodKey = `${currentDate.getFullYear()}-W${weekNumber}`;
+      } else if (period === "month") {
+        periodKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, "0")}`;
+      } else if (period === "year") {
+        periodKey = `${currentDate.getFullYear()}`;
+      } else {
+        // day - 의미없으므로 week로 대체
+        const weekNumber = this.getWeekNumber(currentDate);
+        periodKey = `${currentDate.getFullYear()}-W${weekNumber}`;
+      }
+
+      if (!periodData[periodKey]) {
+        periodData[periodKey] = { workoutDays: new Set(), totalDays: 0 };
+      }
+
+      periodData[periodKey].totalDays++;
+      if (workoutDates.has(dateString)) {
+        periodData[periodKey].workoutDays.add(dateString);
+      }
+
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    const trendArray: WorkoutDaysTrendData[] = Object.entries(periodData)
+      .map(([periodKey, data]) => ({
+        period: periodKey,
+        periodLabel: this.formatPeriodLabel(t, periodKey, period === "day" ? "week" : period),
+        workoutDays: data.workoutDays.size,
+        totalDays: data.totalDays,
+      }))
+      .sort((a, b) => a.period.localeCompare(b.period));
+
+    // 범위 적용
+    let recentTrends = trendArray;
+    if (range !== undefined && range > 0) {
+      recentTrends = trendArray.slice(-range);
+    } else {
+      if (period === "week" || period === "day") {
+        recentTrends = trendArray.slice(-12); // 최근 12주
+      } else if (period === "month") {
+        recentTrends = trendArray.slice(-12); // 최근 12개월
+      } else if (period === "year") {
+        recentTrends = trendArray.slice(-5); // 최근 5년
       }
     }
 

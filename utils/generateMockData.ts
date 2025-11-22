@@ -160,6 +160,118 @@ export async function generateMockWorkoutData() {
   return createdCount;
 }
 
+// 가벼운 테스트 데이터 생성 (30일치, 빠른 확인용)
+export async function generateLightMockData() {
+  console.log("🚀 Starting light mock data generation (30 days)...");
+
+  await clearMockWorkoutData();
+
+  let createdCount = 0;
+
+  // 루틴 정의
+  const routines = [
+    { id: "routine_beginner_fullbody", name: "초보자 전신 운동" },
+    { id: "routine_chest_day", name: "가슴 집중 운동" },
+    { id: "routine_back_day", name: "등 집중 운동" },
+    { id: "routine_leg_day", name: "하체 집중 운동" },
+  ];
+
+  // 운동 정의 (모든 루틴에 웨이트 운동 포함하여 볼륨 추적 가능하게)
+  const exercisesByRoutine: Record<string, Array<{ id: string; name: string; weight: number; reps: number }>> = {
+    routine_beginner_fullbody: [
+      { id: "regularPushup", name: "일반 푸시업", weight: 10, reps: 15 }, // 체중의 일부로 계산
+      { id: "bodyweightSquat", name: "바디웨이트 스쿼트", weight: 15, reps: 20 },
+      { id: "regularPlank", name: "플랭크", weight: 10, reps: 60 },
+    ],
+    routine_chest_day: [
+      { id: "flatBenchPress", name: "플랫 벤치프레스", weight: 60, reps: 10 },
+      { id: "inclineBenchPress", name: "인클라인 벤치프레스", weight: 50, reps: 10 },
+      { id: "dumbbellFly", name: "덤벨 플라이", weight: 20, reps: 12 },
+    ],
+    routine_back_day: [
+      { id: "regularPullup", name: "풀업", weight: 20, reps: 8 }, // 체중의 일부로 계산
+      { id: "barbellRow", name: "바벨 로우", weight: 50, reps: 10 },
+      { id: "dumbbellRow", name: "덤벨 로우", weight: 25, reps: 12 },
+    ],
+    routine_leg_day: [
+      { id: "conventionalDeadlift", name: "컨벤셔널 데드리프트", weight: 80, reps: 8 },
+      { id: "bulgarianSplitSquat", name: "불가리안 스플릿 스쿼트", weight: 20, reps: 12 },
+      { id: "bodyweightSquat", name: "바디웨이트 스쿼트", weight: 15, reps: 20 },
+    ],
+  };
+
+  // 최근 30일 데이터 생성
+  for (let i = 0; i < 30; i++) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    const dateString = date.toISOString().split("T")[0];
+
+    // 주 4회 운동 패턴 (월, 화, 목, 금)
+    const dayOfWeek = date.getDay();
+    const shouldWorkout = [1, 2, 4, 5].includes(dayOfWeek); // 월화목금
+
+    if (shouldWorkout) {
+      // 루틴 순환 선택
+      const routineIndex = Math.floor(i / 7) % routines.length;
+      const routine = routines[routineIndex];
+      const exercises = exercisesByRoutine[routine.id];
+
+      // 시간에 따라 무게 증가 (진보 시뮬레이션)
+      const progressFactor = 1 + ((30 - i) / 30) * 0.15; // 최대 15% 증가
+
+      const workoutExercises = exercises.map((ex) => ({
+        exerciseId: ex.id,
+        exerciseName: ex.name,
+        targetSets: 3,
+        sets: Array.from({ length: 3 }, (_, setIdx) => {
+          const weight = Math.floor(ex.weight * progressFactor);
+          const repsVariation = Math.floor(Math.random() * 3) - 1;
+          const actualReps = Math.max(1, ex.reps + repsVariation);
+
+          return {
+            setNumber: setIdx + 1,
+            targetReps: ex.reps,
+            targetWeight: ex.weight,
+            actualReps,
+            weight,
+            isCompleted: true,
+          };
+        }),
+        isCompleted: true,
+      }));
+
+      const totalVolume = workoutExercises.reduce(
+        (sum, ex) =>
+          sum + ex.sets.reduce((s, set) => s + set.weight * set.actualReps, 0),
+        0
+      );
+
+      const recordData: CreateWorkoutRecordData = {
+        routineId: routine.id,
+        routineName: routine.name,
+        date: dateString,
+        duration: 40 + Math.floor(Math.random() * 20), // 40-60분
+        exercises: workoutExercises,
+        totalVolume,
+        completionRate: 100,
+        bodyWeight: 70 + (Math.random() - 0.5) * 2, // 69-71kg
+        status: "completed",
+        memo: "임시 데이터",
+      };
+
+      try {
+        await workoutRecordService.createRecord("mock-user-id", recordData);
+        createdCount++;
+      } catch (error) {
+        console.error(`Failed to create mock record for ${dateString}:`, error);
+      }
+    }
+  }
+
+  console.log(`✅ Successfully created ${createdCount} light mock records`);
+  return createdCount;
+}
+
 // 임시 데이터 삭제
 export async function clearMockWorkoutData() {
   console.log("🗑️  Clearing existing mock data...");
